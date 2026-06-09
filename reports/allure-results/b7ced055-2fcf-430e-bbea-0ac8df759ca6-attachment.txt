@@ -1,0 +1,527 @@
+2026-06-09 17:32:05,540 | INFO | test_detailed_view | Starting Detailed View Test
+2026-06-09 17:32:05,541 | INFO | pages.detail_view_page | Navigating to Dashboard
+2026-06-09 17:32:15,962 | WARNING | pages.detail_view_page | List View not displayed after Hover, Trying to Click
+2026-06-09 17:32:17,300 | INFO | pages.detail_view_page | Clicked List View
+2026-06-09 17:32:17,301 | INFO | test_detailed_view | Switching to Ongoing
+2026-06-09 17:32:26,299 | INFO | test_detailed_view | Clicking Ongoing 
+2026-06-09 17:32:36,323 | INFO | pages.detail_view_page | Flights are Visible
+2026-06-09 17:32:36,339 | INFO | pages.detail_view_page | Totally we have 15 Flights
+2026-06-09 17:32:38,742 | INFO | test_detailed_view | Clicked the Detail View Arrow for 1 Flight
+2026-06-09 17:32:43,770 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 316
+2026-06-09 17:32:43,780 | INFO | pages.detail_view_page | Departure Flight Number is FZ 827
+2026-06-09 17:32:43,797 | INFO | pages.detail_view_page | Arrival Airport Code is SKT
+2026-06-09 17:32:43,806 | INFO | pages.detail_view_page | Destination Airport Code is MED
+2026-06-09 17:32:43,815 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FQI
+2026-06-09 17:32:43,816 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:32:43,834 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:32:43,854 | INFO | pages.detail_view_page | Displayed Ground Time is ( 520 Min )
+2026-06-09 17:32:43,864 | INFO | pages.detail_view_page | Displayed Bay Number is Q05
+2026-06-09 17:32:43,874 | INFO | pages.detail_view_page | Displayed Gate Number is F9
+2026-06-09 17:32:43,895 | INFO | pages.detail_view_page | Mentioned STA Time is 13:25
+2026-06-09 17:32:43,905 | INFO | pages.detail_view_page | Mentioned ETA Time is 12:59
+2026-06-09 17:32:43,924 | INFO | pages.detail_view_page | Mentioned ONB Time is 12:38
+2026-06-09 17:32:43,934 | INFO | pages.detail_view_page | Mentioned STD Time is 22:05
+2026-06-09 17:32:43,943 | INFO | pages.detail_view_page | Mentioned ETD Time is 22:05
+2026-06-09 17:32:44,372 | INFO | test_detailed_view | Clicking Back and Continuing for 2 Flight
+2026-06-09 17:32:53,500 | INFO | test_detailed_view | FZ 316 - FZ 827 Passed
+2026-06-09 17:32:55,565 | WARNING | test_detailed_view | Flight 2 is locked. Skipping detail view.
+2026-06-09 17:32:57,847 | INFO | test_detailed_view | Clicked the Detail View Arrow for 3 Flight
+2026-06-09 17:33:02,872 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 9022
+2026-06-09 17:33:02,881 | INFO | pages.detail_view_page | Departure Flight Number is FZ 9011
+2026-06-09 17:33:02,898 | INFO | pages.detail_view_page | Arrival Airport Code is DEL
+2026-06-09 17:33:02,906 | INFO | pages.detail_view_page | Destination Airport Code is BOM
+2026-06-09 17:33:02,916 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6PLM
+2026-06-09 17:33:02,916 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:33:02,940 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:33:02,959 | INFO | pages.detail_view_page | Displayed Ground Time is ( 109 Min )
+2026-06-09 17:33:02,969 | WARNING | pages.detail_view_page | Bay Number is not Displayed
+2026-06-09 17:33:02,970 | INFO | pages.detail_view_page | Displayed Bay Number is -
+2026-06-09 17:33:02,980 | WARNING | pages.detail_view_page | Gate Number is not Displayed
+2026-06-09 17:33:02,980 | INFO | pages.detail_view_page | Displayed Gate Number is -
+2026-06-09 17:33:02,998 | INFO | pages.detail_view_page | Mentioned STA Time is 15:00
+2026-06-09 17:33:03,007 | WARNING | pages.detail_view_page | ETA Time is not Displayed
+2026-06-09 17:33:03,008 | INFO | pages.detail_view_page | Mentioned ETA Time is -
+2026-06-09 17:33:03,024 | INFO | pages.detail_view_page | Mentioned ONB Time is 15:49
+2026-06-09 17:33:03,033 | INFO | pages.detail_view_page | Mentioned STD Time is 16:49
+2026-06-09 17:33:03,041 | WARNING | pages.detail_view_page | ETD Time is not Displayed
+2026-06-09 17:33:03,041 | INFO | pages.detail_view_page | Mentioned ETD Time is -
+2026-06-09 17:33:03,468 | INFO | test_detailed_view | Clicking Back and Continuing for 4 Flight
+2026-06-09 17:33:10,556 | INFO | test_detailed_view | FZ 9022 - FZ 9011 Passed
+2026-06-09 17:33:12,821 | INFO | test_detailed_view | Clicked the Detail View Arrow for 4 Flight
+2026-06-09 17:33:17,853 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 9999
+2026-06-09 17:33:17,863 | INFO | pages.detail_view_page | Departure Flight Number is FZ 9989
+2026-06-09 17:33:17,881 | INFO | pages.detail_view_page | Arrival Airport Code is SPX
+2026-06-09 17:33:17,890 | INFO | pages.detail_view_page | Destination Airport Code is KTM
+2026-06-09 17:33:17,899 | INFO | pages.detail_view_page | Displayed Aircraft Number is AFVPI
+2026-06-09 17:33:17,899 | INFO | pages.detail_view_page | Displayed Registration Number is (B37M)
+2026-06-09 17:33:17,916 | INFO | pages.detail_view_page | Displayed Turnaround Status is Turnaround
+2026-06-09 17:33:17,934 | INFO | pages.detail_view_page | Displayed Ground Time is ( 60 Min )
+2026-06-09 17:33:17,944 | INFO | pages.detail_view_page | Displayed Bay Number is E04
+2026-06-09 17:33:17,952 | WARNING | pages.detail_view_page | Gate Number is not Displayed
+2026-06-09 17:33:17,952 | INFO | pages.detail_view_page | Displayed Gate Number is -
+2026-06-09 17:33:17,969 | INFO | pages.detail_view_page | Mentioned STA Time is 13:34
+2026-06-09 17:33:17,977 | INFO | pages.detail_view_page | Mentioned ETA Time is 13:34
+2026-06-09 17:33:17,994 | INFO | pages.detail_view_page | Mentioned ONB Time is 13:32
+2026-06-09 17:33:18,003 | INFO | pages.detail_view_page | Mentioned STD Time is 14:34
+2026-06-09 17:33:18,012 | INFO | pages.detail_view_page | Mentioned ETD Time is 14:34
+2026-06-09 17:33:18,486 | INFO | test_detailed_view | Clicking Back and Continuing for 5 Flight
+2026-06-09 17:33:26,486 | INFO | test_detailed_view | FZ 9999 - FZ 9989 Passed
+2026-06-09 17:33:28,748 | INFO | test_detailed_view | Clicked the Detail View Arrow for 5 Flight
+2026-06-09 17:33:33,774 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 812
+2026-06-09 17:33:33,783 | INFO | pages.detail_view_page | Departure Flight Number is FZ 811
+2026-06-09 17:33:33,801 | INFO | pages.detail_view_page | Arrival Airport Code is AHB
+2026-06-09 17:33:33,810 | INFO | pages.detail_view_page | Destination Airport Code is AHB
+2026-06-09 17:33:33,820 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FKQ
+2026-06-09 17:33:33,821 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:33:33,840 | INFO | pages.detail_view_page | Displayed Turnaround Status is Night Haul
+2026-06-09 17:33:33,861 | INFO | pages.detail_view_page | Displayed Ground Time is ( 1045 Min )
+2026-06-09 17:33:33,872 | INFO | pages.detail_view_page | Displayed Bay Number is E10R
+2026-06-09 17:33:33,883 | INFO | pages.detail_view_page | Displayed Gate Number is F10
+2026-06-09 17:33:33,901 | INFO | pages.detail_view_page | Mentioned STA Time is 22:40
+2026-06-09 17:33:33,911 | INFO | pages.detail_view_page | Mentioned ETA Time is 22:19
+2026-06-09 17:33:33,928 | INFO | pages.detail_view_page | Mentioned ONB Time is 22:24
+2026-06-09 17:33:33,938 | INFO | pages.detail_view_page | Mentioned STD Time is 16:05
+2026-06-09 17:33:33,947 | INFO | pages.detail_view_page | Mentioned ETD Time is 16:05
+2026-06-09 17:33:34,384 | INFO | test_detailed_view | Clicking Back and Continuing for 6 Flight
+2026-06-09 17:33:41,370 | INFO | test_detailed_view | FZ 812 - FZ 811 Passed
+2026-06-09 17:33:43,620 | INFO | test_detailed_view | Clicked the Detail View Arrow for 6 Flight
+2026-06-09 17:33:48,642 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 082
+2026-06-09 17:33:48,653 | INFO | pages.detail_view_page | Departure Flight Number is FZ 875
+2026-06-09 17:33:48,669 | INFO | pages.detail_view_page | Arrival Airport Code is BAH
+2026-06-09 17:33:48,677 | INFO | pages.detail_view_page | Destination Airport Code is ELQ
+2026-06-09 17:33:48,685 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FKA
+2026-06-09 17:33:48,685 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:33:48,700 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:33:48,716 | INFO | pages.detail_view_page | Displayed Ground Time is ( 140 Min )
+2026-06-09 17:33:48,723 | INFO | pages.detail_view_page | Displayed Bay Number is E07L
+2026-06-09 17:33:48,731 | INFO | pages.detail_view_page | Displayed Gate Number is F11
+2026-06-09 17:33:48,747 | INFO | pages.detail_view_page | Mentioned STA Time is 14:45
+2026-06-09 17:33:48,755 | INFO | pages.detail_view_page | Mentioned ETA Time is 14:29
+2026-06-09 17:33:48,771 | INFO | pages.detail_view_page | Mentioned ONB Time is 14:28
+2026-06-09 17:33:48,778 | INFO | pages.detail_view_page | Mentioned STD Time is 17:05
+2026-06-09 17:33:48,787 | INFO | pages.detail_view_page | Mentioned ETD Time is 17:05
+2026-06-09 17:33:49,123 | INFO | test_detailed_view | Clicking Back and Continuing for 7 Flight
+2026-06-09 17:33:55,121 | INFO | test_detailed_view | FZ 082 - FZ 875 Passed
+2026-06-09 17:33:57,367 | INFO | test_detailed_view | Clicked the Detail View Arrow for 7 Flight
+2026-06-09 17:34:02,394 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 848
+2026-06-09 17:34:02,401 | INFO | pages.detail_view_page | Departure Flight Number is FZ 009
+2026-06-09 17:34:02,418 | INFO | pages.detail_view_page | Arrival Airport Code is RUH
+2026-06-09 17:34:02,428 | INFO | pages.detail_view_page | Destination Airport Code is DOH
+2026-06-09 17:34:02,437 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FNC
+2026-06-09 17:34:02,437 | INFO | pages.detail_view_page | Displayed Registration Number is (B39M)
+2026-06-09 17:34:02,457 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:34:02,477 | INFO | pages.detail_view_page | Displayed Ground Time is ( 235 Min )
+2026-06-09 17:34:02,488 | INFO | pages.detail_view_page | Displayed Bay Number is E25
+2026-06-09 17:34:02,499 | INFO | pages.detail_view_page | Displayed Gate Number is F5
+2026-06-09 17:34:02,518 | INFO | pages.detail_view_page | Mentioned STA Time is 13:20
+2026-06-09 17:34:02,528 | INFO | pages.detail_view_page | Mentioned ETA Time is 12:55
+2026-06-09 17:34:02,549 | INFO | pages.detail_view_page | Mentioned ONB Time is 12:58
+2026-06-09 17:34:02,558 | INFO | pages.detail_view_page | Mentioned STD Time is 17:15
+2026-06-09 17:34:02,568 | INFO | pages.detail_view_page | Mentioned ETD Time is 17:15
+2026-06-09 17:34:03,071 | INFO | test_detailed_view | Clicking Back and Continuing for 8 Flight
+2026-06-09 17:34:10,103 | INFO | test_detailed_view | FZ 848 - FZ 009 Passed
+2026-06-09 17:34:12,372 | INFO | test_detailed_view | Clicked the Detail View Arrow for 8 Flight
+2026-06-09 17:34:17,399 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 716
+2026-06-09 17:34:17,410 | INFO | pages.detail_view_page | Departure Flight Number is FZ 029
+2026-06-09 17:34:17,430 | INFO | pages.detail_view_page | Arrival Airport Code is EVN
+2026-06-09 17:34:17,439 | INFO | pages.detail_view_page | Destination Airport Code is BAH
+2026-06-09 17:34:17,448 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FMF
+2026-06-09 17:34:17,449 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:34:17,465 | INFO | pages.detail_view_page | Displayed Turnaround Status is Night Haul
+2026-06-09 17:34:17,482 | INFO | pages.detail_view_page | Displayed Ground Time is ( 1290 Min )
+2026-06-09 17:34:17,490 | INFO | pages.detail_view_page | Displayed Bay Number is E27
+2026-06-09 17:34:17,500 | INFO | pages.detail_view_page | Displayed Gate Number is F12
+2026-06-09 17:34:17,516 | INFO | pages.detail_view_page | Mentioned STA Time is 20:00
+2026-06-09 17:34:17,524 | INFO | pages.detail_view_page | Mentioned ETA Time is 21:41
+2026-06-09 17:34:17,540 | INFO | pages.detail_view_page | Mentioned ONB Time is 21:40
+2026-06-09 17:34:17,549 | INFO | pages.detail_view_page | Mentioned STD Time is 17:30
+2026-06-09 17:34:17,557 | INFO | pages.detail_view_page | Mentioned ETD Time is 17:30
+2026-06-09 17:34:17,909 | INFO | test_detailed_view | Clicking Back and Continuing for 9 Flight
+2026-06-09 17:34:23,873 | INFO | test_detailed_view | FZ 716 - FZ 029 Passed
+2026-06-09 17:34:26,139 | INFO | test_detailed_view | Clicked the Detail View Arrow for 9 Flight
+2026-06-09 17:34:31,165 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 330
+2026-06-09 17:34:31,173 | INFO | pages.detail_view_page | Departure Flight Number is FZ 987
+2026-06-09 17:34:31,189 | INFO | pages.detail_view_page | Arrival Airport Code is KHI
+2026-06-09 17:34:31,197 | INFO | pages.detail_view_page | Destination Airport Code is VKO
+2026-06-09 17:34:31,205 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FMB
+2026-06-09 17:34:31,206 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:34:31,222 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:34:31,238 | INFO | pages.detail_view_page | Displayed Ground Time is ( 990 Min )
+2026-06-09 17:34:31,246 | INFO | pages.detail_view_page | Displayed Bay Number is E33
+2026-06-09 17:34:31,254 | INFO | pages.detail_view_page | Displayed Gate Number is F8
+2026-06-09 17:34:31,269 | INFO | pages.detail_view_page | Mentioned STA Time is 01:20
+2026-06-09 17:34:31,278 | INFO | pages.detail_view_page | Mentioned ETA Time is 01:15
+2026-06-09 17:34:31,294 | INFO | pages.detail_view_page | Mentioned ONB Time is 01:16
+2026-06-09 17:34:31,302 | INFO | pages.detail_view_page | Mentioned STD Time is 17:50
+2026-06-09 17:34:31,310 | INFO | pages.detail_view_page | Mentioned ETD Time is 17:50
+2026-06-09 17:34:31,646 | INFO | test_detailed_view | Clicking Back and Continuing for 10 Flight
+2026-06-09 17:34:37,637 | INFO | test_detailed_view | FZ 330 - FZ 987 Passed
+2026-06-09 17:34:39,888 | INFO | test_detailed_view | Clicked the Detail View Arrow for 10 Flight
+2026-06-09 17:34:44,916 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 046
+2026-06-09 17:34:44,926 | INFO | pages.detail_view_page | Departure Flight Number is FZ 867
+2026-06-09 17:34:44,945 | INFO | pages.detail_view_page | Arrival Airport Code is MCT
+2026-06-09 17:34:44,954 | INFO | pages.detail_view_page | Destination Airport Code is DMM
+2026-06-09 17:34:44,963 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FNB
+2026-06-09 17:34:44,963 | INFO | pages.detail_view_page | Displayed Registration Number is (B39M)
+2026-06-09 17:34:44,979 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:34:44,994 | INFO | pages.detail_view_page | Displayed Ground Time is ( 460 Min )
+2026-06-09 17:34:45,003 | INFO | pages.detail_view_page | Displayed Bay Number is E10L
+2026-06-09 17:34:45,010 | INFO | pages.detail_view_page | Displayed Gate Number is F6
+2026-06-09 17:34:45,027 | INFO | pages.detail_view_page | Mentioned STA Time is 10:25
+2026-06-09 17:34:45,035 | INFO | pages.detail_view_page | Mentioned ETA Time is 10:44
+2026-06-09 17:34:45,051 | INFO | pages.detail_view_page | Mentioned ONB Time is 10:51
+2026-06-09 17:34:45,063 | INFO | pages.detail_view_page | Mentioned STD Time is 18:05
+2026-06-09 17:34:45,078 | INFO | pages.detail_view_page | Mentioned ETD Time is 18:05
+2026-06-09 17:34:45,439 | INFO | test_detailed_view | Clicking Back and Continuing for 11 Flight
+2026-06-09 17:34:50,740 | INFO | test_detailed_view | FZ 046 - FZ 867 Passed
+2026-06-09 17:34:52,990 | INFO | test_detailed_view | Clicked the Detail View Arrow for 11 Flight
+2026-06-09 17:34:58,015 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 988
+2026-06-09 17:34:58,023 | INFO | pages.detail_view_page | Departure Flight Number is FZ 979
+2026-06-09 17:34:58,040 | INFO | pages.detail_view_page | Arrival Airport Code is VKO
+2026-06-09 17:34:58,047 | INFO | pages.detail_view_page | Destination Airport Code is SVX
+2026-06-09 17:34:58,055 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FMO
+2026-06-09 17:34:58,056 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:34:58,082 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:34:58,101 | INFO | pages.detail_view_page | Displayed Ground Time is ( 495 Min )
+2026-06-09 17:34:58,108 | INFO | pages.detail_view_page | Displayed Bay Number is E12L
+2026-06-09 17:34:58,117 | INFO | pages.detail_view_page | Displayed Gate Number is F5
+2026-06-09 17:34:58,132 | INFO | pages.detail_view_page | Mentioned STA Time is 10:00
+2026-06-09 17:34:58,140 | INFO | pages.detail_view_page | Mentioned ETA Time is 09:40
+2026-06-09 17:34:58,156 | INFO | pages.detail_view_page | Mentioned ONB Time is 09:41
+2026-06-09 17:34:58,164 | INFO | pages.detail_view_page | Mentioned STD Time is 18:15
+2026-06-09 17:34:58,172 | INFO | pages.detail_view_page | Mentioned ETD Time is 18:15
+2026-06-09 17:34:58,521 | INFO | test_detailed_view | Clicking Back and Continuing for 12 Flight
+2026-06-09 17:35:04,470 | INFO | test_detailed_view | FZ 988 - FZ 979 Passed
+2026-06-09 17:35:08,345 | INFO | test_detailed_view | Clicked the Detail View Arrow for 12 Flight
+2026-06-09 17:35:13,372 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 446
+2026-06-09 17:35:13,381 | INFO | pages.detail_view_page | Departure Flight Number is FZ 973
+2026-06-09 17:35:13,398 | INFO | pages.detail_view_page | Arrival Airport Code is BOM
+2026-06-09 17:35:13,409 | INFO | pages.detail_view_page | Destination Airport Code is KZN
+2026-06-09 17:35:13,418 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FMQ
+2026-06-09 17:35:13,418 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:35:13,435 | INFO | pages.detail_view_page | Displayed Turnaround Status is Night Haul
+2026-06-09 17:35:13,451 | INFO | pages.detail_view_page | Displayed Ground Time is ( 2130 Min )
+2026-06-09 17:35:13,460 | INFO | pages.detail_view_page | Displayed Bay Number is E09L
+2026-06-09 17:35:13,470 | INFO | pages.detail_view_page | Displayed Gate Number is F11
+2026-06-09 17:35:13,490 | INFO | pages.detail_view_page | Mentioned STA Time is 07:05
+2026-06-09 17:35:13,501 | INFO | pages.detail_view_page | Mentioned ETA Time is 06:42
+2026-06-09 17:35:13,519 | INFO | pages.detail_view_page | Mentioned ONB Time is 06:43
+2026-06-09 17:35:13,529 | INFO | pages.detail_view_page | Mentioned STD Time is 18:35
+2026-06-09 17:35:13,538 | INFO | pages.detail_view_page | Mentioned ETD Time is 18:35
+2026-06-09 17:35:13,918 | INFO | test_detailed_view | Clicking Back and Continuing for 13 Flight
+2026-06-09 17:35:19,958 | INFO | test_detailed_view | FZ 446 - FZ 973 Passed
+2026-06-09 17:35:22,959 | INFO | test_detailed_view | Clicked the Detail View Arrow for 13 Flight
+2026-06-09 17:35:27,985 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 392
+2026-06-09 17:35:27,993 | INFO | pages.detail_view_page | Departure Flight Number is FZ 569
+2026-06-09 17:35:28,011 | INFO | pages.detail_view_page | Arrival Airport Code is LYP
+2026-06-09 17:35:28,020 | INFO | pages.detail_view_page | Destination Airport Code is CMB
+2026-06-09 17:35:28,028 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FQC
+2026-06-09 17:35:28,028 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:35:28,045 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:35:28,067 | INFO | pages.detail_view_page | Displayed Ground Time is ( 315 Min )
+2026-06-09 17:35:28,083 | INFO | pages.detail_view_page | Displayed Bay Number is E22
+2026-06-09 17:35:28,094 | INFO | pages.detail_view_page | Displayed Gate Number is F10
+2026-06-09 17:35:28,113 | INFO | pages.detail_view_page | Mentioned STA Time is 13:25
+2026-06-09 17:35:28,122 | INFO | pages.detail_view_page | Mentioned ETA Time is 13:07
+2026-06-09 17:35:28,141 | INFO | pages.detail_view_page | Mentioned ONB Time is 13:10
+2026-06-09 17:35:28,151 | INFO | pages.detail_view_page | Mentioned STD Time is 18:40
+2026-06-09 17:35:28,160 | INFO | pages.detail_view_page | Mentioned ETD Time is 18:40
+2026-06-09 17:35:28,561 | INFO | test_detailed_view | Clicking Back and Continuing for 14 Flight
+2026-06-09 17:35:35,574 | INFO | test_detailed_view | FZ 392 - FZ 569 Passed
+2026-06-09 17:35:39,118 | INFO | test_detailed_view | Clicked the Detail View Arrow for 14 Flight
+2026-06-09 17:35:44,146 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 1750
+2026-06-09 17:35:44,154 | INFO | pages.detail_view_page | Departure Flight Number is FZ 1749
+2026-06-09 17:35:44,171 | INFO | pages.detail_view_page | Arrival Airport Code is BEG
+2026-06-09 17:35:44,180 | INFO | pages.detail_view_page | Destination Airport Code is BEG
+2026-06-09 17:35:44,188 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FMK
+2026-06-09 17:35:44,188 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:35:44,204 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:35:44,221 | INFO | pages.detail_view_page | Displayed Ground Time is ( 650 Min )
+2026-06-09 17:35:44,231 | INFO | pages.detail_view_page | Displayed Bay Number is C36
+2026-06-09 17:35:44,238 | INFO | pages.detail_view_page | Displayed Gate Number is B4
+2026-06-09 17:35:44,254 | INFO | pages.detail_view_page | Mentioned STA Time is 07:55
+2026-06-09 17:35:44,262 | INFO | pages.detail_view_page | Mentioned ETA Time is 08:07
+2026-06-09 17:35:44,279 | INFO | pages.detail_view_page | Mentioned ONB Time is 08:09
+2026-06-09 17:35:44,288 | INFO | pages.detail_view_page | Mentioned STD Time is 18:45
+2026-06-09 17:35:44,297 | INFO | pages.detail_view_page | Mentioned ETD Time is 18:45
+2026-06-09 17:35:44,736 | INFO | test_detailed_view | Clicking Back and Continuing for 15 Flight
+2026-06-09 17:35:50,722 | INFO | test_detailed_view | FZ 1750 - FZ 1749 Passed
+2026-06-09 17:35:55,064 | INFO | test_detailed_view | Clicked the Detail View Arrow for 15 Flight
+2026-06-09 17:36:00,102 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 708
+2026-06-09 17:36:00,120 | INFO | pages.detail_view_page | Departure Flight Number is FZ 143
+2026-06-09 17:36:00,139 | INFO | pages.detail_view_page | Arrival Airport Code is GYD
+2026-06-09 17:36:00,147 | INFO | pages.detail_view_page | Destination Airport Code is AMM
+2026-06-09 17:36:00,156 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FEO
+2026-06-09 17:36:00,157 | INFO | pages.detail_view_page | Displayed Registration Number is (B738)
+2026-06-09 17:36:00,174 | INFO | pages.detail_view_page | Displayed Turnaround Status is Night Haul
+2026-06-09 17:36:00,195 | INFO | pages.detail_view_page | Displayed Ground Time is ( 1195 Min )
+2026-06-09 17:36:00,205 | INFO | pages.detail_view_page | Displayed Bay Number is E03
+2026-06-09 17:36:00,215 | INFO | pages.detail_view_page | Displayed Gate Number is F8
+2026-06-09 17:36:00,233 | INFO | pages.detail_view_page | Mentioned STA Time is 23:10
+2026-06-09 17:36:00,243 | INFO | pages.detail_view_page | Mentioned ETA Time is 23:19
+2026-06-09 17:36:00,260 | INFO | pages.detail_view_page | Mentioned ONB Time is 23:20
+2026-06-09 17:36:00,269 | INFO | pages.detail_view_page | Mentioned STD Time is 19:05
+2026-06-09 17:36:00,277 | INFO | pages.detail_view_page | Mentioned ETD Time is 19:05
+2026-06-09 17:36:00,608 | INFO | test_detailed_view | Clicking Back and Continuing for 16 Flight
+2026-06-09 17:36:06,629 | INFO | test_detailed_view | FZ 708 - FZ 143 Passed
+2026-06-09 17:36:06,630 | INFO | test_detailed_view | Switching to Departed
+2026-06-09 17:36:06,865 | INFO | test_detailed_view | Clicking Departed 
+2026-06-09 17:36:16,883 | INFO | pages.detail_view_page | Flights are Visible
+2026-06-09 17:36:16,900 | INFO | pages.detail_view_page | Totally we have 15 Flights
+2026-06-09 17:36:19,182 | INFO | test_detailed_view | Clicked the Detail View Arrow for 1 Flight
+2026-06-09 17:36:24,211 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 436
+2026-06-09 17:36:24,223 | INFO | pages.detail_view_page | Departure Flight Number is FZ 905
+2026-06-09 17:36:24,245 | INFO | pages.detail_view_page | Arrival Airport Code is HYD
+2026-06-09 17:36:24,257 | INFO | pages.detail_view_page | Destination Airport Code is ULH
+2026-06-09 17:36:24,267 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FPA
+2026-06-09 17:36:24,267 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:36:24,286 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:36:24,304 | INFO | pages.detail_view_page | Displayed Ground Time is ( 610 Min )
+2026-06-09 17:36:24,314 | INFO | pages.detail_view_page | Displayed Bay Number is E12R
+2026-06-09 17:36:24,323 | INFO | pages.detail_view_page | Displayed Gate Number is F9
+2026-06-09 17:36:24,343 | INFO | pages.detail_view_page | Mentioned STA Time is 05:50
+2026-06-09 17:36:24,352 | INFO | pages.detail_view_page | Mentioned ETA Time is 05:07
+2026-06-09 17:36:24,370 | INFO | pages.detail_view_page | Mentioned ONB Time is 05:08
+2026-06-09 17:36:24,379 | INFO | pages.detail_view_page | Mentioned STD Time is 16:00
+2026-06-09 17:36:24,387 | INFO | pages.detail_view_page | Mentioned ETD Time is 16:00
+2026-06-09 17:36:24,736 | INFO | test_detailed_view | Clicking Back and Continuing for 2 Flight
+2026-06-09 17:36:31,007 | INFO | test_detailed_view | FZ 436 - FZ 905 Passed
+2026-06-09 17:36:33,307 | INFO | test_detailed_view | Clicked the Detail View Arrow for 2 Flight
+2026-06-09 17:36:38,331 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 646
+2026-06-09 17:36:38,341 | INFO | pages.detail_view_page | Departure Flight Number is FZ 573
+2026-06-09 17:36:38,359 | INFO | pages.detail_view_page | Arrival Airport Code is ASM
+2026-06-09 17:36:38,370 | INFO | pages.detail_view_page | Destination Airport Code is KTM
+2026-06-09 17:36:38,380 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FKT
+2026-06-09 17:36:38,380 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:36:38,415 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:36:38,430 | INFO | pages.detail_view_page | Displayed Ground Time is ( 720 Min )
+2026-06-09 17:36:38,439 | INFO | pages.detail_view_page | Displayed Bay Number is E11L
+2026-06-09 17:36:38,447 | INFO | pages.detail_view_page | Displayed Gate Number is F6
+2026-06-09 17:36:38,467 | INFO | pages.detail_view_page | Mentioned STA Time is 03:45
+2026-06-09 17:36:38,479 | INFO | pages.detail_view_page | Mentioned ETA Time is 03:22
+2026-06-09 17:36:38,496 | INFO | pages.detail_view_page | Mentioned ONB Time is 03:27
+2026-06-09 17:36:38,506 | INFO | pages.detail_view_page | Mentioned STD Time is 15:45
+2026-06-09 17:36:38,517 | INFO | pages.detail_view_page | Mentioned ETD Time is 15:45
+2026-06-09 17:36:38,933 | INFO | test_detailed_view | Clicking Back and Continuing for 3 Flight
+2026-06-09 17:36:46,904 | INFO | test_detailed_view | FZ 646 - FZ 573 Passed
+2026-06-09 17:36:49,127 | INFO | test_detailed_view | Clicked the Detail View Arrow for 3 Flight
+2026-06-09 17:36:54,153 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 646
+2026-06-09 17:36:54,161 | INFO | pages.detail_view_page | Departure Flight Number is FZ 573
+2026-06-09 17:36:54,177 | INFO | pages.detail_view_page | Arrival Airport Code is ASM
+2026-06-09 17:36:54,185 | INFO | pages.detail_view_page | Destination Airport Code is KTM
+2026-06-09 17:36:54,194 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FKT
+2026-06-09 17:36:54,195 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:36:54,216 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:36:54,237 | INFO | pages.detail_view_page | Displayed Ground Time is ( 720 Min )
+2026-06-09 17:36:54,248 | INFO | pages.detail_view_page | Displayed Bay Number is E11L
+2026-06-09 17:36:54,258 | INFO | pages.detail_view_page | Displayed Gate Number is F6
+2026-06-09 17:36:54,277 | INFO | pages.detail_view_page | Mentioned STA Time is 03:45
+2026-06-09 17:36:54,286 | INFO | pages.detail_view_page | Mentioned ETA Time is 03:22
+2026-06-09 17:36:54,305 | INFO | pages.detail_view_page | Mentioned ONB Time is 03:27
+2026-06-09 17:36:54,315 | INFO | pages.detail_view_page | Mentioned STD Time is 15:45
+2026-06-09 17:36:54,324 | INFO | pages.detail_view_page | Mentioned ETD Time is 15:45
+2026-06-09 17:36:54,662 | INFO | test_detailed_view | Clicking Back and Continuing for 4 Flight
+2026-06-09 17:37:03,685 | INFO | test_detailed_view | FZ 646 - FZ 573 Passed
+2026-06-09 17:37:05,936 | INFO | test_detailed_view | Clicked the Detail View Arrow for 4 Flight
+2026-06-09 17:37:10,958 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 312
+2026-06-09 17:37:10,966 | INFO | pages.detail_view_page | Departure Flight Number is FZ 017
+2026-06-09 17:37:10,982 | INFO | pages.detail_view_page | Arrival Airport Code is KBL
+2026-06-09 17:37:10,990 | INFO | pages.detail_view_page | Destination Airport Code is DOH
+2026-06-09 17:37:10,998 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FKN
+2026-06-09 17:37:10,998 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:37:11,015 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:37:11,030 | INFO | pages.detail_view_page | Displayed Ground Time is ( 210 Min )
+2026-06-09 17:37:11,038 | INFO | pages.detail_view_page | Displayed Bay Number is E09R
+2026-06-09 17:37:11,046 | INFO | pages.detail_view_page | Displayed Gate Number is F7
+2026-06-09 17:37:11,063 | INFO | pages.detail_view_page | Mentioned STA Time is 12:20
+2026-06-09 17:37:11,077 | INFO | pages.detail_view_page | Mentioned ETA Time is 11:42
+2026-06-09 17:37:11,105 | INFO | pages.detail_view_page | Mentioned ONB Time is 11:43
+2026-06-09 17:37:11,114 | INFO | pages.detail_view_page | Mentioned STD Time is 15:50
+2026-06-09 17:37:11,122 | INFO | pages.detail_view_page | Mentioned ETD Time is 15:50
+2026-06-09 17:37:11,457 | INFO | test_detailed_view | Clicking Back and Continuing for 5 Flight
+2026-06-09 17:37:17,459 | INFO | test_detailed_view | FZ 312 - FZ 017 Passed
+2026-06-09 17:37:19,756 | INFO | test_detailed_view | Clicked the Detail View Arrow for 5 Flight
+2026-06-09 17:37:24,783 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 978
+2026-06-09 17:37:24,793 | INFO | pages.detail_view_page | Departure Flight Number is FZ 025
+2026-06-09 17:37:24,813 | INFO | pages.detail_view_page | Arrival Airport Code is MRV
+2026-06-09 17:37:24,824 | INFO | pages.detail_view_page | Destination Airport Code is BAH
+2026-06-09 17:37:24,834 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FKS
+2026-06-09 17:37:24,834 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:37:24,854 | INFO | pages.detail_view_page | Displayed Turnaround Status is Night Haul
+2026-06-09 17:37:24,872 | INFO | pages.detail_view_page | Displayed Ground Time is ( 3225 Min )
+2026-06-09 17:37:24,884 | INFO | pages.detail_view_page | Displayed Bay Number is Q02
+2026-06-09 17:37:24,894 | INFO | pages.detail_view_page | Displayed Gate Number is F10
+2026-06-09 17:37:24,909 | INFO | pages.detail_view_page | Mentioned STA Time is 09:45
+2026-06-09 17:37:24,916 | INFO | pages.detail_view_page | Mentioned ETA Time is 09:56
+2026-06-09 17:37:24,931 | INFO | pages.detail_view_page | Mentioned ONB Time is 09:56
+2026-06-09 17:37:24,938 | INFO | pages.detail_view_page | Mentioned STD Time is 15:30
+2026-06-09 17:37:24,946 | INFO | pages.detail_view_page | Mentioned ETD Time is 15:30
+2026-06-09 17:37:25,436 | INFO | test_detailed_view | Clicking Back and Continuing for 6 Flight
+2026-06-09 17:37:31,482 | INFO | test_detailed_view | FZ 978 - FZ 025 Passed
+2026-06-09 17:37:33,703 | INFO | test_detailed_view | Clicked the Detail View Arrow for 6 Flight
+2026-06-09 17:37:38,728 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 564
+2026-06-09 17:37:38,737 | INFO | pages.detail_view_page | Departure Flight Number is FZ 647
+2026-06-09 17:37:38,756 | INFO | pages.detail_view_page | Arrival Airport Code is CGP
+2026-06-09 17:37:38,766 | INFO | pages.detail_view_page | Destination Airport Code is ADD
+2026-06-09 17:37:38,775 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FQK
+2026-06-09 17:37:38,775 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:37:38,792 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:37:38,809 | INFO | pages.detail_view_page | Displayed Ground Time is ( 130 Min )
+2026-06-09 17:37:38,817 | INFO | pages.detail_view_page | Displayed Bay Number is E01
+2026-06-09 17:37:38,825 | INFO | pages.detail_view_page | Displayed Gate Number is F5
+2026-06-09 17:37:38,841 | INFO | pages.detail_view_page | Mentioned STA Time is 13:00
+2026-06-09 17:37:38,850 | INFO | pages.detail_view_page | Mentioned ETA Time is 13:00
+2026-06-09 17:37:38,868 | INFO | pages.detail_view_page | Mentioned ONB Time is 13:00
+2026-06-09 17:37:38,876 | INFO | pages.detail_view_page | Mentioned STD Time is 15:10
+2026-06-09 17:37:38,884 | INFO | pages.detail_view_page | Mentioned ETD Time is 15:10
+2026-06-09 17:37:39,222 | INFO | test_detailed_view | Clicking Back and Continuing for 7 Flight
+2026-06-09 17:37:46,289 | INFO | test_detailed_view | FZ 564 - FZ 647 Passed
+2026-06-09 17:37:48,523 | INFO | test_detailed_view | Clicked the Detail View Arrow for 7 Flight
+2026-06-09 17:37:53,544 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 884
+2026-06-09 17:37:53,552 | INFO | pages.detail_view_page | Departure Flight Number is FZ 881
+2026-06-09 17:37:53,570 | INFO | pages.detail_view_page | Arrival Airport Code is DMM
+2026-06-09 17:37:53,579 | INFO | pages.detail_view_page | Destination Airport Code is TUU
+2026-06-09 17:37:53,586 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FMT
+2026-06-09 17:37:53,586 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:37:53,601 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:37:53,616 | INFO | pages.detail_view_page | Displayed Ground Time is ( 230 Min )
+2026-06-09 17:37:53,623 | INFO | pages.detail_view_page | Displayed Bay Number is E02
+2026-06-09 17:37:53,630 | INFO | pages.detail_view_page | Displayed Gate Number is F7
+2026-06-09 17:37:53,646 | INFO | pages.detail_view_page | Mentioned STA Time is 11:10
+2026-06-09 17:37:53,655 | INFO | pages.detail_view_page | Mentioned ETA Time is 10:49
+2026-06-09 17:37:53,675 | INFO | pages.detail_view_page | Mentioned ONB Time is 10:52
+2026-06-09 17:37:53,683 | INFO | pages.detail_view_page | Mentioned STD Time is 15:00
+2026-06-09 17:37:53,690 | INFO | pages.detail_view_page | Mentioned ETD Time is 15:00
+2026-06-09 17:37:54,048 | INFO | test_detailed_view | Clicking Back and Continuing for 8 Flight
+2026-06-09 17:38:02,110 | INFO | test_detailed_view | FZ 884 - FZ 881 Passed
+2026-06-09 17:38:04,372 | INFO | test_detailed_view | Clicked the Detail View Arrow for 8 Flight
+2026-06-09 17:38:09,398 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 756
+2026-06-09 17:38:09,408 | INFO | pages.detail_view_page | Departure Flight Number is FZ 829
+2026-06-09 17:38:09,425 | INFO | pages.detail_view_page | Arrival Airport Code is IST
+2026-06-09 17:38:09,432 | INFO | pages.detail_view_page | Destination Airport Code is JED
+2026-06-09 17:38:09,440 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FED
+2026-06-09 17:38:09,441 | INFO | pages.detail_view_page | Displayed Registration Number is (B738)
+2026-06-09 17:38:09,457 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:38:09,473 | INFO | pages.detail_view_page | Displayed Ground Time is ( 385 Min )
+2026-06-09 17:38:09,481 | INFO | pages.detail_view_page | Displayed Bay Number is E24
+2026-06-09 17:38:09,489 | INFO | pages.detail_view_page | Displayed Gate Number is F10
+2026-06-09 17:38:09,505 | INFO | pages.detail_view_page | Mentioned STA Time is 08:20
+2026-06-09 17:38:09,513 | INFO | pages.detail_view_page | Mentioned ETA Time is 09:15
+2026-06-09 17:38:09,529 | INFO | pages.detail_view_page | Mentioned ONB Time is 09:18
+2026-06-09 17:38:09,537 | INFO | pages.detail_view_page | Mentioned STD Time is 14:45
+2026-06-09 17:38:09,546 | INFO | pages.detail_view_page | Mentioned ETD Time is 14:45
+2026-06-09 17:38:09,949 | INFO | test_detailed_view | Clicking Back and Continuing for 9 Flight
+2026-06-09 17:38:18,933 | INFO | test_detailed_view | FZ 756 - FZ 829 Passed
+2026-06-09 17:38:21,202 | INFO | test_detailed_view | Clicked the Detail View Arrow for 9 Flight
+2026-06-09 17:38:26,230 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 335(R)
+2026-06-09 17:38:26,239 | INFO | pages.detail_view_page | Departure Flight Number is FZ 335
+2026-06-09 17:38:26,256 | INFO | pages.detail_view_page | Arrival Airport Code is DXB
+2026-06-09 17:38:26,265 | INFO | pages.detail_view_page | Destination Airport Code is KHI
+2026-06-09 17:38:26,275 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FMX
+2026-06-09 17:38:26,275 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:38:26,293 | INFO | pages.detail_view_page | Displayed Turnaround Status is Turnaround
+2026-06-09 17:38:26,310 | INFO | pages.detail_view_page | Displayed Ground Time is ( 0 Min )
+2026-06-09 17:38:26,318 | INFO | pages.detail_view_page | Displayed Bay Number is E01
+2026-06-09 17:38:26,326 | INFO | pages.detail_view_page | Displayed Gate Number is F9
+2026-06-09 17:38:26,343 | INFO | pages.detail_view_page | Mentioned STA Time is 12:25
+2026-06-09 17:38:26,353 | INFO | pages.detail_view_page | Mentioned ETA Time is 12:25
+2026-06-09 17:38:26,371 | INFO | pages.detail_view_page | Mentioned ONB Time is 13:30
+2026-06-09 17:38:26,382 | INFO | pages.detail_view_page | Mentioned STD Time is 12:25
+2026-06-09 17:38:26,392 | INFO | pages.detail_view_page | Mentioned ETD Time is 14:30
+2026-06-09 17:38:26,791 | INFO | test_detailed_view | Clicking Back and Continuing for 10 Flight
+2026-06-09 17:38:33,065 | INFO | test_detailed_view | FZ 335(R) - FZ 335 Passed
+2026-06-09 17:38:35,322 | INFO | test_detailed_view | Clicked the Detail View Arrow for 10 Flight
+2026-06-09 17:38:40,348 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 832
+2026-06-09 17:38:40,356 | INFO | pages.detail_view_page | Departure Flight Number is FZ 897
+2026-06-09 17:38:40,373 | INFO | pages.detail_view_page | Arrival Airport Code is JED
+2026-06-09 17:38:40,383 | INFO | pages.detail_view_page | Destination Airport Code is MED
+2026-06-09 17:38:40,394 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FQJ
+2026-06-09 17:38:40,394 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:38:40,410 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:38:40,425 | INFO | pages.detail_view_page | Displayed Ground Time is ( 155 Min )
+2026-06-09 17:38:40,433 | INFO | pages.detail_view_page | Displayed Bay Number is E28L
+2026-06-09 17:38:40,441 | INFO | pages.detail_view_page | Displayed Gate Number is F8
+2026-06-09 17:38:40,457 | INFO | pages.detail_view_page | Mentioned STA Time is 11:50
+2026-06-09 17:38:40,465 | INFO | pages.detail_view_page | Mentioned ETA Time is 11:35
+2026-06-09 17:38:40,480 | INFO | pages.detail_view_page | Mentioned ONB Time is 11:36
+2026-06-09 17:38:40,488 | INFO | pages.detail_view_page | Mentioned STD Time is 14:25
+2026-06-09 17:38:40,497 | INFO | pages.detail_view_page | Mentioned ETD Time is 14:25
+2026-06-09 17:38:40,838 | INFO | test_detailed_view | Clicking Back and Continuing for 11 Flight
+2026-06-09 17:38:47,910 | INFO | test_detailed_view | FZ 832 - FZ 897 Passed
+2026-06-09 17:38:50,153 | INFO | test_detailed_view | Clicked the Detail View Arrow for 11 Flight
+2026-06-09 17:38:55,182 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 002
+2026-06-09 17:38:55,192 | INFO | pages.detail_view_page | Departure Flight Number is FZ 159
+2026-06-09 17:38:55,215 | INFO | pages.detail_view_page | Arrival Airport Code is DOH
+2026-06-09 17:38:55,223 | INFO | pages.detail_view_page | Destination Airport Code is BEY
+2026-06-09 17:38:55,230 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FKR
+2026-06-09 17:38:55,230 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:38:55,244 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:38:55,261 | INFO | pages.detail_view_page | Displayed Ground Time is ( 110 Min )
+2026-06-09 17:38:55,269 | INFO | pages.detail_view_page | Displayed Bay Number is E08
+2026-06-09 17:38:55,277 | INFO | pages.detail_view_page | Displayed Gate Number is F12
+2026-06-09 17:38:55,293 | INFO | pages.detail_view_page | Mentioned STA Time is 12:20
+2026-06-09 17:38:55,301 | INFO | pages.detail_view_page | Mentioned ETA Time is 12:11
+2026-06-09 17:38:55,316 | INFO | pages.detail_view_page | Mentioned ONB Time is 12:13
+2026-06-09 17:38:55,324 | INFO | pages.detail_view_page | Mentioned STD Time is 14:10
+2026-06-09 17:38:55,333 | INFO | pages.detail_view_page | Mentioned ETD Time is 14:25
+2026-06-09 17:38:55,759 | INFO | test_detailed_view | Clicking Back and Continuing for 12 Flight
+2026-06-09 17:39:01,944 | INFO | test_detailed_view | FZ 002 - FZ 159 Passed
+2026-06-09 17:39:04,226 | INFO | test_detailed_view | Clicked the Detail View Arrow for 12 Flight
+2026-06-09 17:39:09,255 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 018
+2026-06-09 17:39:09,265 | INFO | pages.detail_view_page | Departure Flight Number is FZ 821
+2026-06-09 17:39:09,282 | INFO | pages.detail_view_page | Arrival Airport Code is DOH
+2026-06-09 17:39:09,290 | INFO | pages.detail_view_page | Destination Airport Code is HAS
+2026-06-09 17:39:09,298 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FKK
+2026-06-09 17:39:09,298 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:39:09,314 | INFO | pages.detail_view_page | Displayed Turnaround Status is Night Haul
+2026-06-09 17:39:09,330 | INFO | pages.detail_view_page | Displayed Ground Time is ( 1095 Min )
+2026-06-09 17:39:09,338 | INFO | pages.detail_view_page | Displayed Bay Number is Q03
+2026-06-09 17:39:09,346 | INFO | pages.detail_view_page | Displayed Gate Number is F8
+2026-06-09 17:39:09,362 | INFO | pages.detail_view_page | Mentioned STA Time is 19:30
+2026-06-09 17:39:09,371 | INFO | pages.detail_view_page | Mentioned ETA Time is 18:56
+2026-06-09 17:39:09,387 | INFO | pages.detail_view_page | Mentioned ONB Time is 18:57
+2026-06-09 17:39:09,395 | INFO | pages.detail_view_page | Mentioned STD Time is 13:45
+2026-06-09 17:39:09,403 | INFO | pages.detail_view_page | Mentioned ETD Time is 14:00
+2026-06-09 17:39:09,740 | INFO | test_detailed_view | Clicking Back and Continuing for 13 Flight
+2026-06-09 17:39:15,921 | INFO | test_detailed_view | FZ 018 - FZ 821 Passed
+2026-06-09 17:39:19,366 | INFO | test_detailed_view | Clicked the Detail View Arrow for 13 Flight
+2026-06-09 17:39:24,392 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 828
+2026-06-09 17:39:24,402 | INFO | pages.detail_view_page | Departure Flight Number is FZ 523
+2026-06-09 17:39:24,418 | INFO | pages.detail_view_page | Arrival Airport Code is MED
+2026-06-09 17:39:24,427 | INFO | pages.detail_view_page | Destination Airport Code is DAC
+2026-06-09 17:39:24,436 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FQH
+2026-06-09 17:39:24,436 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:39:24,452 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:39:24,468 | INFO | pages.detail_view_page | Displayed Ground Time is ( 540 Min )
+2026-06-09 17:39:24,476 | INFO | pages.detail_view_page | Displayed Bay Number is E07R
+2026-06-09 17:39:24,485 | INFO | pages.detail_view_page | Displayed Gate Number is F6
+2026-06-09 17:39:24,501 | INFO | pages.detail_view_page | Mentioned STA Time is 04:55
+2026-06-09 17:39:24,510 | INFO | pages.detail_view_page | Mentioned ETA Time is 04:50
+2026-06-09 17:39:24,527 | INFO | pages.detail_view_page | Mentioned ONB Time is 04:49
+2026-06-09 17:39:24,535 | INFO | pages.detail_view_page | Mentioned STD Time is 13:55
+2026-06-09 17:39:24,543 | INFO | pages.detail_view_page | Mentioned ETD Time is 13:55
+2026-06-09 17:39:24,914 | INFO | test_detailed_view | Clicking Back and Continuing for 14 Flight
+2026-06-09 17:39:31,955 | INFO | test_detailed_view | FZ 828 - FZ 523 Passed
+2026-06-09 17:39:35,225 | INFO | test_detailed_view | Clicked the Detail View Arrow for 14 Flight
+2026-06-09 17:39:40,249 | INFO | pages.detail_view_page | Arrival Flight Number is Visible & Arrival Flight Number is FZ 994
+2026-06-09 17:39:40,258 | INFO | pages.detail_view_page | Departure Flight Number is FZ 863
+2026-06-09 17:39:40,275 | INFO | pages.detail_view_page | Arrival Airport Code is MCX
+2026-06-09 17:39:40,284 | INFO | pages.detail_view_page | Destination Airport Code is DMM
+2026-06-09 17:39:40,292 | INFO | pages.detail_view_page | Displayed Aircraft Number is A6FKP
+2026-06-09 17:39:40,293 | INFO | pages.detail_view_page | Displayed Registration Number is (B38M)
+2026-06-09 17:39:40,308 | INFO | pages.detail_view_page | Displayed Turnaround Status is Long Ground
+2026-06-09 17:39:40,325 | INFO | pages.detail_view_page | Displayed Ground Time is ( 240 Min )
+2026-06-09 17:39:40,334 | INFO | pages.detail_view_page | Displayed Bay Number is E11R
+2026-06-09 17:39:40,342 | INFO | pages.detail_view_page | Displayed Gate Number is F5
+2026-06-09 17:39:40,358 | INFO | pages.detail_view_page | Mentioned STA Time is 09:50
+2026-06-09 17:39:40,367 | INFO | pages.detail_view_page | Mentioned ETA Time is 10:01
+2026-06-09 17:39:40,383 | INFO | pages.detail_view_page | Mentioned ONB Time is 09:59
+2026-06-09 17:39:40,392 | INFO | pages.detail_view_page | Mentioned STD Time is 13:50
+2026-06-09 17:39:40,401 | INFO | pages.detail_view_page | Mentioned ETD Time is 13:50
+2026-06-09 17:39:40,741 | INFO | test_detailed_view | Clicking Back and Continuing for 15 Flight
+2026-06-09 17:39:46,762 | INFO | test_detailed_view | FZ 994 - FZ 863 Passed
+2026-06-09 17:39:48,887 | ERROR | test_detailed_view | Flight Iteration 15 Failed: Locator.scroll_into_view_if_needed: Target page, context or browser has been closed
+2026-06-09 17:39:48,888 | ERROR | test_detailed_view | Locator.scroll_into_view_if_needed: Target page, context or browser has been closed
+2026-06-09 17:39:48,897 | INFO | test_detailed_view | Passed Flights Count: 28
+2026-06-09 17:39:48,898 | INFO | test_detailed_view | Failed Flights Count: 1
+2026-06-09 17:39:48,898 | INFO | test_detailed_view | Testing is Done, Data Validated Successfully

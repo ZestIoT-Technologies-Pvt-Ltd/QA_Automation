@@ -1,0 +1,341 @@
+2026-06-09 16:15:28,606 | INFO | test_pax | Starting Detailed View Test
+2026-06-09 16:15:28,607 | INFO | pages.pax_count | Navigating to Dashboard
+2026-06-09 16:15:35,864 | WARNING | pages.pax_count | List View not displayed after Hover, Trying to Click
+2026-06-09 16:15:37,421 | INFO | pages.pax_count | Clicked List View
+2026-06-09 16:15:43,943 | INFO | test_pax | Processing Ongoing flights
+2026-06-09 16:15:54,740 | INFO | pages.pax_count | Flights are Visible
+2026-06-09 16:15:54,757 | INFO | pages.pax_count | Totally we have 15 Flights
+2026-06-09 16:15:56,834 | INFO | pages.pax_count | Arrival Number = 316 & Departure Number = 827
+2026-06-09 16:15:56,852 | INFO | pages.pax_count | Arrival PAX Count = 186 & Departure PAX Count = 8
+2026-06-09 16:15:57,055 | ERROR | test_pax | Arrival PAX exceeded the limit and Arrival PAX is 186
+2026-06-09 16:15:59,119 | INFO | pages.pax_count | Arrival Number = 9909 & Departure Number = 9908
+2026-06-09 16:15:59,136 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = -
+2026-06-09 16:15:59,292 | ERROR | test_pax | Arrival PAX is Missing for Flight 9909 - 9908 
+2026-06-09 16:16:01,354 | INFO | pages.pax_count | Arrival Number = 9022 & Departure Number = 9011
+2026-06-09 16:16:01,370 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = -
+2026-06-09 16:16:01,578 | ERROR | test_pax | Arrival PAX is Missing for Flight 9022 - 9011 
+2026-06-09 16:16:03,643 | INFO | pages.pax_count | Arrival Number = 335(R) & Departure Number = 335
+2026-06-09 16:16:03,667 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = -
+2026-06-09 16:16:03,882 | ERROR | test_pax | Arrival PAX is Missing for Flight 335(R) - 335 
+2026-06-09 16:16:05,964 | INFO | pages.pax_count | Arrival Number = 9999 & Departure Number = 9989
+2026-06-09 16:16:05,982 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = -
+2026-06-09 16:16:06,145 | ERROR | test_pax | Arrival PAX is Missing for Flight 9999 - 9989 
+2026-06-09 16:16:08,204 | INFO | pages.pax_count | Arrival Number = 756 & Departure Number = 829
+2026-06-09 16:16:08,221 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = 107
+2026-06-09 16:16:08,370 | ERROR | test_pax | Arrival PAX is Missing for Flight 756 - 829 
+2026-06-09 16:16:10,434 | INFO | pages.pax_count | Arrival Number = 884 & Departure Number = 881
+2026-06-09 16:16:10,452 | INFO | pages.pax_count | Arrival PAX Count = 41 & Departure PAX Count = 54
+2026-06-09 16:16:10,453 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 884 - 881
+2026-06-09 16:16:10,453 | INFO | test_pax | Validating PAX segregation for Flight 884 - 881
+2026-06-09 16:16:12,555 | INFO | pages.pax_count | Arrival -> J:1, Y:40, Infant:0
+2026-06-09 16:16:12,556 | INFO | pages.pax_count | Departure -> J:3, Y:51, Infant:0
+2026-06-09 16:16:12,556 | INFO | pages.pax_count | Calculated Arrival Total = 41
+2026-06-09 16:16:12,556 | INFO | pages.pax_count | Calculated Departure Total = 54
+2026-06-09 16:16:12,556 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:16:15,215 | INFO | pages.pax_count | Arrival Number = 564 & Departure Number = 647
+2026-06-09 16:16:15,235 | INFO | pages.pax_count | Arrival PAX Count = 136 & Departure PAX Count = 112
+2026-06-09 16:16:15,236 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 564 - 647
+2026-06-09 16:16:15,236 | INFO | test_pax | Validating PAX segregation for Flight 564 - 647
+2026-06-09 16:16:17,333 | INFO | pages.pax_count | Arrival -> J:0, Y:136, Infant:0
+2026-06-09 16:16:17,334 | INFO | pages.pax_count | Departure -> J:0, Y:112, Infant:1
+2026-06-09 16:16:17,334 | INFO | pages.pax_count | Calculated Arrival Total = 136
+2026-06-09 16:16:17,334 | INFO | pages.pax_count | Calculated Departure Total = 112
+2026-06-09 16:16:17,334 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:16:19,948 | INFO | pages.pax_count | Arrival Number = 978 & Departure Number = 025
+2026-06-09 16:16:19,964 | INFO | pages.pax_count | Arrival PAX Count = 152 & Departure PAX Count = 96
+2026-06-09 16:16:19,964 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 978 - 025
+2026-06-09 16:16:19,965 | INFO | test_pax | Validating PAX segregation for Flight 978 - 025
+2026-06-09 16:16:22,077 | INFO | pages.pax_count | Arrival -> J:10, Y:142, Infant:2
+2026-06-09 16:16:22,077 | INFO | pages.pax_count | Departure -> J:0, Y:96, Infant:2
+2026-06-09 16:16:22,077 | INFO | pages.pax_count | Calculated Arrival Total = 152
+2026-06-09 16:16:22,078 | INFO | pages.pax_count | Calculated Departure Total = 96
+2026-06-09 16:16:22,078 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:16:24,720 | INFO | pages.pax_count | Arrival Number = 646 & Departure Number = 573
+2026-06-09 16:16:24,737 | INFO | pages.pax_count | Arrival PAX Count = 90 & Departure PAX Count = 130
+2026-06-09 16:16:24,738 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 646 - 573
+2026-06-09 16:16:24,738 | INFO | test_pax | Validating PAX segregation for Flight 646 - 573
+2026-06-09 16:16:26,837 | INFO | pages.pax_count | Arrival -> J:1, Y:89, Infant:0
+2026-06-09 16:16:26,838 | INFO | pages.pax_count | Departure -> J:1, Y:129, Infant:0
+2026-06-09 16:16:26,838 | INFO | pages.pax_count | Calculated Arrival Total = 90
+2026-06-09 16:16:26,838 | INFO | pages.pax_count | Calculated Departure Total = 130
+2026-06-09 16:16:26,839 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:16:29,485 | INFO | pages.pax_count | Arrival Number = 312 & Departure Number = 017
+2026-06-09 16:16:29,502 | INFO | pages.pax_count | Arrival PAX Count = 167 & Departure PAX Count = 77
+2026-06-09 16:16:29,502 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 312 - 017
+2026-06-09 16:16:29,503 | INFO | test_pax | Validating PAX segregation for Flight 312 - 017
+2026-06-09 16:16:31,603 | INFO | pages.pax_count | Arrival -> J:5, Y:162, Infant:2
+2026-06-09 16:16:31,604 | INFO | pages.pax_count | Departure -> J:3, Y:74, Infant:0
+2026-06-09 16:16:31,604 | INFO | pages.pax_count | Calculated Arrival Total = 167
+2026-06-09 16:16:31,604 | INFO | pages.pax_count | Calculated Departure Total = 77
+2026-06-09 16:16:31,604 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:16:34,280 | INFO | pages.pax_count | Arrival Number = 436 & Departure Number = 905
+2026-06-09 16:16:34,295 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = 36
+2026-06-09 16:16:34,457 | ERROR | test_pax | Arrival PAX is Missing for Flight 436 - 905 
+2026-06-09 16:16:36,520 | INFO | pages.pax_count | Arrival Number = 812 & Departure Number = 811
+2026-06-09 16:16:36,535 | INFO | pages.pax_count | Arrival PAX Count = 106 & Departure PAX Count = 71
+2026-06-09 16:16:36,536 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 812 - 811
+2026-06-09 16:16:36,536 | INFO | test_pax | Validating PAX segregation for Flight 812 - 811
+2026-06-09 16:16:38,643 | INFO | pages.pax_count | Arrival -> J:2, Y:104, Infant:0
+2026-06-09 16:16:38,643 | INFO | pages.pax_count | Departure -> J:2, Y:69, Infant:0
+2026-06-09 16:16:38,643 | INFO | pages.pax_count | Calculated Arrival Total = 106
+2026-06-09 16:16:38,644 | INFO | pages.pax_count | Calculated Departure Total = 71
+2026-06-09 16:16:38,644 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:16:41,297 | INFO | pages.pax_count | Arrival Number = 082 & Departure Number = 875
+2026-06-09 16:16:41,327 | INFO | pages.pax_count | Arrival PAX Count = 65 & Departure PAX Count = 66
+2026-06-09 16:16:41,329 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 082 - 875
+2026-06-09 16:16:41,329 | INFO | test_pax | Validating PAX segregation for Flight 082 - 875
+2026-06-09 16:16:44,015 | INFO | pages.pax_count | Arrival -> J:1, Y:64, Infant:0
+2026-06-09 16:16:44,015 | INFO | pages.pax_count | Departure -> J:0, Y:66, Infant:0
+2026-06-09 16:16:44,016 | INFO | pages.pax_count | Calculated Arrival Total = 65
+2026-06-09 16:16:44,016 | INFO | pages.pax_count | Calculated Departure Total = 66
+2026-06-09 16:16:44,016 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:16:46,667 | INFO | pages.pax_count | Arrival Number = 848 & Departure Number = 009
+2026-06-09 16:16:46,682 | INFO | pages.pax_count | Arrival PAX Count = 100 & Departure PAX Count = 97
+2026-06-09 16:16:46,683 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 848 - 009
+2026-06-09 16:16:46,683 | INFO | test_pax | Validating PAX segregation for Flight 848 - 009
+2026-06-09 16:16:48,786 | INFO | pages.pax_count | Arrival -> J:1, Y:99, Infant:0
+2026-06-09 16:16:48,787 | INFO | pages.pax_count | Departure -> J:2, Y:95, Infant:0
+2026-06-09 16:16:48,787 | INFO | pages.pax_count | Calculated Arrival Total = 100
+2026-06-09 16:16:48,787 | INFO | pages.pax_count | Calculated Departure Total = 97
+2026-06-09 16:16:48,788 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:16:49,527 | INFO | test_pax | Processing Incoming flights
+2026-06-09 16:16:59,565 | INFO | pages.pax_count | Flights are Visible
+2026-06-09 16:16:59,580 | INFO | pages.pax_count | Totally we have 15 Flights
+2026-06-09 16:17:01,643 | INFO | pages.pax_count | Arrival Number = 1234 & Departure Number = 4321
+2026-06-09 16:17:01,666 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = -
+2026-06-09 16:17:01,819 | ERROR | test_pax | Arrival PAX is Missing for Flight 1234 - 4321 
+2026-06-09 16:17:03,882 | INFO | pages.pax_count | Arrival Number = 1260 & Departure Number = 
+2026-06-09 16:17:03,901 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = -
+2026-06-09 16:17:04,205 | ERROR | test_pax | Arrival PAX is Missing for Flight 1260 -  
+2026-06-09 16:17:06,288 | INFO | pages.pax_count | Arrival Number = 870 & Departure Number = 977
+2026-06-09 16:17:06,304 | INFO | pages.pax_count | Arrival PAX Count = 33 & Departure PAX Count = 63
+2026-06-09 16:17:06,305 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 870 - 977
+2026-06-09 16:17:06,305 | INFO | test_pax | Validating PAX segregation for Flight 870 - 977
+2026-06-09 16:17:08,396 | INFO | pages.pax_count | Arrival -> J:0, Y:33, Infant:0
+2026-06-09 16:17:08,397 | INFO | pages.pax_count | Departure -> J:3, Y:60, Infant:0
+2026-06-09 16:17:08,397 | INFO | pages.pax_count | Calculated Arrival Total = 33
+2026-06-09 16:17:08,397 | INFO | pages.pax_count | Calculated Departure Total = 63
+2026-06-09 16:17:08,397 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:17:11,031 | INFO | pages.pax_count | Arrival Number = 1550 & Departure Number = 1681
+2026-06-09 16:17:11,047 | INFO | pages.pax_count | Arrival PAX Count = 152 & Departure PAX Count = 67
+2026-06-09 16:17:11,047 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 1550 - 1681
+2026-06-09 16:17:11,047 | INFO | test_pax | Validating PAX segregation for Flight 1550 - 1681
+2026-06-09 16:17:13,163 | INFO | pages.pax_count | Arrival -> J:10, Y:142, Infant:2
+2026-06-09 16:17:13,163 | INFO | pages.pax_count | Departure -> J:6, Y:61, Infant:1
+2026-06-09 16:17:13,163 | INFO | pages.pax_count | Calculated Arrival Total = 152
+2026-06-09 16:17:13,164 | INFO | pages.pax_count | Calculated Departure Total = 67
+2026-06-09 16:17:13,164 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:17:15,803 | INFO | pages.pax_count | Arrival Number = 842 & Departure Number = 855
+2026-06-09 16:17:15,818 | INFO | pages.pax_count | Arrival PAX Count = 108 & Departure PAX Count = 93
+2026-06-09 16:17:15,818 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 842 - 855
+2026-06-09 16:17:15,819 | INFO | test_pax | Validating PAX segregation for Flight 842 - 855
+2026-06-09 16:17:17,914 | INFO | pages.pax_count | Arrival -> J:6, Y:102, Infant:0
+2026-06-09 16:17:17,915 | INFO | pages.pax_count | Departure -> J:3, Y:90, Infant:0
+2026-06-09 16:17:17,915 | INFO | pages.pax_count | Calculated Arrival Total = 108
+2026-06-09 16:17:17,915 | INFO | pages.pax_count | Calculated Departure Total = 93
+2026-06-09 16:17:17,916 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:17:20,551 | INFO | pages.pax_count | Arrival Number = 710 & Departure Number = 445
+2026-06-09 16:17:20,567 | INFO | pages.pax_count | Arrival PAX Count = 68 & Departure PAX Count = 23
+2026-06-09 16:17:20,568 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 710 - 445
+2026-06-09 16:17:20,568 | INFO | test_pax | Validating PAX segregation for Flight 710 - 445
+2026-06-09 16:17:22,682 | INFO | pages.pax_count | Arrival -> J:7, Y:60, Infant:0
+2026-06-09 16:17:22,682 | INFO | pages.pax_count | Departure -> J:0, Y:23, Infant:0
+2026-06-09 16:17:22,682 | INFO | pages.pax_count | Calculated Arrival Total = 67
+2026-06-09 16:17:22,682 | INFO | pages.pax_count | Calculated Departure Total = 23
+2026-06-09 16:17:22,684 | ERROR | test_pax | Arrival mismatch: Card=68, Popup=67
+2026-06-09 16:17:24,755 | INFO | pages.pax_count | Arrival Number = 662 & Departure Number = 867
+2026-06-09 16:17:24,776 | INFO | pages.pax_count | Arrival PAX Count = 59 & Departure PAX Count = 8
+2026-06-09 16:17:24,776 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 662 - 867
+2026-06-09 16:17:24,777 | INFO | test_pax | Validating PAX segregation for Flight 662 - 867
+2026-06-09 16:17:29,519 | INFO | pages.pax_count | Arrival -> J:6, Y:53, Infant:0
+2026-06-09 16:17:29,520 | INFO | pages.pax_count | Departure -> J:0, Y:8, Infant:0
+2026-06-09 16:17:29,520 | INFO | pages.pax_count | Calculated Arrival Total = 59
+2026-06-09 16:17:29,520 | INFO | pages.pax_count | Calculated Departure Total = 8
+2026-06-09 16:17:29,520 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:17:32,166 | INFO | pages.pax_count | Arrival Number = 948 & Departure Number = 081
+2026-06-09 16:17:32,182 | INFO | pages.pax_count | Arrival PAX Count = 57 & Departure PAX Count = 8
+2026-06-09 16:17:32,183 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 948 - 081
+2026-06-09 16:17:32,183 | INFO | test_pax | Validating PAX segregation for Flight 948 - 081
+2026-06-09 16:17:34,276 | INFO | pages.pax_count | Arrival -> J:0, Y:56, Infant:0
+2026-06-09 16:17:34,277 | INFO | pages.pax_count | Departure -> J:1, Y:7, Infant:0
+2026-06-09 16:17:34,277 | INFO | pages.pax_count | Calculated Arrival Total = 56
+2026-06-09 16:17:34,277 | INFO | pages.pax_count | Calculated Departure Total = 8
+2026-06-09 16:17:34,279 | ERROR | test_pax | Arrival mismatch: Card=57, Popup=56
+2026-06-09 16:17:36,337 | INFO | pages.pax_count | Arrival Number = 910 & Departure Number = 337
+2026-06-09 16:17:36,352 | INFO | pages.pax_count | Arrival PAX Count = 160 & Departure PAX Count = 6
+2026-06-09 16:17:36,353 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 910 - 337
+2026-06-09 16:17:36,353 | INFO | test_pax | Validating PAX segregation for Flight 910 - 337
+2026-06-09 16:17:38,556 | INFO | pages.pax_count | Arrival -> J:0, Y:160, Infant:0
+2026-06-09 16:17:38,556 | INFO | pages.pax_count | Departure -> J:0, Y:6, Infant:0
+2026-06-09 16:17:38,557 | INFO | pages.pax_count | Calculated Arrival Total = 160
+2026-06-09 16:17:38,557 | INFO | pages.pax_count | Calculated Departure Total = 6
+2026-06-09 16:17:38,557 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:17:41,210 | INFO | pages.pax_count | Arrival Number = 718 & Departure Number = 175
+2026-06-09 16:17:41,226 | INFO | pages.pax_count | Arrival PAX Count = 137 & Departure PAX Count = 57
+2026-06-09 16:17:41,227 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 718 - 175
+2026-06-09 16:17:41,227 | INFO | test_pax | Validating PAX segregation for Flight 718 - 175
+2026-06-09 16:17:43,316 | INFO | pages.pax_count | Arrival -> J:12, Y:125, Infant:5
+2026-06-09 16:17:43,317 | INFO | pages.pax_count | Departure -> J:2, Y:55, Infant:0
+2026-06-09 16:17:43,317 | INFO | pages.pax_count | Calculated Arrival Total = 137
+2026-06-09 16:17:43,317 | INFO | pages.pax_count | Calculated Departure Total = 57
+2026-06-09 16:17:43,317 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:17:45,965 | INFO | pages.pax_count | Arrival Number = 212 & Departure Number = 793
+2026-06-09 16:17:45,980 | INFO | pages.pax_count | Arrival PAX Count = 51 & Departure PAX Count = 135
+2026-06-09 16:17:45,981 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 212 - 793
+2026-06-09 16:17:45,981 | INFO | test_pax | Validating PAX segregation for Flight 212 - 793
+2026-06-09 16:17:48,077 | INFO | pages.pax_count | Arrival -> J:8, Y:42, Infant:3
+2026-06-09 16:17:48,077 | INFO | pages.pax_count | Departure -> J:1, Y:134, Infant:0
+2026-06-09 16:17:48,077 | INFO | pages.pax_count | Calculated Arrival Total = 50
+2026-06-09 16:17:48,078 | INFO | pages.pax_count | Calculated Departure Total = 135
+2026-06-09 16:17:48,079 | ERROR | test_pax | Arrival mismatch: Card=51, Popup=50
+2026-06-09 16:17:50,137 | INFO | pages.pax_count | Arrival Number = 864 & Departure Number = 833
+2026-06-09 16:17:50,153 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = 4
+2026-06-09 16:17:50,329 | ERROR | test_pax | Arrival PAX is Missing for Flight 864 - 833 
+2026-06-09 16:17:52,390 | INFO | pages.pax_count | Arrival Number = 1212 & Departure Number = 453
+2026-06-09 16:17:52,406 | INFO | pages.pax_count | Arrival PAX Count = 118 & Departure PAX Count = 38
+2026-06-09 16:17:52,406 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 1212 - 453
+2026-06-09 16:17:52,407 | INFO | test_pax | Validating PAX segregation for Flight 1212 - 453
+2026-06-09 16:17:54,601 | INFO | pages.pax_count | Arrival -> J:7, Y:111, Infant:2
+2026-06-09 16:17:54,601 | INFO | pages.pax_count | Departure -> J:1, Y:37, Infant:0
+2026-06-09 16:17:54,601 | INFO | pages.pax_count | Calculated Arrival Total = 118
+2026-06-09 16:17:54,602 | INFO | pages.pax_count | Calculated Departure Total = 38
+2026-06-09 16:17:54,602 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:17:57,238 | INFO | pages.pax_count | Arrival Number = 916 & Departure Number = 993
+2026-06-09 16:17:57,254 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = 21
+2026-06-09 16:17:57,428 | ERROR | test_pax | Arrival PAX is Missing for Flight 916 - 993 
+2026-06-09 16:17:59,487 | INFO | pages.pax_count | Arrival Number = 206 & Departure Number = 001
+2026-06-09 16:17:59,502 | INFO | pages.pax_count | Arrival PAX Count = 47 & Departure PAX Count = 28
+2026-06-09 16:17:59,502 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 206 - 001
+2026-06-09 16:17:59,503 | INFO | test_pax | Validating PAX segregation for Flight 206 - 001
+2026-06-09 16:18:01,609 | INFO | pages.pax_count | Arrival -> J:3, Y:44, Infant:1
+2026-06-09 16:18:01,610 | INFO | pages.pax_count | Departure -> J:0, Y:28, Infant:0
+2026-06-09 16:18:01,610 | INFO | pages.pax_count | Calculated Arrival Total = 47
+2026-06-09 16:18:01,610 | INFO | pages.pax_count | Calculated Departure Total = 28
+2026-06-09 16:18:01,610 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:18:02,370 | INFO | test_pax | Processing Departed flights
+2026-06-09 16:18:12,438 | INFO | pages.pax_count | Flights are Visible
+2026-06-09 16:18:12,453 | INFO | pages.pax_count | Totally we have 15 Flights
+2026-06-09 16:18:14,532 | INFO | pages.pax_count | Arrival Number = 832 & Departure Number = 897
+2026-06-09 16:18:14,548 | INFO | pages.pax_count | Arrival PAX Count = 81 & Departure PAX Count = 66
+2026-06-09 16:18:14,548 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 832 - 897
+2026-06-09 16:18:14,548 | INFO | test_pax | Validating PAX segregation for Flight 832 - 897
+2026-06-09 16:18:21,655 | ERROR | test_pax | Locator expected to be visible
+Actual value: hidden 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("//mat-card[contains(@class,'listviewmatcard')]/div").first.locator("//div[@class='pax_count-col']/div[@class='dropdown']/div[@class='dropdown-content']")
+    9 × locator resolved to <div apphovertruncated="" _ngcontent-mqu-c394="" class="dropdown-content">…</div>
+      - unexpected value "hidden"
+
+2026-06-09 16:18:23,724 | INFO | pages.pax_count | Arrival Number = 002 & Departure Number = 159
+2026-06-09 16:18:23,739 | INFO | pages.pax_count | Arrival PAX Count = 74 & Departure PAX Count = 95
+2026-06-09 16:18:23,740 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 002 - 159
+2026-06-09 16:18:23,740 | INFO | test_pax | Validating PAX segregation for Flight 002 - 159
+2026-06-09 16:18:25,839 | INFO | pages.pax_count | Arrival -> J:5, Y:69, Infant:0
+2026-06-09 16:18:25,839 | INFO | pages.pax_count | Departure -> J:7, Y:88, Infant:2
+2026-06-09 16:18:25,840 | INFO | pages.pax_count | Calculated Arrival Total = 74
+2026-06-09 16:18:25,840 | INFO | pages.pax_count | Calculated Departure Total = 95
+2026-06-09 16:18:25,840 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:18:28,480 | INFO | pages.pax_count | Arrival Number = 018 & Departure Number = 821
+2026-06-09 16:18:28,497 | INFO | pages.pax_count | Arrival PAX Count = 55 & Departure PAX Count = 114
+2026-06-09 16:18:28,498 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 018 - 821
+2026-06-09 16:18:28,498 | INFO | test_pax | Validating PAX segregation for Flight 018 - 821
+2026-06-09 16:18:30,584 | INFO | pages.pax_count | Arrival -> J:5, Y:50, Infant:0
+2026-06-09 16:18:30,584 | INFO | pages.pax_count | Departure -> J:1, Y:113, Infant:0
+2026-06-09 16:18:30,585 | INFO | pages.pax_count | Calculated Arrival Total = 55
+2026-06-09 16:18:30,585 | INFO | pages.pax_count | Calculated Departure Total = 114
+2026-06-09 16:18:30,585 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:18:33,243 | INFO | pages.pax_count | Arrival Number = 828 & Departure Number = 523
+2026-06-09 16:18:33,260 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = 145
+2026-06-09 16:18:33,473 | ERROR | test_pax | Arrival PAX is Missing for Flight 828 - 523 
+2026-06-09 16:18:35,560 | INFO | pages.pax_count | Arrival Number = 994 & Departure Number = 863
+2026-06-09 16:18:35,580 | INFO | pages.pax_count | Arrival PAX Count = 162 & Departure PAX Count = 46
+2026-06-09 16:18:35,580 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 994 - 863
+2026-06-09 16:18:35,581 | INFO | test_pax | Validating PAX segregation for Flight 994 - 863
+2026-06-09 16:18:37,724 | INFO | pages.pax_count | Arrival -> J:2, Y:160, Infant:5
+2026-06-09 16:18:37,724 | INFO | pages.pax_count | Departure -> J:2, Y:44, Infant:1
+2026-06-09 16:18:37,725 | INFO | pages.pax_count | Calculated Arrival Total = 162
+2026-06-09 16:18:37,725 | INFO | pages.pax_count | Calculated Departure Total = 46
+2026-06-09 16:18:37,725 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:18:40,375 | INFO | pages.pax_count | Arrival Number = 1942 & Departure Number = 1125
+2026-06-09 16:18:40,394 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = 158
+2026-06-09 16:18:40,685 | ERROR | test_pax | Arrival PAX is Missing for Flight 1942 - 1125 
+2026-06-09 16:18:42,760 | INFO | pages.pax_count | Arrival Number = 914 & Departure Number = 727
+2026-06-09 16:18:42,779 | INFO | pages.pax_count | Arrival PAX Count = 123 & Departure PAX Count = 121
+2026-06-09 16:18:42,780 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 914 - 727
+2026-06-09 16:18:42,780 | INFO | test_pax | Validating PAX segregation for Flight 914 - 727
+2026-06-09 16:18:44,896 | INFO | pages.pax_count | Arrival -> J:0, Y:123, Infant:0
+2026-06-09 16:18:44,896 | INFO | pages.pax_count | Departure -> J:7, Y:114, Infant:0
+2026-06-09 16:18:44,896 | INFO | pages.pax_count | Calculated Arrival Total = 123
+2026-06-09 16:18:44,897 | INFO | pages.pax_count | Calculated Departure Total = 121
+2026-06-09 16:18:44,897 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:18:47,544 | INFO | pages.pax_count | Arrival Number = 1942 & Departure Number = 1113
+2026-06-09 16:18:47,564 | INFO | pages.pax_count | Arrival PAX Count = - & Departure PAX Count = 158
+2026-06-09 16:18:47,895 | ERROR | test_pax | Arrival PAX is Missing for Flight 1942 - 1113 
+2026-06-09 16:18:49,999 | INFO | pages.pax_count | Arrival Number = 732 & Departure Number = 1595
+2026-06-09 16:18:50,024 | INFO | pages.pax_count | Arrival PAX Count = 166 & Departure PAX Count = 108
+2026-06-09 16:18:50,025 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 732 - 1595
+2026-06-09 16:18:50,026 | INFO | test_pax | Validating PAX segregation for Flight 732 - 1595
+2026-06-09 16:18:52,147 | INFO | pages.pax_count | Arrival -> J:5, Y:161, Infant:2
+2026-06-09 16:18:52,148 | INFO | pages.pax_count | Departure -> J:0, Y:108, Infant:0
+2026-06-09 16:18:52,148 | INFO | pages.pax_count | Calculated Arrival Total = 166
+2026-06-09 16:18:52,148 | INFO | pages.pax_count | Calculated Departure Total = 108
+2026-06-09 16:18:52,149 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:18:54,811 | INFO | pages.pax_count | Arrival Number = 1290 & Departure Number = 335
+2026-06-09 16:18:54,830 | INFO | pages.pax_count | Arrival PAX Count = 64 & Departure PAX Count = 163
+2026-06-09 16:18:54,831 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 1290 - 335
+2026-06-09 16:18:54,831 | INFO | test_pax | Validating PAX segregation for Flight 1290 - 335
+2026-06-09 16:18:56,958 | INFO | pages.pax_count | Arrival -> J:0, Y:64, Infant:0
+2026-06-09 16:18:56,958 | INFO | pages.pax_count | Departure -> J:8, Y:155, Infant:0
+2026-06-09 16:18:56,959 | INFO | pages.pax_count | Calculated Arrival Total = 64
+2026-06-09 16:18:56,959 | INFO | pages.pax_count | Calculated Departure Total = 163
+2026-06-09 16:18:56,959 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:18:59,606 | INFO | pages.pax_count | Arrival Number = 574 & Departure Number = 1635
+2026-06-09 16:18:59,629 | INFO | pages.pax_count | Arrival PAX Count = 157 & Departure PAX Count = 149
+2026-06-09 16:18:59,630 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 574 - 1635
+2026-06-09 16:18:59,630 | INFO | test_pax | Validating PAX segregation for Flight 574 - 1635
+2026-06-09 16:19:01,794 | INFO | pages.pax_count | Arrival -> J:2, Y:155, Infant:2
+2026-06-09 16:19:01,795 | INFO | pages.pax_count | Departure -> J:8, Y:141, Infant:0
+2026-06-09 16:19:01,795 | INFO | pages.pax_count | Calculated Arrival Total = 157
+2026-06-09 16:19:01,796 | INFO | pages.pax_count | Calculated Departure Total = 149
+2026-06-09 16:19:01,796 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:19:04,463 | INFO | pages.pax_count | Arrival Number = 728 & Departure Number = 1227
+2026-06-09 16:19:04,482 | INFO | pages.pax_count | Arrival PAX Count = 118 & Departure PAX Count = 50
+2026-06-09 16:19:04,483 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 728 - 1227
+2026-06-09 16:19:04,483 | INFO | test_pax | Validating PAX segregation for Flight 728 - 1227
+2026-06-09 16:19:06,594 | INFO | pages.pax_count | Arrival -> J:10, Y:108, Infant:0
+2026-06-09 16:19:06,594 | INFO | pages.pax_count | Departure -> J:5, Y:45, Infant:0
+2026-06-09 16:19:06,595 | INFO | pages.pax_count | Calculated Arrival Total = 118
+2026-06-09 16:19:06,595 | INFO | pages.pax_count | Calculated Departure Total = 50
+2026-06-09 16:19:06,595 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:19:09,265 | INFO | pages.pax_count | Arrival Number = 308 & Departure Number = 915
+2026-06-09 16:19:09,284 | INFO | pages.pax_count | Arrival PAX Count = 174 & Departure PAX Count = 63
+2026-06-09 16:19:09,285 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 308 - 915
+2026-06-09 16:19:09,285 | INFO | test_pax | Validating PAX segregation for Flight 308 - 915
+2026-06-09 16:19:11,410 | INFO | pages.pax_count | Arrival -> J:12, Y:162, Infant:6
+2026-06-09 16:19:11,411 | INFO | pages.pax_count | Departure -> J:0, Y:63, Infant:0
+2026-06-09 16:19:11,411 | INFO | pages.pax_count | Calculated Arrival Total = 174
+2026-06-09 16:19:11,412 | INFO | pages.pax_count | Calculated Departure Total = 63
+2026-06-09 16:19:11,412 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:19:14,077 | INFO | pages.pax_count | Arrival Number = 010 & Departure Number = 707
+2026-06-09 16:19:14,097 | INFO | pages.pax_count | Arrival PAX Count = 109 & Departure PAX Count = 80
+2026-06-09 16:19:14,097 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 010 - 707
+2026-06-09 16:19:14,098 | INFO | test_pax | Validating PAX segregation for Flight 010 - 707
+2026-06-09 16:19:16,241 | INFO | pages.pax_count | Arrival -> J:3, Y:106, Infant:0
+2026-06-09 16:19:16,242 | INFO | pages.pax_count | Departure -> J:10, Y:70, Infant:1
+2026-06-09 16:19:16,242 | INFO | pages.pax_count | Calculated Arrival Total = 109
+2026-06-09 16:19:16,242 | INFO | pages.pax_count | Calculated Departure Total = 80
+2026-06-09 16:19:16,242 | INFO | pages.pax_count | Arrival and Departure PAX segregation validated successfully
+2026-06-09 16:19:18,963 | INFO | pages.pax_count | Arrival Number = 1798 & Departure Number = 1081
+2026-06-09 16:19:18,993 | INFO | pages.pax_count | Arrival PAX Count = 63 & Departure PAX Count = 148
+2026-06-09 16:19:18,994 | INFO | test_pax | Arrival and Departure PAX are Valid for Flight 1798 - 1081
+2026-06-09 16:19:18,994 | INFO | test_pax | Validating PAX segregation for Flight 1798 - 1081
+2026-06-09 16:19:28,730 | ERROR | test_pax | Locator expected to be visible
+Actual value: hidden 
+Call log:
+  - Expect "to_be_visible" with timeout 5000ms
+  - waiting for locator("//mat-card[contains(@class,'listviewmatcard')]/div").nth(14).locator("//div[@class='pax_count-col']/div[@class='dropdown']/div[@class='dropdown-content']")
+    9 × locator resolved to <div apphovertruncated="" _ngcontent-mqu-c394="" class="dropdown-content">…</div>
+      - unexpected value "hidden"
+
+2026-06-09 16:19:28,731 | INFO | test_pax | Testing is Done, Data Validated Successfully
