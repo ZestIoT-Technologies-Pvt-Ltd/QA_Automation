@@ -1,3 +1,4 @@
+import os
 import pytest
 from playwright.sync_api import sync_playwright
 from pages.base_page import BasePage
@@ -5,10 +6,13 @@ from pages.login_page import LoginPage
 from utils.config import Config
 
 
-#def pytest_addoption(parser):
+def pytest_addoption(parser):
 #    parser.addoption("--browser", action="store", default="chromium")
-#    parser.addoption("--env", action="store", default="qa")
+    parser.addoption("--env", action="store", default="qa")
 
+def pytest_configure(config):
+    env = config.getoption("--env")
+    os.environ["ENV"] = env
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item):
@@ -26,12 +30,12 @@ def page(request):
         page = context.new_page()
         
 
-        base = BasePage(page, Config.BASE_URL)
+        base = BasePage(page, Config.get_url())
         base.open_application()
 
         if "login" in request.keywords:
-            login_page = LoginPage(page, Config.BASE_URL)
-            login_page.login_user("flydubai.test", "Zestiot123$")
+            login_page = LoginPage(page, Config.get_url())
+            login_page.login_user(Config.get_username(), Config.get_password())
 
         yield page
 

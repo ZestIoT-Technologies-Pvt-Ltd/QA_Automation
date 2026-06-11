@@ -95,7 +95,7 @@ def test_detailed_view(page):
                             with allure.step("Clicking Back Arrow"):
                                 back_Arrow = detail_view_page.page.locator(detail_view_page.DETAIL_VIEW_BACK_ARROW)
                                 back_Arrow.click()
-                                logger.info(f"Clicking Back and Continuing for {i+2} Flight")
+                                logger.info(f"Clicking Back and Continuing for next Flight")
 
                             #time.sleep(10)
                             ongoing_flights = detail_view_page.page.locator(detail_view_page.FLIGHTS_CARDS)
