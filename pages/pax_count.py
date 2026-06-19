@@ -20,8 +20,8 @@ class PAX_Count_Page(BasePage):
     ]
 
     ARRIVAL_AND_DEPARTURE_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
-    ARRIVAL_AND_DEPARTURE_PAX = "//div[@class='pax_count-col']/div[@class='dropdown']/div[@class='dropbtn']"
-    PAX_COUNT_POPUP = "//div[@class='pax_count-col']/div[@class='dropdown']/div[@class='dropdown-content']"
+    ARRIVAL_AND_DEPARTURE_PAX = "//div[contains(@class,'pax_count-col')]/div[@class='dropdown']/div[@class='dropbtn']"
+    PAX_COUNT_POPUP = "//div[contains(@class,'pax_count-col')]/div[@class='dropdown']/div[@class='dropdown-content']"
     NO_FLIGHTS_AVAILABLE = "//div[contains(text(),'No Flights Available')]"
     FLIGHTS_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
 

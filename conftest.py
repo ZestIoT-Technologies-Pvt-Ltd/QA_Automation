@@ -25,8 +25,8 @@ def pytest_runtest_makereport(item):
 def page(request):
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False, args=["--start-maximized"])
-        context = browser.new_context(no_viewport=True)
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context()
         page = context.new_page()
         
 
