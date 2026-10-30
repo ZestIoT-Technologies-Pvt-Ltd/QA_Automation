@@ -1,6 +1,6 @@
 import pytest
 import allure
-from pages.Login_Page.Login_Page import LoginPage
+from pages.Login.Login_Page import LoginPage
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
