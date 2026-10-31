@@ -2,7 +2,7 @@
 
 A page-object-based UI automation framework built with **Playwright for Python** and **pytest**. This document explains the folder structure, why each part exists, the naming conventions, and the best practices every contributor should follow.
 
-## 1. Folder Structure at a Glance
+## 1. Framework Folder Structure at a Glance 
 
 ```text
 project-root/
