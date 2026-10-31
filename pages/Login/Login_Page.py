@@ -1,4 +1,4 @@
-from pages.Base_Page import BasePage
+from pages.Common_Base_Page.Base_Page import BasePage
 
 class LoginPage(BasePage):
 
