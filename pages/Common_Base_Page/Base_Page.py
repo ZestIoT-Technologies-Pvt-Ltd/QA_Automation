@@ -1,3 +1,9 @@
+
+# Author : Tilak Badsheshi
+# Created Date : 2026-10-22
+# Modified By : Tilak Badsheshi
+# Modified Date : 2026-11-04
+
 """Reusable synchronous Playwright actions and Page Object Model foundation. Locators remain owned by page objects."""
 from __future__ import annotations
 
