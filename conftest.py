@@ -1,8 +1,8 @@
 import os
 import pytest
 from playwright.sync_api import sync_playwright
-from pages.Base_Page import BasePage
-from pages.Login_Page import LoginPage
+from pages.Common_Base_Page.Base_Page import BasePage
+from pages.Login.Login_Page import LoginPage
 from utils.config import Config
 from utils.email_sender import EmailSender
 
