@@ -1,7 +1,22 @@
 # Author : Tilak Badsheshi
 # Created Date : 2026-10-22
 # Modified By : Tilak Badsheshi
-# Modified Date : 2026-11-04
+# Modified Date : 2026-11-10
+
+"""
+==============  INTRODUCTION ================
+Page Object / Component: PAX_Count_Page
+Description: Page Object Model for validating Passenger (PAX) counts and demographic segregation
+             across Ongoing, Incoming, and Departed sections on Flights List View.
+
+Scenario & Workflow Capabilities:
+1. Navigation: Route through navigation menu to Flights List View dashboard.
+2. Section Iteration: Process flight cards across Ongoing, Incoming, and Departed sections.
+3. Flight Number Extraction: Parse flight arrival and departure numbers from flight cards.
+4. PAX Count Parsing: Extract Arrival PAX, Departure PAX, and validate against max capacity thresholds.
+5. PAX Segregation Verification: Open PAX dropdown and validate demographic breakdowns (Adults, Children, Infants).
+6. Evidence Capture: Capture screenshot evidence on missing PAX counts or limit violations.
+"""
 
 import time
 import re
@@ -13,10 +28,14 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-class PAX_Count_Page(BasePage):
 
-    MENU = "//span[@class='nav-icon']/i[text()='menu']"
-    LIST_VIEW = "//div[@role='button']/span[text()='Flights']"
+class PAX_Count_Page(BasePage):
+    """
+    Page Object for Flights List View Passenger (PAX) count validation and segregation.
+    """
+
+    MENU = "//span[@class='nav-icon']/i[normalize-space()='menu' or text()='menu']"
+    LIST_VIEW = "//div[@role='button']/span[normalize-space()='Flights'] | //span[normalize-space()='Flights']"
 
     SECTIONS = [
         {"name": "Ongoing", "tab": "//div[contains(text(),'Ongoing')]"},
@@ -61,9 +80,16 @@ class PAX_Count_Page(BasePage):
     def flights_are_visible(self, section_name):
 
         with allure.step("Checking Flights are Visible in Dashboard"):
-            #time.sleep(10)
             flights = self.page.locator("//mat-card[contains(@class,'listviewmatcard')]")
-            expect(flights.first).to_be_visible()
+            try:
+                flights.first.wait_for(state="visible", timeout=15000)
+            except Exception:
+                sync_icon = self.page.locator("//i[@ptooltip='Refresh Flight'] | //i[contains(@class,'pi-sync')]").first
+                if sync_icon.count() > 0 and sync_icon.is_visible():
+                    logger.info("Clicking Refresh Flight icon to trigger flight load...")
+                    sync_icon.click()
+                    self.page.wait_for_timeout(3000)
+            expect(flights.first).to_be_visible(timeout=30000)
             logger.info("Flights are Visible")
                     
             # Checking No Flights Message

@@ -2,7 +2,23 @@
 # Author : Tilak Badsheshi
 # Created Date : 2026-10-22
 # Modified By : Tilak Badsheshi
-# Modified Date : 2026-11-04
+# Modified Date : 2026-11-10
+
+"""
+==============  INTRODUCTION ================
+Page Object / Component: Flights_View_Ongoing_Page
+Description: Page Object Model for the main Flights List View interface across Ongoing, Incoming,
+             Departed, and Non-Operational sections. Encapsulates flight card element locators,
+             dropdown inspections, PTS milestone validations, and on-block/off-block timings.
+
+Scenario & Workflow Capabilities:
+1. Navigation: Open side menu and route to Flights List View dashboard.
+2. Section Switching: Switch dynamically between Ongoing, Incoming, Departed, and Non Operational tabs.
+3. Flight Card Inspection: Count total active cards, extract flight numbers, aircraft type, bay, and gate.
+4. Activity & Milestone Validation: Validate Activity Dropdowns and verify PTS names list for turnaround flights.
+5. Timing & Hover Validation: Hover on STA to verify Onblock Time; hover on ETD to verify Offblock Time.
+6. Flight Menu Actions: Access action menus, trigger Flight Card popups, and verify new browser tabs.
+"""
 
 import pytest
 from pages.Common_Base_Page.Base_Page import BasePage
@@ -15,9 +31,12 @@ logger = get_logger(__name__)
 
 
 class Flights_View_Ongoing_Page(BasePage):
+    """
+    Page Object for Flights List View - Ongoing and Departed flight dashboard operations.
+    """
         
-    MENU = "//span[@class='nav-icon']/i[text()='menu']"
-    LIST_VIEW = "//div[@role='button']/span[text()='Flights']"
+    MENU = "//span[@class='nav-icon']/i[normalize-space()='menu' or text()='menu']"
+    LIST_VIEW = "//div[@role='button']/span[normalize-space()='Flights'] | //span[normalize-space()='Flights']"
 
     SECTIONS = [
         {"name": "Ongoing", "tab": "//div[contains(text(),'Ongoing')]"},
@@ -140,6 +159,8 @@ class Flights_View_Ongoing_Page(BasePage):
         #Clicking List View
         list_view.click()
         logger.info("Clicked List View")
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(2000)
 
 
     def load_all_flights(self):

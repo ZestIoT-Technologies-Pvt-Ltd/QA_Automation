@@ -28,7 +28,7 @@ EMAIL_PATTERN = r"[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+"
 class EmailSender:
     """Create a station-wise summary email and attach HTML reports."""
 
-    MAX_REPORT_SIZE = 8 * 1024 * 1024  # 8 MB per report
+    MAX_REPORT_SIZE = 25 * 1024 * 1024  # 25 MB per report
 
     def __init__(self):
         # Configuration is loaded strictly from environment variables (.env)
@@ -92,14 +92,52 @@ class EmailSender:
             "invalid": [],
         }
 
-    @staticmethod
-    def _station_title(station_name: Any) -> str:
-        """Format station heading as '<Code> Airport'."""
+    @classmethod
+    def get_excel_station_config(cls, project: Optional[str] = None) -> Tuple[str, str]:
+        """
+        Reads station code and station name from test_data/execution_config.xlsx.
+        Returns: (station_code, station_name) e.g. ('DXB', 'Dubai')
+        """
+        try:
+            excel_path = Path("test_data/execution_config.xlsx")
+            if not excel_path.is_file():
+                excel_path = Path(__file__).resolve().parent.parent / "test_data" / "execution_config.xlsx"
+            if excel_path.is_file():
+                from utils.excel_reader import ExcelReader
+                reader = ExcelReader(str(excel_path))
+                if "Execution_Config" in reader.get_sheet_names():
+                    rows = reader.read_sheet("Execution_Config")
+                    # 1. Match project and Enabled
+                    for r in rows:
+                        enabled = str(r.get("Enabled", "")).strip().lower() in ("yes", "true", "1", "y")
+                        proj_val = str(r.get("Project", "")).strip().lower()
+                        if enabled and (not project or proj_val == str(project).strip().lower()):
+                            st = str(r.get("Station", "")).strip().upper()
+                            name = str(r.get("Station_Name", "")).strip()
+                            if st:
+                                return st, name or st
+                    # 2. Match any Enabled row
+                    for r in rows:
+                        enabled = str(r.get("Enabled", "")).strip().lower() in ("yes", "true", "1", "y")
+                        if enabled and str(r.get("Station", "")).strip():
+                            st = str(r.get("Station", "")).strip().upper()
+                            name = str(r.get("Station_Name", "")).strip()
+                            return st, name or st
+        except Exception as e:
+            logger.warning(f"Could not load station from execution_config.xlsx: {e}")
+        return "DXB", "Dubai"
+
+    @classmethod
+    def _station_title(cls, station_name: Any) -> str:
+        """Format station heading as '<Code> Airport' or '<Code> - <Station_Name> Airport' using Excel config."""
         station = str(station_name or "").strip()
-        if not station or station.upper() in ("ALL", "UNKNOWN", "-", "NONE", "ALL STATIONS"):
-            return "Airport"
+        excel_code, excel_name = cls.get_excel_station_config()
+        if not station or station.upper() in ("ALL", "UNKNOWN", "-", "NONE", "ALL STATIONS", "DEFAULT"):
+            station = excel_code
         if station.upper().endswith("AIRPORT"):
             return station
+        if excel_name and excel_name.upper() != station.upper() and station.upper() == excel_code.upper():
+            return f"{station} - {excel_name} Airport"
         return f"{station} Airport"
 
     @staticmethod
@@ -154,7 +192,9 @@ class EmailSender:
             if match:
                 return match.group(1).upper()
 
-        return str(default_station or "DEFAULT").upper()
+        if not default_station or str(default_station).strip().upper() in ("DEFAULT", "UNKNOWN", "-", "NONE", ""):
+            default_station, _ = self.get_excel_station_config()
+        return str(default_station).upper()
 
     @staticmethod
     def _status_from_testcase(testcase: ET.Element) -> str:
@@ -301,21 +341,27 @@ class EmailSender:
         """
         grouped: Dict[str, List[Dict[str, Any]]] = {}
 
+        excel_code, _ = self.get_excel_station_config()
+
         for r in records:
             airport = str(getattr(r, "airport", "-")).strip()
+            if airport in ("-", "DEFAULT", "UNKNOWN", "", "None"):
+                airport = excel_code
             mapped = getattr(r, "stations", [airport])
+            mapped = [st if st not in ("-", "DEFAULT", "UNKNOWN", "", "None") else excel_code for st in mapped]
 
             # Determine stations this test record belongs to
             stations_for_record = []
             if requested_stations:
                 for st in requested_stations:
-                    if st in mapped or "ALL" in mapped or airport == st:
-                        stations_for_record.append(st)
+                    st_clean = st if st not in ("-", "DEFAULT", "UNKNOWN", "", "None") else excel_code
+                    if st_clean in mapped or "ALL" in mapped or airport == st_clean:
+                        stations_for_record.append(st_clean)
             else:
                 stations_for_record = [airport] if airport and airport != "-" else mapped
 
             if not stations_for_record:
-                stations_for_record = [airport or "DEFAULT"]
+                stations_for_record = [excel_code]
 
             name = getattr(r, "name", "") or getattr(r, "nodeid", "Unknown Test")
             display_name = self._clean_test_name(name)
@@ -631,11 +677,14 @@ class EmailSender:
         """
         self._check_settings()
 
+        excel_code, _ = self.get_excel_station_config(meta.get("project"))
         requested_stations = [
             s.strip().upper()
             for s in str(meta.get("airports", "")).split(",")
-            if s.strip() and s.strip() != "-"
+            if s.strip() and s.strip() not in ("-", "DEFAULT", "UNKNOWN", "NONE")
         ]
+        if not requested_stations:
+            requested_stations = [excel_code]
         summaries = self.summarize_records(records, requested_stations=requested_stations)
         if not summaries:
             logger.warning("No test summaries generated from records; email not sent.")
@@ -702,6 +751,10 @@ class EmailSender:
         according to the required summary layout.
         """
         self._check_settings()
+
+        excel_code, _ = self.get_excel_station_config(project)
+        if not station or str(station).strip().upper() in ("DEFAULT", "UNKNOWN", "-", "NONE", ""):
+            station = excel_code
 
         summaries = self.parse_pytest_results(xml_file, station=station)
         if not summaries:

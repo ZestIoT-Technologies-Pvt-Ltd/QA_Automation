@@ -13,6 +13,7 @@ import time
 import traceback
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional, List
 
 _log = logging.getLogger("report")
@@ -144,10 +145,14 @@ def attach_screenshot(data: bytes, name: str, caption: str = "", mime: str = "im
     if _current is None:
         return
     b64_str = base64.b64encode(data).decode("ascii")
-    shot = Screenshot(name=name, data_b64=b64_str, mime=mime, caption=caption)
+    # Avoid duplicate additions of the exact same screenshot
+    if _current.screenshots and _current.screenshots[-1].data_b64 == b64_str:
+        return
+    shot = Screenshot(name=name, data_b64=b64_str, mime=mime, caption=caption or name)
     _current.screenshots.append(shot)
     if _active_steps:
-        _active_steps[-1].screenshots.append(shot)
+        if not (_active_steps[-1].screenshots and _active_steps[-1].screenshots[-1].data_b64 == b64_str):
+            _active_steps[-1].screenshots.append(shot)
 
 
 class LogCapture(logging.Handler):
@@ -214,5 +219,54 @@ try:
             return wrapper
 
     allure.step = _AllureStepBridge
+
+    # ---------------------------------------------------------------------------
+    # Allure attach bridge: automatically route allure.attach screenshots to report_context
+    # ---------------------------------------------------------------------------
+    _orig_allure_attach = getattr(allure, "attach", None)
+
+    def _allure_attach_bridge(body, name=None, attachment_type=None, extension=None):
+        if _orig_allure_attach is not None:
+            try:
+                _orig_allure_attach(body, name=name, attachment_type=attachment_type, extension=extension)
+            except Exception:
+                pass
+        try:
+            is_image = False
+            att_type_str = str(attachment_type or "").lower()
+            if "png" in att_type_str or "image" in att_type_str or "jpg" in att_type_str or "jpeg" in att_type_str:
+                is_image = True
+            elif isinstance(body, bytes) and (body.startswith(b"\x89PNG") or body.startswith(b"\xff\xd8\xff")):
+                is_image = True
+
+            if is_image and isinstance(body, bytes):
+                mime = "image/jpeg" if ("jpg" in att_type_str or "jpeg" in att_type_str or body.startswith(b"\xff\xd8\xff")) else "image/png"
+                attach_screenshot(body, name=name or "Screenshot", caption=name or "Screenshot", mime=mime)
+        except Exception:
+            pass
+
+    if _orig_allure_attach is not None:
+        _orig_allure_attach_file = getattr(_orig_allure_attach, "file", None)
+
+        def _allure_attach_file_bridge(source, name=None, attachment_type=None, extension=None):
+            if _orig_allure_attach_file is not None:
+                try:
+                    _orig_allure_attach_file(source, name=name, attachment_type=attachment_type, extension=extension)
+                except Exception:
+                    pass
+            try:
+                p = Path(source)
+                if p.is_file() and p.suffix.lower() in (".png", ".jpg", ".jpeg"):
+                    data = p.read_bytes()
+                    mime = "image/jpeg" if p.suffix.lower() in (".jpg", ".jpeg") else "image/png"
+                    attach_screenshot(data, name=name or p.name, caption=name or p.name, mime=mime)
+            except Exception:
+                pass
+
+        _allure_attach_bridge.file = _allure_attach_file_bridge
+        for attr in ("attachment_type",):
+            if hasattr(_orig_allure_attach, attr):
+                setattr(_allure_attach_bridge, attr, getattr(_orig_allure_attach, attr))
+        allure.attach = _allure_attach_bridge
 except Exception:
     pass

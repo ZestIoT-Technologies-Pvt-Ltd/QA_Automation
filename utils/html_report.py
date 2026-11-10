@@ -68,7 +68,11 @@ def pytest_configure(config):
 
 def cfg_station(item):
     values=[v for k,v in item.user_properties if k == "stations"]
-    return values[-1] if values else item.config.getoption('--station', default='unknown')
+    if values:
+        return values[-1]
+    from utils.email_sender import EmailSender
+    default_st, _ = EmailSender.get_excel_station_config(item.config.getoption('--project', default='flydubai'))
+    return item.config.getoption('--station', default=default_st)
 
 class HtmlReportPlugin:
     def __init__(self, config):
@@ -82,13 +86,6 @@ class HtmlReportPlugin:
     # ---- lifecycle
     def pytest_sessionstart(self, session):
         self.started = time.time()
-        from utils.logger import configure_logging
-        cfg = self.config
-        project = getattr(cfg, "framework_project", None) or cfg.getoption("--project", default="unknown") or "unknown"
-        env = getattr(cfg, "framework_env", None) or cfg.getoption("--env", default="unknown") or "unknown"
-        station_req = getattr(cfg, "framework_stations_requested", None)
-        station = (station_req[0] if station_req else None) or cfg.getoption("--station", default="unknown") or "unknown"
-        configure_logging(project, env, station, str(cfg.rootpath / "logs"))
         import logging
         logging.getLogger().addHandler(self.capture)
 
@@ -108,16 +105,33 @@ class HtmlReportPlugin:
     def pytest_runtest_protocol(self, item, nextitem):
         params = getattr(getattr(item, "callspec", None), "params", {}) or {}
         marker = item.get_closest_marker("tc")
-        doc = (getattr(item.function, "__doc__", "") or "").strip().splitlines()
+        raw_doc = (getattr(item.function, "__doc__", "") or "").strip()
+        doc_lines = [l.strip() for l in raw_doc.splitlines() if l.strip()]
+        scenario_title = ""
+        for line in doc_lines:
+            low = line.lower()
+            if low.startswith("test scenario:"):
+                scenario_title = line[14:].strip()
+                break
+            elif low.startswith("scenario:"):
+                scenario_title = line[9:].strip()
+                break
+        if not scenario_title and doc_lines:
+            for line in doc_lines:
+                if not line.startswith("=") and not line.lower().startswith("introduction"):
+                    scenario_title = line
+                    break
+
         record = rc.TestRecord(
             nodeid=item.nodeid,
             name=item.name,
-            description=re.sub(r"^TC[\s_\-]*\d+\s*[-:]\s*", "", doc[0].strip()) if doc else "",
-            airport=str(params.get("station") or params.get("airport") or ",".join(dict.fromkeys(v for k,v in item.user_properties if k == "stations")) or "-"),
+            description=scenario_title or (doc_lines[0] if doc_lines else ""),
+            airport=str(params.get("station") or params.get("airport") or ",".join(dict.fromkeys(v for k,v in item.user_properties if k == "stations")) or cfg_station(item) or "-"),
             tc=_tc_label(marker),
             markers=sorted({m.name for m in item.iter_markers() if m.name not in ("tc", "parametrize", "usefixtures")}),
             start=time.time(),
         )
+        record.full_doc = raw_doc
         self.records[item.nodeid] = record
         station_values = [v for k,v in item.user_properties if k == "stations"]
         record.stations = [str(params["station"])] if params.get("station") else ([s for s in (station_values[-1].split(",") if station_values else []) if s] or [record.airport])
@@ -136,19 +150,22 @@ class HtmlReportPlugin:
         if report.failed:
             page = getattr(item, "_framework_page", None)
             if page is not None and not page.is_closed():
-                from pages.base_page import BasePage
-                from utils import report_context
-                station_values=[v for k,v in item.user_properties if k == "stations"]
-                station=station_values[-1] if station_values else cfg_station(item)
-                path=BasePage.capture_failure(page, project=item.config.getoption('--project'), station=station,
-                                             test_name=item.name, report_context=report_context,
-                                             error_message=report.longreprtext)
-                if path:
-                    try:
-                        import allure
-                        allure.attach.file(path, name=f"{item.name} failure", attachment_type=allure.attachment_type.PNG)
-                    except Exception:
-                        pass
+                try:
+                    from pages.Common_Base_Page.Base_Page import BasePage
+                    from utils import report_context
+                    station_values=[v for k,v in item.user_properties if k == "stations"]
+                    station=station_values[-1] if station_values else cfg_station(item)
+                    path=BasePage.capture_failure(page, project=item.config.getoption('--project'), station=station,
+                                                 test_name=item.name, report_context=report_context,
+                                                 error_message=report.longreprtext)
+                    if path:
+                        try:
+                            import allure
+                            allure.attach.file(path, name=f"{item.name} failure", attachment_type=allure.attachment_type.PNG)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
 
         record = self.records.get(item.nodeid)
         if record is None:
@@ -176,12 +193,18 @@ class HtmlReportPlugin:
         if not records:
             return
         cfg = self.config
+        from utils.email_sender import EmailSender
+        excel_code, _ = EmailSender.get_excel_station_config(cfg.getoption("--project", default="flydubai"))
+        resolved_station = cfg.getoption("--station", default=excel_code) or excel_code
+        if not getattr(cfg, "framework_stations_requested", []):
+            cfg.framework_stations_requested = [resolved_station]
+
         meta = {
             "title": cfg.getoption("--report-title"),
             "project": cfg.getoption("--project", default="-"),
             "env": cfg.getoption("--env", default="-"),
             "browser": getattr(cfg, "_framework_execution_settings", {}).get("browser", cfg.getoption("--browser") or "chromium"),
-            "airports": ", ".join(getattr(cfg, "framework_stations_requested", [])) or "-",
+            "airports": ", ".join(getattr(cfg, "framework_stations_requested", [])) or resolved_station,
             "started": datetime.fromtimestamp(self.started).strftime("%d %b %Y %H:%M:%S"),
             "duration": time.time() - self.started,
             "ended": datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z"),
@@ -202,8 +225,14 @@ class HtmlReportPlugin:
         name = f"{str(meta['project']).upper()}_{str(meta['env']).upper()}_{stamp}.html"
         self.report_path = os.path.join(out_dir, name)
         document = build_html(meta, summary, records)
-        for path in (self.report_path, os.path.join(out_dir, "latest_report.html")):
+        for path in (
+            self.report_path,
+            os.path.join(out_dir, "latest_report.html"),
+            os.path.join(str(cfg.rootpath), "reports", "Extent_Report.html"),
+            os.path.join(str(cfg.rootpath), "reports", "latest_report.html"),
+        ):
             write_html(path, document)
+        cfg._extent_report_path = self.report_path
         write_json(os.path.join(out_dir, "summary.json"), {
             "meta": {k: v for k, v in meta.items() if k not in ("warnings", "plan_warnings")},
             "summary": summary})
@@ -232,18 +261,20 @@ class HtmlReportPlugin:
             write_html(f"{base}_{station}.html", station_doc)
 
         if not cfg.getoption("--no-email"):
-            from utils.email_sender import EmailSender
-            try:
-                sender = EmailSender()
-                sender.send_session_report(
-                    meta=meta,
-                    records=records,
-                    station_reports=station_reports,
-                    consolidated_report=self.report_path,
-                )
-            except Exception as error:
-                self.framework_warnings.append(f"E-mail delivery failed: {type(error).__name__}: {error}")
-                print(f"\n[report] E-mail delivery problem: {type(error).__name__}: {error}")
+            if not getattr(cfg, "_email_delivered", False):
+                from utils.email_sender import EmailSender
+                try:
+                    sender = EmailSender()
+                    sender.send_session_report(
+                        meta=meta,
+                        records=records,
+                        station_reports=station_reports,
+                        consolidated_report=self.report_path,
+                    )
+                    cfg._email_delivered = True
+                except Exception as error:
+                    self.framework_warnings.append(f"E-mail delivery failed: {type(error).__name__}: {error}")
+                    print(f"\n[report] E-mail delivery problem: {type(error).__name__}: {error}")
 
     def pytest_terminal_summary(self, terminalreporter):
         if self.report_path:
@@ -345,9 +376,7 @@ def _clean_log_text(msg: str) -> str:
 
 
 def build_html(meta: dict, summary: dict, records) -> str:
-    """Generate ExtentReports 2.41.1 format report."""
-    import uuid
-
+    """Generate modern, self-contained ExtentReports HTML report."""
     template_file = Path(__file__).resolve().parent / "extent_template.html"
     if not template_file.is_file():
         raise FileNotFoundError(f"ExtentReports template not found: {template_file}")
@@ -369,31 +398,60 @@ def build_html(meta: dict, summary: dict, records) -> str:
     total_duration_str = _format_duration(meta.get("duration", 0.0))
 
     user_name = os.getenv("USERNAME") or os.getenv("USER") or "avileap"
-    os_name = platform.system()
+    os_name = f"{platform.system()} {platform.release()}"
     python_version = platform.python_version()
     host_name = platform.node()
     project = str(meta.get("project", "FLYDUBAI")).upper()
     env = str(meta.get("env", "QA")).upper()
-    airport_default = str(meta.get("airports", "DEL")).upper()
+    browser = str(meta.get("browser", "chromium")).capitalize()
 
-    test_items = []
-    category_rows = []
-
+    total_count = summary.get("total", len(records))
     pass_count = summary.get("passed", 0)
     fail_count = summary.get("failed", 0)
-    other_count = summary.get("skipped", 0)
+    skip_count = summary.get("skipped", 0)
+    pass_rate = f"{summary.get('pass_rate', 0)}%"
+
+    overall_status = "PASSED" if fail_count == 0 else "FAILED"
+    overall_status_class = "pass" if fail_count == 0 else "fail"
+
+    nav_items = []
+    detail_panes = []
 
     now_ts = datetime.now().timestamp()
-    for r in records:
-        test_id = str(uuid.uuid4())
+    for idx, r in enumerate(records):
+        test_id = f"test_{idx}"
         name = _clean_test_name(getattr(r, "name", "Unknown Test"))
         st_raw = str(getattr(r, "status", "PASSED")).upper()
         if st_raw in ("FAILED", "ERROR"):
             status = "fail"
+            status_label = "FAILED"
         elif st_raw == "SKIPPED":
             status = "skip"
+            status_label = "SKIPPED"
         else:
             status = "pass"
+            status_label = "PASSED"
+
+        # Scenario extraction
+        scenario_title = getattr(r, "description", "").strip()
+        full_doc = getattr(r, "full_doc", "").strip()
+        if (not scenario_title or scenario_title.startswith("=")) and full_doc:
+            doc_lines = [l.strip() for l in full_doc.splitlines() if l.strip()]
+            for line in doc_lines:
+                low = line.lower()
+                if low.startswith("test scenario:"):
+                    scenario_title = line[14:].strip()
+                    break
+                elif low.startswith("scenario:"):
+                    scenario_title = line[9:].strip()
+                    break
+            if (not scenario_title or scenario_title.startswith("=")) and doc_lines:
+                for line in doc_lines:
+                    if not line.startswith("=") and not line.lower().startswith("introduction"):
+                        scenario_title = line
+                        break
+        if not scenario_title or scenario_title.startswith("="):
+            scenario_title = name
 
         rec_start = getattr(r, "start", 0.0)
         if not rec_start or rec_start < 86400:
@@ -405,190 +463,210 @@ def build_html(meta: dict, summary: dict, records) -> str:
         r_start_str = rec_start_dt.strftime("%Y-%m-%d %H:%M:%S")
         r_end_str = rec_end_dt.strftime("%Y-%m-%d %H:%M:%S")
         r_dur_str = _format_duration(rec_dur)
-        r_start_clock = rec_start_dt.strftime("%H:%M:%S")
-        r_end_clock = rec_end_dt.strftime("%H:%M:%S")
 
-        rec_airport = getattr(r, "airport", airport_default)
-        if not rec_airport or rec_airport == "-":
-            rec_airport = airport_default
+        markers = getattr(r, "markers", [])
+        tags_html = "".join(f"<span class='meta-badge' style='margin-left:4px;'>#{_e(m)}</span>" for m in markers)
 
+        # Left Navigator Item
+        nav_item_html = f"""<div class="test-nav-item" data-id="{test_id}" data-status="{status}" data-text="{_e(name)} {_e(scenario_title)}" onclick="selectTest('{test_id}')">
+  <div class="test-nav-head">
+    <span class="badge {status}">{status_label}</span>
+    <span class="test-nav-duration">{r_dur_str}</span>
+  </div>
+  <div class="test-nav-title">{_e(name)}</div>
+  <div class="test-nav-scenario">{_e(scenario_title)}</div>
+</div>"""
+        nav_items.append(nav_item_html)
+
+        # Right Detail Pane
+        # Scenario details block
+        scenario_details_html = ""
+        if full_doc and full_doc != scenario_title:
+            scenario_details_html = f"<div class='scenario-details'>{_e(full_doc)}</div>"
+
+        # Failure banner (if failed)
+        failure_alert_html = ""
+        if status == "fail":
+            err_msg = _clean_error_message(getattr(r, "error", ""))
+            raw_err = getattr(r, "error", "")
+            traceback_block = ""
+            if raw_err and raw_err != err_msg:
+                traceback_block = f"""<details class='failure-traceback-details'>
+  <summary>View Complete Traceback</summary>
+  <pre>{_e(raw_err)}</pre>
+</details>"""
+            failure_alert_html = f"""<div class="failure-alert-box">
+  <div class="failure-alert-title">❌ Test Execution Failure</div>
+  <div class="failure-alert-msg">{_e(err_msg or 'Execution failed')}</div>
+  {traceback_block}
+</div>"""
+
+        # Steps Table
+        rendered_screenshot_names = set()
         step_rows = []
-        # Step 1: Airport and Environment header block
-        step_rows.append(f"""<tr>
-	<td class='status info' title='info' alt='info'><i class='mdi-action-info-outline'></i></td>
-	<td class='timestamp'>{r_start_clock}</td>
-	<td class='step-details'><h5 align="center" style="color:#008ae6;margin:4px 0;font-weight:600;">Airport: {_e(rec_airport)} &nbsp;|&nbsp; Environment: {_e(env)}</h5></td>
-</tr>""")
-
-        used_screenshot_names = set()
-        has_failed_step = False
-
-        # Sequential test steps if recorded via allure.step / rc.step
         steps_list = getattr(r, "steps", None)
+
         if steps_list:
-            for step_obj in steps_list:
-                s_time = datetime.fromtimestamp(getattr(step_obj, "start", rec_start)).strftime("%H:%M:%S")
-                s_name = _e(getattr(step_obj, "name", ""))
-                s_status = getattr(step_obj, "status", "passed")
-                if s_status == "failed":
-                    has_failed_step = True
-                    err_msg = _clean_error_message(getattr(step_obj, "error", "") or getattr(r, "error", ""))
-                    step_shots = getattr(step_obj, "screenshots", []) or r.screenshots
-                    shots_markup = ""
-                    for s in step_shots:
-                        used_screenshot_names.add(s.name)
-                        shots_markup += f"<div style='margin-top:8px;'><a href='data:{s.mime};base64,{s.data_b64}' data-featherlight='image'><img class='report-img' src='data:{s.mime};base64,{s.data_b64}' alt='Failure Screenshot' /></a></div>"
-                    if not shots_markup:
-                        shots_markup = "<div style='color:#888;font-size:12px;margin-top:4px;'>[Screenshot not available]</div>"
+            for s in steps_list:
+                s_time = datetime.fromtimestamp(getattr(s, "start", rec_start)).strftime("%H:%M:%S")
+                s_name = _e(getattr(s, "name", ""))
+                s_status = getattr(s, "status", "passed")
+                is_step_failed = (s_status == "failed")
+                step_badge_cls = "fail" if is_step_failed else "pass"
+                step_badge_txt = "FAIL" if is_step_failed else "PASS"
 
-                    fail_desc = f"{s_name} - {_e(err_msg)}" if err_msg else s_name
-                    step_rows.append(f"""<tr>
-	<td class='status fail' title='fail' alt='fail'><i class='mdi-navigation-cancel'></i></td>
-	<td class='timestamp'>{s_time}</td>
-	<td class='step-details'><span class='fail label'>Fail</span> <span style='color:red;margin-left: 10px;font-weight:600;'>{fail_desc}</span>{shots_markup}</td>
-</tr>""")
-                else:
-                    step_rows.append(f"""<tr>
-	<td class='status info' title='info' alt='info'><i class='mdi-action-info-outline'></i></td>
-	<td class='timestamp'>{s_time}</td>
-	<td class='step-details'>{s_name}</td>
+                step_err_html = ""
+                if is_step_failed:
+                    step_err = _clean_error_message(getattr(s, "error", "") or getattr(r, "error", ""))
+                    if step_err:
+                        step_err_html = f"<div class='step-error-desc'>{_e(step_err)}</div>"
+
+                # Screenshots for this step
+                step_shots = getattr(s, "screenshots", [])
+                step_shots_html = ""
+                if step_shots:
+                    cards = []
+                    for shot in step_shots:
+                        rendered_screenshot_names.add(shot.name)
+                        cards.append(f"""<div class="screenshot-card">
+  <div class="screenshot-thumb-wrapper" onclick="openLightbox('data:{shot.mime};base64,{shot.data_b64}', '{_e(shot.name)}')">
+    <img class="screenshot-thumb" src="data:{shot.mime};base64,{shot.data_b64}" alt="{_e(shot.name)}" />
+    <div class="screenshot-zoom-overlay">🔍 Enlarge</div>
+  </div>
+  <div class="screenshot-caption" title="{_e(shot.name)}">{_e(shot.name)}</div>
+</div>""")
+                    step_shots_html = f"<div class='screenshots-row'>{''.join(cards)}</div>"
+
+                step_rows.append(f"""<tr>
+  <td class="step-col-status"><span class="badge {step_badge_cls}">{step_badge_txt}</span></td>
+  <td class="step-col-time">{s_time}</td>
+  <td class="step-col-details">
+    <div class="step-title">{s_name}</div>
+    {step_err_html}
+    {step_shots_html}
+  </td>
 </tr>""")
 
-        # If no steps were recorded via allure.step, display meaningful logs from test execution
         else:
+            # Fallback: display execution info or logs
             for l in getattr(r, "logs", []):
+                msg = _clean_log_text(l.message)
+                if not msg or any(p in msg for p in ("TEST START |", "TEST TEARDOWN |")):
+                    continue
+                l_time = datetime.fromtimestamp(l.ts).strftime("%H:%M:%S")
+                l_status = "fail" if l.level in ("ERROR", "CRITICAL") else ("skip" if l.level == "WARNING" else "info")
+                l_badge = "FAIL" if l_status == "fail" else ("WARN" if l_status == "skip" else "INFO")
+                step_rows.append(f"""<tr>
+  <td class="step-col-status"><span class="badge {l_status}">{l_badge}</span></td>
+  <td class="step-col-time">{l_time}</td>
+  <td class="step-col-details">{_e(msg)}</td>
+</tr>""")
+
+            if not step_rows:
+                step_rows.append(f"""<tr>
+  <td class="step-col-status"><span class="badge {status}">{status_label}</span></td>
+  <td class="step-col-time">{rec_end_dt.strftime('%H:%M:%S')}</td>
+  <td class="step-col-details">Test completed with status: <strong>{status_label}</strong></td>
+</tr>""")
+
+        # Additional Test Screenshots (screenshots on record not yet displayed in a step)
+        remaining_shots = [s for s in getattr(r, "screenshots", []) if s.name not in rendered_screenshot_names]
+        additional_gallery_html = ""
+        if remaining_shots:
+            cards = []
+            for shot in remaining_shots:
+                cards.append(f"""<div class="screenshot-card">
+  <div class="screenshot-thumb-wrapper" onclick="openLightbox('data:{shot.mime};base64,{shot.data_b64}', '{_e(shot.name)}')">
+    <img class="screenshot-thumb" src="data:{shot.mime};base64,{shot.data_b64}" alt="{_e(shot.name)}" />
+    <div class="screenshot-zoom-overlay">🔍 Enlarge</div>
+  </div>
+  <div class="screenshot-caption" title="{_e(shot.name)}">{_e(shot.name)}</div>
+</div>""")
+            additional_gallery_html = f"""<div class="screenshots-gallery">
+  <div class="section-heading">📸 Attached Test Screenshots ({len(remaining_shots)})</div>
+  <div class="screenshots-row">{''.join(cards)}</div>
+</div>"""
+
+        # Execution Logs Block
+        logs_html = ""
+        log_lines = getattr(r, "logs", [])
+        if log_lines:
+            log_entries = []
+            for l in log_lines:
                 msg = _clean_log_text(l.message)
                 if not msg:
                     continue
-                if any(p in msg for p in ("TEST START |", "TEST TEARDOWN |", "ACTION start |", "ACTION success |")):
-                    continue
-                l_time = datetime.fromtimestamp(l.ts).strftime("%H:%M:%S")
-                l_status = "warning" if l.level == "WARNING" else ("fail" if l.level in ("ERROR", "CRITICAL") else "info")
-                l_icon = "mdi-alert-warning" if l.level == "WARNING" else ("mdi-navigation-cancel" if l_status == "fail" else "mdi-action-info-outline")
-                step_rows.append(f"""<tr>
-	<td class='status {l_status}' title='{l_status}' alt='{l_status}'><i class='{l_icon}'></i></td>
-	<td class='timestamp'>{l_time}</td>
-	<td class='step-details'>{_e(msg)}</td>
-</tr>""")
+                t_str = datetime.fromtimestamp(l.ts).strftime("%H:%M:%S")
+                log_entries.append(f"<div class='log-line {l.level}'>[{t_str}] [{l.level}] {_e(msg)}</div>")
+            if log_entries:
+                logs_html = f"""<details class="logs-accordion">
+  <summary>📋 Execution Logs ({len(log_entries)} events)</summary>
+  <div class="logs-content">
+    {''.join(log_entries)}
+  </div>
+</details>"""
 
-        # If test status is fail but no failed step was rendered above, render failure details with screenshot
-        if status == "fail" and not has_failed_step:
-            err_msg = _clean_error_message(getattr(r, "error", ""))
-            shots_markup = "".join(
-                f"<div style='margin-top:8px;'><a href='data:{s.mime};base64,{s.data_b64}' data-featherlight='image'><img class='report-img' src='data:{s.mime};base64,{s.data_b64}' alt='Failure Screenshot' /></a></div>"
-                for s in getattr(r, "screenshots", [])
-            )
-            if not shots_markup:
-                shots_markup = "<div style='color:#888;font-size:12px;margin-top:4px;'>[Screenshot not available]</div>"
-            step_rows.append(f"""<tr>
-	<td class='status fail' title='fail' alt='fail'><i class='mdi-navigation-cancel'></i></td>
-	<td class='timestamp'>{r_end_clock}</td>
-	<td class='step-details'><span class='fail label'>Fail</span> <span style='color:red;margin-left: 10px;font-weight:600;'>{_e(err_msg or 'Execution Failure')}</span>{shots_markup}</td>
-</tr>""")
+        detail_pane_html = f"""<div class="test-detail-card" id="{test_id}">
+  <div class="detail-header">
+    <div class="detail-title-row">
+      <div class="detail-test-name">{_e(name)}</div>
+      <div class="detail-status-pill {status}">{status_label}</div>
+    </div>
+    <div class="detail-meta-row">
+      <div class="detail-meta-item">Started: <strong>{r_start_str}</strong></div>
+      <div class="detail-meta-item">Ended: <strong>{r_end_str}</strong></div>
+      <div class="detail-meta-item">Duration: <strong>{r_dur_str}</strong></div>
+      {tags_html}
+    </div>
+  </div>
 
-        # Final status badge
-        if status == "pass":
-            step_rows.append(f"""<tr>
-	<td class='status pass' title='pass' alt='pass'><i class='mdi-action-check-circle'></i></td>
-	<td class='timestamp'>{r_end_clock}</td>
-	<td class='step-details'><span class='pass label'>Pass</span></td>
-</tr>""")
-        elif status == "skip":
-            skip_msg = _e(str(getattr(r, "skip_reason", "") or "Skipping this test"))
-            step_rows.append(f"""<tr>
-	<td class='status skip' title='skip' alt='skip'><i class='mdi-content-redo'></i></td>
-	<td class='timestamp'>{r_end_clock}</td>
-	<td class='step-details'><span class='skip label'>Skip</span> <span style='color:orange;margin-left: 10px'>{skip_msg}</span></td>
-</tr>""")
+  <div class="scenario-box">
+    <div class="scenario-header">📋 TEST SCENARIO</div>
+    <div class="scenario-title">{_e(scenario_title)}</div>
+    {scenario_details_html}
+  </div>
 
-        test_item_html = f"""<li class='collection-item test displayed active {status} ' extentid='{test_id}'>
-	<div class='test-head'>
-		<span class='test-name'>{_e(name)} </span>
-		<span class='test-status label right outline capitalize {status}'>{status}</span>
-		<span class='category-assigned hide  sanity'></span>
-	</div>
-	<div class='test-body'>
-		<div class='test-info'>
-			<span title='Test started time' alt='Test started time' class='test-started-time label green lighten-1 text-white'>{r_start_str}</span>
-			<span title='Test ended time' alt='Test ended time' class='test-ended-time label red lighten-1 text-white'>{r_end_str}</span>
-			<span title='Time taken to finish' alt='Time taken to finish' class='test-time-taken label blue-grey lighten-3 text-white'>{r_dur_str}</span>
-		</div>
-		<div class='test-desc'></div>
-		<div class='test-attributes'>
-				<div class='categories'>
-						<span class='category text-white'>sanity</span>
-				</div>
-		</div>
-		<div class='test-steps'>
-			<table class='bordered table-results'>
-				<thead>
-					<tr>
-						<th>Status</th>
-						<th>Timestamp</th>
-						<th>Details</th>
-					</tr>
-				</thead>
-				<tbody>
-						{''.join(step_rows)}
-				</tbody>
-			</table>
-			<ul class='collapsible node-list' data-collapsible='accordion'>
-			</ul>
-		</div>
-	</div>
-</li>"""
-        test_items.append(test_item_html)
+  {failure_alert_html}
 
-        category_rows.append(f"""<tr class='{status}'>
-	<td>{r_start_str}</td>
-	<td><span class='category-link linked' extentid='{test_id}'>{_e(name)}</span></td>
-	<td><div class='status label capitalize {status}'>{status}</div></td>
-</tr>""")
+  <div class="section-heading">🔄 Execution Steps & Results</div>
+  <table class="steps-table">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Time</th>
+        <th>Step Details & Screenshots</th>
+      </tr>
+    </thead>
+    <tbody>
+      {''.join(step_rows)}
+    </tbody>
+  </table>
 
-    category_html = f"""<li class='category-item displayed'>
-	<div class='cat-head'>
-		<span class='category-name'>sanity</span>
-	</div>
-	<div class='category-status-counts'>
-			<span class='fail label dot'>Fail: {fail_count}</span>
-			<span class='pass label dot'>Pass: {pass_count}</span>
-	</div>
-	<div class='cat-body'>
-		<div class='category-status-counts'>
-			<div class='button-group'>
-				<a href='#!' class='pass label filter'>Pass <span class='icon'>{pass_count}</span></a>
-				<a href='#!' class='fail label filter'>Fail <span class='icon'>{fail_count}</span></a>
-				<a href='#!' class='other label filter'>Others <span class='icon'>{other_count}</span></a>
-			</div>
-		</div>
-		<div class='cat-tests'>
-			<table class='bordered'>
-				<thead>
-					<tr>
-						<th>RunDate</th>
-						<th>Test Name</th>
-						<th>Status</th>
-					</tr>
-				</thead>
-				<tbody>
-						{''.join(category_rows)}
-				</tbody>
-			</table>
-		</div>
-	</div> 
-</li>"""
+  {additional_gallery_html}
+  {logs_html}
+</div>"""
+        detail_panes.append(detail_pane_html)
 
     doc = (template
+           .replace("{{TITLE}}", _e(meta.get("title", "QA Automation Execution Report")))
+           .replace("{{PROJECT}}", _e(project))
+           .replace("{{ENV}}", _e(env))
+           .replace("{{BROWSER}}", _e(browser))
            .replace("{{STARTED_TIME}}", started_str)
            .replace("{{ENDED_TIME}}", ended_str)
            .replace("{{TOTAL_DURATION}}", total_duration_str)
+           .replace("{{TOTAL_TESTS}}", str(total_count))
+           .replace("{{PASSED_TESTS}}", str(pass_count))
+           .replace("{{FAILED_TESTS}}", str(fail_count))
+           .replace("{{SKIPPED_TESTS}}", str(skip_count))
+           .replace("{{PASS_RATE}}", pass_rate)
+           .replace("{{OVERALL_STATUS}}", overall_status)
+           .replace("{{OVERALL_STATUS_CLASS}}", overall_status_class)
            .replace("{{USER_NAME}}", _e(user_name))
            .replace("{{OS_NAME}}", _e(os_name))
            .replace("{{PYTHON_VERSION}}", _e(python_version))
            .replace("{{HOST_NAME}}", _e(host_name))
-           .replace("{{PROJECT}}", _e(project))
-           .replace("{{ENV}}", _e(env))
-           .replace("{{TEST_COLLECTION}}", "\n".join(test_items))
-           .replace("{{CATEGORY_ITEMS}}", category_html)
+           .replace("{{TEST_LIST_HTML}}", "\n".join(nav_items))
+           .replace("{{TEST_DETAILS_HTML}}", "\n".join(detail_panes))
     )
     return doc

@@ -1,4 +1,23 @@
 
+# Author : Gowthami
+# Created Date : 2026-10-26
+# Modified By : Gowthami
+# Modified Date : 2026-11-10
+
+"""
+==============  INTRODUCTION ================
+Page Object / Component: Listview_DepartedSection_FlightCard
+Description: Page Object Model for the Departed section in Flights List View. Manages departed flight
+             inspections, actions menu triggers, and opening and verifying the Flight Card report tab.
+
+Scenario & Workflow Capabilities:
+1. Navigation: Route to Flights List View dashboard via navigation menu.
+2. Section Selection: Switch to the Departed Flights tab and await flight card loading.
+3. Actions Menu: Click the three-dots menu ('more_vert') on departed flight rows.
+4. Flight Card Trigger: Click 'Flight Card' menu item and handle popup page lifecycle in a new tab.
+5. Verification & Cleanup: Verify Flight Card container visibility, take screenshot evidence, and close popup tab.
+"""
+
 import allure
 import pytest
 
@@ -10,6 +29,9 @@ logger = get_logger(__name__)
 
 
 class Listview_DepartedSection_FlightCard(BasePage):
+    """
+    Page Object for Flights List View Departed Section - Flight Card report functionality.
+    """
 
     # ==================== LOCATORS ====================
 

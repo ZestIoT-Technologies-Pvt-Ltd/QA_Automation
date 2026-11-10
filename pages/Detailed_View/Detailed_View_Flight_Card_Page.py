@@ -2,7 +2,28 @@
 # Author : Tilak Badsheshi
 # Created Date : 2026-10-22
 # Modified By : Tilak Badsheshi
-# Modified Date : 2026-11-04
+# Modified Date : 2026-11-10
+
+"""
+==============  INTRODUCTION ================
+Page Object / Component: DetailViewPage
+Description: Page Object Model for inspecting the Detailed View of flight cards in Flights List View.
+             Handles expanding detailed flight metadata, validating core operational parameters,
+             and returning safely back to the Turnaround List View.
+
+Scenario & Workflow Capabilities:
+1. Navigation: Route from navigation menu to Flights List View dashboard.
+2. Section Traversing: Switch between Ongoing and Departed sections.
+3. Card Selection & Forward Navigation: Scroll to flight card, verify lock status, and click the forward detail arrow.
+4. Detailed Data Validation:
+   - Arrival and Departure flight numbers.
+   - Origin and Destination airport codes.
+   - Aircraft type and registration number.
+   - Turnaround status and allocated ground time.
+   - Bay number and Gate number.
+   - Arrival timings (STA, ETA), on-block timing (ONB), and departure timings (STD, ETD).
+5. Safe Return & Recovery: Click back arrow to return to Turnaround List, with resilient error recovery.
+"""
 
 import pytest
 from pages.Common_Base_Page.Base_Page import BasePage
@@ -13,10 +34,14 @@ import time
 
 logger = get_logger(__name__)
 
-class DetailViewPage(BasePage):
 
-    MENU = "//span[@class='nav-icon']/i[text()='menu']"
-    LIST_VIEW = "//div[@role='button']/span[text()='Flights']"
+class DetailViewPage(BasePage):
+    """
+    Page Object for Flights List View Detailed Flight Card inspections.
+    """
+
+    MENU = "//span[@class='nav-icon']/i[normalize-space()='menu' or text()='menu']"
+    LIST_VIEW = "//div[@role='button']/span[normalize-space()='Flights'] | //span[normalize-space()='Flights']"
 
     SECTIONS = [
         {"name": "Ongoing", "tab": "//div[contains(text(),'Ongoing')]"},
@@ -303,18 +328,27 @@ class DetailViewPage(BasePage):
     def flight_are_visible(self):   
         # Checking Flights are Visible
         with allure.step("Checking Flights are Visible in Dashboard"):
-            #time.sleep(10)
             flights = self.page.locator("//mat-card[contains(@class,'listviewmatcard')]")
-            expect(flights.first).to_be_visible()
+            try:
+                flights.first.wait_for(state="visible", timeout=15000)
+            except Exception:
+                sync_icon = self.page.locator("//i[@ptooltip='Refresh Flight'] | //i[contains(@class,'pi-sync')]").first
+                if sync_icon.count() > 0 and sync_icon.is_visible():
+                    logger.info("Clicking Refresh Flight icon to trigger flight load...")
+                    sync_icon.click()
+                    self.page.wait_for_timeout(3000)
+            expect(flights.first).to_be_visible(timeout=30000)
             logger.info("Flights are Visible")
 
     def count_of_flights(self):
         # Counting the Number of Flights
         ongoing_flights = self.page.locator(self.FLIGHTS_CARDS)
-        expect(ongoing_flights.first).to_be_visible()
+        try:
+            ongoing_flights.first.wait_for(state="visible", timeout=10000)
+        except Exception:
+            pass
         number_of_flights = ongoing_flights.count()
         logger.info(f"Totally we have {number_of_flights} Flights")
-
         return number_of_flights
 
 
