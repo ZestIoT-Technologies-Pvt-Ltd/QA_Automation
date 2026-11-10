@@ -1,10 +1,16 @@
 import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 import pytest
 from playwright.sync_api import sync_playwright
 from pages.Common_Base_Page.Base_Page import BasePage
 from pages.Login.Login_Page import LoginPage
 from utils.config import Config
 from utils.email_sender import EmailSender
+
+pytest_plugins = ["utils.html_report"]
 
 
 def pytest_addoption(parser):
@@ -19,6 +25,9 @@ def pytest_addoption(parser):
         parser.addoption("--project", action="store", default="flydubai", help="Project Name")
     if "--env" not in existing:
         parser.addoption("--env", action="store", default="qa", help="Environment Name")
+    if "--station" not in existing:
+        default_station, _ = EmailSender.get_excel_station_config("flydubai")
+        parser.addoption("--station", action="store", default=default_station, help="Station Code from Excel config")
     if "--browser" not in existing:
         parser.addoption("--browser", action="store", default="chromium", help="Browser Name")
     if "--no-email" not in existing:
@@ -62,6 +71,7 @@ def page(request):
         )
 
         page = context.new_page()
+        request.node._framework_page = page
 
         base = BasePage(page,config["url"])
 
@@ -99,15 +109,37 @@ def pytest_sessionfinish(session, exitstatus):
     if session.config.getoption("--no-email", default=False):
         return
 
+    # If html_report plugin already handled email delivery, avoid sending duplicate email
+    if getattr(session.config, "_email_delivered", False):
+        return
+
     project = session.config.getoption("--project")
     env = session.config.getoption("--env")
     browser = session.config.getoption("--browser")
+    default_st, _ = EmailSender.get_excel_station_config(project)
+    station = session.config.getoption("--station", default=default_st)
 
     try:
+        report_path = getattr(session.config, "_extent_report_path", None)
+        if not report_path or not os.path.exists(report_path):
+            for candidate in [
+                os.path.join("reports", "Extent_Report.html"),
+                os.path.join("reports", "latest_report.html"),
+            ]:
+                if os.path.exists(candidate):
+                    report_path = candidate
+                    break
 
         email = EmailSender()
-        email.send_execution_report(project=project, env=env, browser=browser, xml_file=os.path.join("reports", "results.xml"))
+        email.send_execution_report(
+            project=project,
+            env=env,
+            browser=browser,
+            station=station,
+            xml_file=os.path.join("reports", "results.xml"),
+            report_path=report_path,
+        )
+        session.config._email_delivered = True
 
     except Exception as e:
-
         print(f"Failed to send execution email: {e}")

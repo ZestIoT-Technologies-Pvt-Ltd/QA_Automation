@@ -2,9 +2,22 @@
 # Author : Tilak Badsheshi
 # Created Date : 2026-10-22
 # Modified By : Tilak Badsheshi
-# Modified Date : 2026-11-04
+# Modified Date : 2026-11-10
 
-"""Reusable synchronous Playwright actions and Page Object Model foundation. Locators remain owned by page objects."""
+"""
+==============  INTRODUCTION ================
+Page Object / Component: BasePage (Common Foundation)
+Description: Reusable synchronous Playwright actions and Page Object Model foundation for AviLeap.
+             Provides resilient locator interactions, error logging, screenshot attachments,
+             and explicit waiting strategies. Locators remain owned by individual Page Objects.
+
+Scenario & Workflow Capabilities:
+1. Navigation & Page Lifecycle: Open application URL, wait for DOM/networkidle load states, reload.
+2. Synchronized Element Interaction: Click, double-click, hover, fill/type text, clear, select dropdown options.
+3. Element State Inquiries: Check visibility, enabled state, count elements, extract inner text and attributes.
+4. Resilient Scrolling & Waiting: Scroll into view, wait for locators, retry mechanisms.
+5. Evidence & Reporting: Capture viewport and full-page screenshots, attach failure artifacts to Allure and Extent reports.
+"""
 from __future__ import annotations
 
 import re
@@ -53,7 +66,11 @@ class BasePage:
                 "Application URL not found. Pass a URL to open_application() or configure project/environment URL."
             )
         logger.info("Navigating to application: %s", target)
-        self.page.goto(target, wait_until="domcontentloaded")
+        try:
+            self.page.goto(target, wait_until="domcontentloaded", timeout=60000)
+        except Exception as e:
+            logger.warning("Initial navigation to %s encountered %s, retrying...", target, e)
+            self.page.goto(target, wait_until="domcontentloaded", timeout=60000)
 
     def goto(self, url, **kwargs):
         return self.page.goto(url, **kwargs)
@@ -72,6 +89,9 @@ class BasePage:
 
     def wait_for(self, target, state="visible", timeout=None):
         return self._locator(target).wait_for(state=state, timeout=timeout)
+
+    def wait_for_element(self, target, state="visible", timeout=None):
+        return self.wait_for(target, state=state, timeout=timeout)
 
     # -------------------------------------------------------------------------
     # Basic User Actions

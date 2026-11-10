@@ -1,4 +1,24 @@
 
+# Author : Gowthami
+# Created Date : 2026-10-26
+# Modified By : Gowthami
+# Modified Date : 2026-11-10
+
+"""
+==============  INTRODUCTION ================
+Page Object / Component: Listview_DepartedSection_AccesstoAIMedia
+Description: Page Object Model for Departed section flights to access and validate AI Media
+             (video/audio/image recordings) across turnaround and split flight activity groups.
+
+Scenario & Workflow Capabilities:
+1. Navigation: Route to Flights List View dashboard via navigation menu.
+2. Section Selection: Switch to the Departed Flights tab.
+3. Accordion Management: Expand and collapse turnaround headers and split flight expansion panels.
+4. Activity Sub-Panels: Inspect Arrival, Departure, and Additional activity categories.
+5. AI Media Validation: Locate AI media icons/thumbnails and click to open the media popup player (`#player`).
+6. Playback & Verification: Assert video/image player visibility and safely close modal preview.
+"""
+
 import re
 import pytest
 import allure
@@ -9,7 +29,11 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+
 class Listview_DepartedSection_AccesstoAIMedia(BasePage):
+    """
+    Page Object for Flights List View Departed Section - AI Media access and validation.
+    """
 
     # ==================== LOCATORS ====================
 
