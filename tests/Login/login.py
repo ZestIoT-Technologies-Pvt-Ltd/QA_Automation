@@ -1,6 +1,11 @@
+# Author : Tilak Badsheshi
+# Created Date : 2026-10-22
+# Modified By : Tilak Badsheshi
+# Modified Date : 2026-11-04
+
 import pytest
 import allure
-from pages.login_page import LoginPage
+from pages.Login.Login_Page import LoginPage
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -15,7 +20,7 @@ def test_login(page):
     try:
         login_page = LoginPage(page, None)
 
-        title = login_page.get_title()
+        title = login_page.get_page_title()
         logger.info(f"Page title is: {title}")
 
         assert "AviLeap" in title
