@@ -5,7 +5,7 @@
 
 import pytest
 import allure
-from pages.List_View.List_View_Ongoing_Lock_Unlock_Flight_Page import (
+from pages.List_View.ListView_Ongoing_Lock_Unlock_Flight_Page import (
     List_View_Ongoing_Lock_Unlock_Flight_Page,
 )
 from utils.logger import get_logger

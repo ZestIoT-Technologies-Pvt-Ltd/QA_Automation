@@ -1,0 +1,33 @@
+{
+  "meta": {
+    "title": "Sanity Automation Execution Report",
+    "project": "flydubai",
+    "env": "qa",
+    "browser": "chromium",
+    "airports": "DXB",
+    "started": "10 Nov 2026 17:32:47",
+    "duration": 62.08269739151001,
+    "ended": "2026-11-10 17:33:49 India Standard Time",
+    "deselected": 0,
+    "host": "Tilak"
+  },
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 0,
+    "errors_logged": 0,
+    "airports": {
+      "DXB": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "pass_rate": 100.0,
+    "selected": 1,
+    "deselected": 0
+  }
+}

@@ -5,7 +5,7 @@
 
 import pytest
 import allure
-from pages.List_View.Listview_Flag_Unflag_Flight_Page import Listview_OngoingSection_Flag_Unflag_Flight
+from pages.List_View.ListView_Ongoing_Flag_Unflag_Flight_Page import Listview_OngoingSection_Flag_Unflag_Flight
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

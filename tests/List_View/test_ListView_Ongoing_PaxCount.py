@@ -7,7 +7,7 @@
 from playwright.sync_api import expect
 import pytest
 import allure
-from pages.List_View.Flights_List_View_Pax_Count_Page import PAX_Count_Page
+from pages.List_View.ListView_Ongoing_PaxCount_Page import PAX_Count_Page
 from utils.logger import get_logger
 import time
 

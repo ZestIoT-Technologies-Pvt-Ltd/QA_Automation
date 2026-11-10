@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sanity Automation Execution Report - -</title>
+  <style>
+    :root {
+      --bg-body: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --color-pass: #10b981;
+      --color-pass-bg: #ecfdf5;
+      --color-pass-border: #a7f3d0;
+      --color-fail: #ef4444;
+      --color-fail-bg: #fef2f2;
+      --color-fail-border: #fecaca;
+      --color-skip: #f59e0b;
+      --color-skip-bg: #fffbeb;
+      --color-skip-border: #fde68a;
+      --color-info: #0284c7;
+      --color-info-bg: #f0f9ff;
+      --color-info-border: #bae6fd;
+      --header-bg: #0f172a;
+      --header-text: #ffffff;
+      --accent: #2563eb;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Navigation Header */
+    header.report-header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: var(--header-text);
+      padding: 16px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 20px;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+    }
+
+    .brand-info h1 {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      margin: 0;
+      color: #f8fafc;
+    }
+
+    .brand-info p {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 1px;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    .meta-badge strong {
+      color: #ffffff;
+    }
+
+    .status-banner {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .status-banner.pass {
+      background: #10b981;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+    }
+
+    .status-banner.fail {
+      background: #ef4444;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+    }
+
+    /* Main Container */
+    main.report-container {
+      max-width: 1600px;
+      margin: 24px auto;
+      padding: 0 24px;
+    }
+
+    /* Dashboard Executive Summary */
+    section.dashboard-section {
+      margin-bottom: 24px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .card-metric-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .card-metric-value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--text-main);
+    }
+
+    .card-metric-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .metric-total { border-left: 4px solid #3b82f6; }
+    .metric-pass { border-left: 4px solid var(--color-pass); }
+    .metric-pass .card-metric-value { color: var(--color-pass); }
+    .metric-fail { border-left: 4px solid var(--color-fail); }
+    .metric-fail .card-metric-value { color: var(--color-fail); }
+    .metric-skip { border-left: 4px solid var(--color-skip); }
+    .metric-skip .card-metric-value { color: var(--color-skip); }
+    .metric-rate { border-left: 4px solid #8b5cf6; }
+    .metric-rate .card-metric-value { color: #8b5cf6; }
+    .metric-duration { border-left: 4px solid #0284c7; }
+
+    /* Environment Meta Grid */
+    .env-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+
+    .env-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .env-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .env-val {
+      font-weight: 600;
+      color: var(--text-main);
+      margin-top: 2px;
+      word-break: break-all;
+    }
+
+    /* Two-Pane Workspace Layout */
+    .workspace-layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1080px) {
+      .workspace-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Pane: Test Cases Explorer */
+    .tests-navigator {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      overflow: hidden;
+      position: sticky;
+      top: 86px;
+      max-height: calc(100vh - 110px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .navigator-toolbar {
+      padding: 14px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .search-wrapper {
+      position: relative;
+      margin-bottom: 10px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 9px 12px 9px 34px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      background: #ffffff;
+      transition: border-color 0.15s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      background: #f1f5f9;
+      color: var(--text-main);
+    }
+
+    .filter-btn.active {
+      background: #1e293b;
+      color: #ffffff;
+      border-color: #1e293b;
+    }
+
+    .filter-btn.pass.active { background: var(--color-pass); border-color: var(--color-pass); }
+    .filter-btn.fail.active { background: var(--color-fail); border-color: var(--color-fail); }
+    .filter-btn.skip.active { background: var(--color-skip); border-color: var(--color-skip); }
+
+    .test-list-scroll {
+      overflow-y: auto;
+      flex: 1;
+      padding: 8px;
+    }
+
+    .test-nav-item {
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: #ffffff;
+    }
+
+    .test-nav-item:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+
+    .test-nav-item.selected {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08);
+    }
+
+    .test-nav-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .badge.pass { background: var(--color-pass-bg); color: var(--color-pass); border: 1px solid var(--color-pass-border); }
+    .badge.fail { background: var(--color-fail-bg); color: var(--color-fail); border: 1px solid var(--color-fail-border); }
+    .badge.skip { background: var(--color-skip-bg); color: var(--color-skip); border: 1px solid var(--color-skip-border); }
+    .badge.info { background: var(--color-info-bg); color: var(--color-info); border: 1px solid var(--color-info-border); }
+
+    .test-nav-duration {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .test-nav-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      word-break: break-word;
+      line-height: 1.3;
+    }
+
+    .test-nav-scenario {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Right Pane: Test Details View */
+    .test-details-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      padding: 24px 28px;
+      min-height: 600px;
+    }
+
+    .test-detail-card {
+      display: none;
+    }
+
+    .test-detail-card.active {
+      display: block;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Detail Header */
+    .detail-header {
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+
+    .detail-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .detail-test-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.25;
+      letter-spacing: -0.3px;
+    }
+
+    .detail-status-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .detail-status-pill.pass {
+      background: var(--color-pass-bg);
+      color: var(--color-pass);
+      border: 1px solid var(--color-pass-border);
+    }
+
+    .detail-status-pill.fail {
+      background: var(--color-fail-bg);
+      color: var(--color-fail);
+      border: 1px solid var(--color-fail-border);
+    }
+
+    .detail-status-pill.skip {
+      background: var(--color-skip-bg);
+      color: var(--color-skip);
+      border: 1px solid var(--color-skip-border);
+    }
+
+    .detail-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    .detail-meta-item strong {
+      color: var(--text-main);
+    }
+
+    /* Test Scenario Callout Box */
+    .scenario-box {
+      background: linear-gradient(to right, #f8fafc, #ffffff);
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid #0284c7;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    .scenario-header {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #0284c7;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scenario-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.45;
+    }
+
+    .scenario-details {
+      font-size: 12px;
+      color: #475569;
+      margin-top: 8px;
+      white-space: pre-line;
+      line-height: 1.5;
+    }
+
+    /* Failure Alert Box */
+    .failure-alert-box {
+      background: var(--color-fail-bg);
+      border: 1px solid var(--color-fail-border);
+      border-left: 5px solid var(--color-fail);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+
+    .failure-alert-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-fail);
+      margin-bottom: 6px;
+    }
+
+    .failure-alert-msg {
+      font-size: 13px;
+      color: #7f1d1d;
+      font-weight: 500;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .failure-traceback-details {
+      margin-top: 10px;
+      font-size: 12px;
+    }
+
+    .failure-traceback-details summary {
+      cursor: pointer;
+      color: #991b1b;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .failure-traceback-details pre {
+      background: #1e1e1e;
+      color: #fca5a5;
+      padding: 12px 14px;
+      border-radius: 6px;
+      margin-top: 8px;
+      overflow-x: auto;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    /* Steps Table */
+    .section-heading {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .steps-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 26px;
+    }
+
+    .steps-table thead th {
+      background: #f8fafc;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+      text-align: left;
+    }
+
+    .steps-table tbody tr {
+      border-bottom: 1px solid var(--border-color);
+      transition: background-color 0.1s ease;
+    }
+
+    .steps-table tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    .steps-table tbody tr:hover {
+      background: #fafafa;
+    }
+
+    .steps-table td {
+      padding: 12px 14px;
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    .step-col-status {
+      width: 90px;
+    }
+
+    .step-col-time {
+      width: 85px;
+      color: var(--text-muted);
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .step-col-details {
+      color: var(--text-main);
+    }
+
+    .step-title {
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .step-error-desc {
+      color: var(--color-fail);
+      font-weight: 600;
+      margin-top: 4px;
+      font-size: 12px;
+    }
+
+    /* Embedded Screenshots Layout */
+    .screenshots-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .screenshot-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      max-width: 280px;
+    }
+
+    .screenshot-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+      border-color: #93c5fd;
+    }
+
+    .screenshot-thumb-wrapper {
+      position: relative;
+      cursor: pointer;
+      background: #f1f5f9;
+      display: block;
+      overflow: hidden;
+      height: 160px;
+    }
+
+    .screenshot-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.2s ease;
+    }
+
+    .screenshot-thumb-wrapper:hover .screenshot-thumb {
+      transform: scale(1.03);
+    }
+
+    .screenshot-zoom-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      gap: 6px;
+    }
+
+    .screenshot-thumb-wrapper:hover .screenshot-zoom-overlay {
+      opacity: 1;
+    }
+
+    .screenshot-caption {
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      background: #f8fafc;
+      border-top: 1px solid var(--border-color);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Additional Screenshots Gallery */
+    .screenshots-gallery {
+      margin-bottom: 24px;
+    }
+
+    /* Logs Section */
+    .logs-accordion {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 20px;
+    }
+
+    .logs-accordion summary {
+      background: #f8fafc;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      outline: none;
+      user-select: none;
+    }
+
+    .logs-content {
+      background: #0f172a;
+      color: #cbd5e1;
+      padding: 14px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 11px;
+      max-height: 300px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    .log-line {
+      margin-bottom: 2px;
+      white-space: pre-wrap;
+    }
+
+    .log-line.ERROR { color: #f87171; }
+    .log-line.WARNING { color: #fbbf24; }
+    .log-line.INFO { color: #93c5fd; }
+
+    /* Lightbox Modal */
+    .lightbox-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(5px);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .lightbox-modal.active {
+      display: flex;
+      animation: fadeIn 0.15s ease-in-out;
+    }
+
+    .lightbox-content-box {
+      position: relative;
+      max-width: 94vw;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .lightbox-header {
+      width: 100%;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .lightbox-close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 24px;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+      transition: color 0.15s;
+    }
+
+    .lightbox-close-btn:hover {
+      color: #ffffff;
+    }
+
+    .lightbox-img {
+      max-width: 92vw;
+      max-height: calc(88vh - 44px);
+      object-fit: contain;
+      display: block;
+      background: #1e293b;
+    }
+
+    /* Footer */
+    footer.report-footer {
+      text-align: center;
+      padding: 24px 0 36px 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="report-header">
+    <div class="header-brand">
+      <div class="brand-logo">E</div>
+      <div class="brand-info">
+        <h1>Sanity Automation Execution Report - -</h1>
+        <p>ExtentReports 2.0 • Clean Single-File Test Execution Summary</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="meta-badge">
+        <span>Project:</span>
+        <strong>FLYDUBAI</strong>
+      </div>
+      <div class="meta-badge">
+        <span>Env:</span>
+        <strong>QA</strong>
+      </div>
+      <div class="meta-badge">
+        <span>Started:</span>
+        <strong>2026-11-10 16:31:47</strong>
+      </div>
+      <div class="meta-badge">
+        <span>Duration:</span>
+        <strong>0h 0m 8s+752ms</strong>
+      </div>
+      <div class="status-banner pass">
+        PASSED
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="report-container">
+
+    <!-- Dashboard Executive Summary -->
+    <section class="dashboard-section">
+      <div class="dashboard-grid">
+        <div class="card metric-total">
+          <div class="card-metric-title">Total Tests</div>
+          <div class="card-metric-value">1</div>
+          <div class="card-metric-sub">Executed in session</div>
+        </div>
+
+        <div class="card metric-pass">
+          <div class="card-metric-title">Passed Tests</div>
+          <div class="card-metric-value">1</div>
+          <div class="card-metric-sub">Completed successfully</div>
+        </div>
+
+        <div class="card metric-fail">
+          <div class="card-metric-title">Failed Tests</div>
+          <div class="card-metric-value">0</div>
+          <div class="card-metric-sub">Encountered errors</div>
+        </div>
+
+        <div class="card metric-skip">
+          <div class="card-metric-title">Skipped Tests</div>
+          <div class="card-metric-value">0</div>
+          <div class="card-metric-sub">Bypassed or ignored</div>
+        </div>
+
+        <div class="card metric-rate">
+          <div class="card-metric-title">Pass Rate</div>
+          <div class="card-metric-value">100.0%</div>
+          <div class="card-metric-sub">Overall test success</div>
+        </div>
+
+        <div class="card metric-duration">
+          <div class="card-metric-title">Total Duration</div>
+          <div class="card-metric-value" style="font-size:22px;margin-top:4px;">0h 0m 8s+752ms</div>
+          <div class="card-metric-sub">Ended at 2026-11-10 16:31:59</div>
+        </div>
+      </div>
+
+      <!-- Environment Details Table -->
+      <div class="env-grid">
+        <div class="env-item">
+          <span class="env-label">Project</span>
+          <span class="env-val">FLYDUBAI</span>
+        </div>
+        <div class="env-item">
+          <span class="env-label">Environment</span>
+          <span class="env-val">QA</span>
+        </div>
+        <div class="env-item">
+          <span class="env-label">Browser</span>
+          <span class="env-val">Chromium</span>
+        </div>
+        <div class="env-item">
+          <span class="env-label">Operating System</span>
+          <span class="env-val">Windows 11</span>
+        </div>
+        <div class="env-item">
+          <span class="env-label">Host Node</span>
+          <span class="env-val">Tilak</span>
+        </div>
+        <div class="env-item">
+          <span class="env-label">Python Version</span>
+          <span class="env-val">3.13.10</span>
+        </div>
+        <div class="env-item">
+          <span class="env-label">User / Runner</span>
+          <span class="env-val">TilakVBadsheshi</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-Pane Workspace Layout -->
+    <div class="workspace-layout">
+
+      <!-- Left Navigator: Test List -->
+      <aside class="tests-navigator">
+        <div class="navigator-toolbar">
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="testSearchInput"
+              class="search-input"
+              placeholder="Search tests or scenarios..."
+              oninput="handleSearch(this.value)"
+            />
+          </div>
+          <div class="filter-pills">
+            <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">
+              All (1)
+            </button>
+            <button class="filter-btn pass" data-filter="pass" onclick="setFilter('pass')">
+              Pass (1)
+            </button>
+            <button class="filter-btn fail" data-filter="fail" onclick="setFilter('fail')">
+              Fail (0)
+            </button>
+            <button class="filter-btn skip" data-filter="skip" onclick="setFilter('skip')">
+              Skip (0)
+            </button>
+          </div>
+        </div>
+
+        <div class="test-list-scroll" id="testListContainer">
+<div class="test-nav-item" data-id="test_0" data-status="pass" data-text="test_login Verify successful authentication and application launch for AviLeap." onclick="selectTest('test_0')">
+  <div class="test-nav-head">
+    <span class="badge pass">PASSED</span>
+    <span class="test-nav-duration">0h 0m 8s+752ms</span>
+  </div>
+  <div class="test-nav-title">test_login</div>
+  <div class="test-nav-scenario">Verify successful authentication and application launch for AviLeap.</div>
+</div>
+        </div>
+      </aside>
+
+      <!-- Right Details Pane: Test Details & Steps -->
+      <section class="test-details-container" id="testDetailsContainer">
+<div class="test-detail-card" id="test_0">
+  <div class="detail-header">
+    <div class="detail-title-row">
+      <div class="detail-test-name">test_login</div>
+      <div class="detail-status-pill pass">PASSED</div>
+    </div>
+    <div class="detail-meta-row">
+      <div class="detail-meta-item">Started: <strong>2026-11-10 16:31:47</strong></div>
+      <div class="detail-meta-item">Ended: <strong>2026-11-10 16:31:55</strong></div>
+      <div class="detail-meta-item">Duration: <strong>0h 0m 8s+752ms</strong></div>
+      <span class='meta-badge' style='margin-left:4px;'>#login</span><span class='meta-badge' style='margin-left:4px;'>#smoke</span>
+    </div>
+  </div>
+
+  <div class="scenario-box">
+    <div class="scenario-header">📋 TEST SCENARIO</div>
+    <div class="scenario-title">Verify successful authentication and application launch for AviLeap.</div>
+    <div class='scenario-details'>==============  INTRODUCTION ================
+Test Scenario: Verify successful authentication and application launch for AviLeap.
+
+Steps:
+1. Authenticate / Login to application (managed via @pytest.mark.login fixture).
+2. Initialize LoginPage object with active browser page context.
+3. Retrieve the web page title.
+4. Assert and verify that the page title contains &#x27;AviLeap&#x27;.</div>
+  </div>
+
+  
+
+  <div class="section-heading">🔄 Execution Steps & Results</div>
+  <table class="steps-table">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Time</th>
+        <th>Step Details & Screenshots</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+  <td class="step-col-status"><span class="badge pass">PASS</span></td>
+  <td class="step-col-time">16:31:55</td>
+  <td class="step-col-details">
+    <div class="step-title">Step 1: Initialize Login Page Object</div>
+    
+    
+  </td>
+</tr><tr>
+  <td class="step-col-status"><span class="badge pass">PASS</span></td>
+  <td class="step-col-time">16:31:55</td>
+  <td class="step-col-details">
+    <div class="step-title">Step 2: Retrieve Page Title</div>
+    
+    
+  </td>
+</tr><tr>
+  <td class="step-col-status"><span class="badge pass">PASS</span></td>
+  <td class="step-col-time">16:31:55</td>
+  <td class="step-col-details">
+    <div class="step-title">Step 3: Verify Application Title contains &#x27;AviLeap&#x27;</div>
+    
+    
+  </td>
+</tr>
+    </tbody>
+  </table>
+
+  
+  <details class="logs-accordion">
+  <summary>📋 Execution Logs (16 events)</summary>
+  <div class="logs-content">
+    <div class='log-line INFO'>[16:31:47] [INFO] TEST START | tests/Login/login.py::test_login</div><div class='log-line INFO'>[16:31:50] [INFO] Navigating to application: https://test.flydubai.avileap.com/login</div><div class='log-line INFO'>[16:31:55] [INFO] ACTION start | fill | locator=//input[@name=&#x27;username&#x27;]</div><div class='log-line INFO'>[16:31:55] [INFO] ACTION success | fill | locator=//input[@name=&#x27;username&#x27;]</div><div class='log-line INFO'>[16:31:55] [INFO] ACTION start | fill | locator=//input[@name=&#x27;password&#x27;]</div><div class='log-line INFO'>[16:31:55] [INFO] ACTION success | fill | locator=//input[@name=&#x27;password&#x27;]</div><div class='log-line INFO'>[16:31:55] [INFO] ACTION start | click | locator=//button[@type = &#x27;submit&#x27;]/span[text() = &#x27;Log In&#x27;]</div><div class='log-line INFO'>[16:31:55] [INFO] ACTION success | click | locator=//button[@type = &#x27;submit&#x27;]/span[text() = &#x27;Log In&#x27;]</div><div class='log-line INFO'>[16:31:55] [INFO] Starting test_login</div><div class='log-line INFO'>[16:31:55] [INFO] STEP: Step 1: Initialize Login Page Object</div><div class='log-line INFO'>[16:31:55] [INFO] STEP: Step 2: Retrieve Page Title</div><div class='log-line INFO'>[16:31:55] [INFO] Page title is: AviLeap</div><div class='log-line INFO'>[16:31:55] [INFO] STEP: Step 3: Verify Application Title contains &#x27;AviLeap&#x27;</div><div class='log-line INFO'>[16:31:55] [INFO] Application title verified successfully</div><div class='log-line INFO'>[16:31:55] [INFO] Test execution completed</div><div class='log-line INFO'>[16:31:55] [INFO] TEST TEARDOWN | tests/Login/login.py::test_login</div>
+  </div>
+</details>
+</div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Lightbox Modal for Screenshots -->
+  <div class="lightbox-modal" id="lightboxModal" onclick="closeLightbox(event)">
+    <div class="lightbox-content-box" onclick="event.stopPropagation()">
+      <div class="lightbox-header">
+        <span id="lightboxCaption">Screenshot Preview</span>
+        <button class="lightbox-close-btn" onclick="closeLightbox()">&times;</button>
+      </div>
+      <img id="lightboxImage" class="lightbox-img" src="" alt="Full Screenshot" />
+    </div>
+  </div>
+
+  <footer class="report-footer">
+    Generated automatically by QA Automation Framework • ExtentReports HTML Engine • FlyDubai QA
+  </footer>
+
+  <script>
+    let currentFilter = 'all';
+    let currentSearch = '';
+
+    function selectTest(testId) {
+      // Highlight nav item
+      document.querySelectorAll('.test-nav-item').forEach(item => {
+        item.classList.remove('selected');
+        if (item.getAttribute('data-id') === testId) {
+          item.classList.add('selected');
+        }
+      });
+
+      // Show detail pane
+      document.querySelectorAll('.test-detail-card').forEach(pane => {
+        pane.classList.remove('active');
+        if (pane.id === testId) {
+          pane.classList.add('active');
+        }
+      });
+    }
+
+    function setFilter(status) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-filter') === status);
+      });
+      applyFilters();
+    }
+
+    function handleSearch(query) {
+      currentSearch = query.trim().toLowerCase();
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const items = document.querySelectorAll('.test-nav-item');
+      let firstVisibleId = null;
+
+      items.forEach(item => {
+        const itemStatus = item.getAttribute('data-status');
+        const itemText = (item.getAttribute('data-text') || '').toLowerCase();
+
+        const matchesStatus = (currentFilter === 'all') || (itemStatus === currentFilter);
+        const matchesQuery = (!currentSearch) || itemText.includes(currentSearch);
+
+        if (matchesStatus && matchesQuery) {
+          item.style.display = 'block';
+          if (!firstVisibleId) {
+            firstVisibleId = item.getAttribute('data-id');
+          }
+        } else {
+          item.style.display = 'none';
+        }
+      });
+
+      // If currently selected is hidden, activate first visible
+      const selectedItem = document.querySelector('.test-nav-item.selected');
+      if (!selectedItem || selectedItem.style.display === 'none') {
+        if (firstVisibleId) {
+          selectTest(firstVisibleId);
+        }
+      }
+    }
+
+    function openLightbox(src, caption) {
+      const modal = document.getElementById('lightboxModal');
+      const img = document.getElementById('lightboxImage');
+      const cap = document.getElementById('lightboxCaption');
+      img.src = src;
+      cap.textContent = caption || 'Screenshot Preview';
+      modal.classList.add('active');
+    }
+
+    function closeLightbox(e) {
+      const modal = document.getElementById('lightboxModal');
+      modal.classList.remove('active');
+      document.getElementById('lightboxImage').src = '';
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeLightbox();
+      }
+    });
+
+    // Auto-select first test on load (prefer first failed test, else first test)
+    document.addEventListener('DOMContentLoaded', function() {
+      const firstFail = document.querySelector('.test-nav-item[data-status="fail"]');
+      if (firstFail) {
+        selectTest(firstFail.getAttribute('data-id'));
+      } else {
+        const first = document.querySelector('.test-nav-item');
+        if (first) {
+          selectTest(first.getAttribute('data-id'));
+        }
+      }
+    });
+  </script>
+</body>
+</html>
