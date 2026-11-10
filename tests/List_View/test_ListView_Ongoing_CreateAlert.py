@@ -5,7 +5,7 @@
 
 import pytest
 import allure
-from pages.List_View.List_View_Create_Alert_Page import List_View_Create_Alert_Page
+from pages.List_View.ListView_Create_Alert_Page import List_View_Create_Alert_Page
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
