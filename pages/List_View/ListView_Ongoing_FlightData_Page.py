@@ -252,7 +252,8 @@ class Flights_View_Ongoing_Page(BasePage):
             Flight_Card.click()
             logger.info(f"Clicked Flight Card")
             time.sleep(10)
-            onblock_time = Flight_Card.locator().text_content()
+            onblock_loc = Flight_Card.locator(self.ONBLOCK_TIME)
+            onblock_time = onblock_loc.text_content() if onblock_loc.count() > 0 else ""
             logger.info(f"Onblock Time for Flight Card = {onblock_time}")
 
         return onblock_time

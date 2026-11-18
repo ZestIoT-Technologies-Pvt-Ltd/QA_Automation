@@ -46,7 +46,8 @@ class List_View_Create_Alert_Page(BasePage):
     # ==================== NAVIGATION & TOOLBAR LOCATORS ====================
     MENU = "//span[@class='nav-icon']/i[normalize-space()='menu' or text()='menu']"
     FLIGHTS = "//div[@role='button']/span[text()='Flights']"
-    ONGOING_TAB = "//div[contains(text(),'Ongoing')]"
+    ONGOING_TAB = "text=Ongoing"
+    INCOMING_TAB = "text=Incoming"
     REFRESH_FLIGHTS_ICON = "//i[@ptooltip='Refresh Flight'] | //i[contains(@class,'pi-sync')]"
 
     # ==================== FLIGHT CARD LOCATORS ====================
@@ -106,16 +107,23 @@ class List_View_Create_Alert_Page(BasePage):
     )
 
     # ==================== FALLBACK / SUCCESS MESSAGE LOCATORS ====================
-    SUCCESS_SNACKBAR = "snack-bar-container, .mat-snack-bar-container, .snackbar-background"
+    SUCCESS_SNACKBAR = "snack-bar-container, .mat-snack-bar-container, .snackbar-background, .p-toast-message, .p-toast, .toast, .alert-success"
     SUCCESS_MESSAGE_TEXT = (
         "//snack-bar-container[contains(.,'successfully') or contains(.,'Success') or contains(.,'Alert raised')] | "
         "//div[contains(@class,'mat-snack-bar-container')][contains(.,'successfully') or contains(.,'Success')] | "
+        "//div[contains(@class,'p-toast-message')][contains(.,'successfully') or contains(.,'Success')] | "
         "//*[contains(@class,'snackbar-background')]"
     )
 
     # ==================== ALERT COLUMN ON FLIGHT CARD ====================
-    ALERT_COUNT_ELEMENT = "p.alerts-list, p[class*='alerts_p'], .alerts-col p, p[class*='Ongoing_alerts_p']"
-    ALERT_COL_BUTTON = "button.Ongoing_alerts_button_Two, button[class*='alerts_button'], .alerts-col button, p.alerts-list"
+    ALERT_COUNT_ELEMENT = (
+        "p.alerts-list, p[class*='alerts_p'], .alerts-col p, "
+        "p[class*='Ongoing_alerts_p'], p[class*='Incoming_alerts_p']"
+    )
+    ALERT_COL_BUTTON = (
+        "button.Ongoing_alerts_button_Two, button.Incoming_alerts_button_Two, "
+        "button[class*='alerts_button'], .alerts-col button, p.alerts-list"
+    )
     ALERT_COUNT_TEXT = "p.alerts-list, p[class*='alerts_p'], .alerts-col p"
 
     # ==================== RIGHT-SIDE ALERT DETAILS POPUP ====================
@@ -247,6 +255,40 @@ class List_View_Create_Alert_Page(BasePage):
         except Exception as e:
             self.attach_screenshot("ongoing_section_activation_failed")
             logger.error(f"Failed to activate Ongoing section: {e}")
+            raise
+
+    @allure.step("Ensure Incoming Section is selected")
+    def ensure_incoming_section(self) -> int:
+        """Ensures that the Incoming section tab is active."""
+        logger.info("Ensuring Incoming section tab is active")
+        try:
+            self.page.mouse.move(600, 500)
+            self.page.wait_for_timeout(500)
+
+            incoming_tab = self.page.locator(self.INCOMING_TAB).first
+            if incoming_tab.count() == 0 or not incoming_tab.is_visible():
+                incoming_tab = self.page.locator(
+                    "//div[contains(.,'Incoming') and not(contains(@class,'card'))] | "
+                    "//span[contains(text(),'Incoming')]"
+                ).first
+
+            expect(incoming_tab).to_be_visible(timeout=15000)
+            incoming_tab.scroll_into_view_if_needed()
+            incoming_tab.click()
+            logger.info("Clicked Incoming section tab")
+
+            self.page.wait_for_timeout(2000)
+            self.wait_for_loading_to_finish()
+
+            flights = self.page.locator(self.FLIGHT_ROW_CARDS)
+            expect(flights.first).to_be_visible(timeout=20000)
+            count = flights.count()
+            logger.info(f"Incoming section active. Total flight cards: {count}")
+            return count
+
+        except Exception as e:
+            self.attach_screenshot("incoming_section_activation_failed")
+            logger.error(f"Failed to activate Incoming section: {e}")
             raise
 
     # ==================== FLIGHT CARD HELPERS ====================
@@ -437,19 +479,29 @@ class List_View_Create_Alert_Page(BasePage):
             logger.info(f"Selected Alert Category: '{category}'")
             self.page.wait_for_timeout(500)
 
-            # 3. Select Alert Type (Departure toggle by default)
-            if alert_type.lower() == "arrival":
-                toggle = self.page.locator(self.ALERT_TYPE_ARRIVAL).first
-            else:
-                toggle = self.page.locator(self.ALERT_TYPE_DEPARTURE).first
+            # 3. Alert Type Handling:
+            # If the toggle is present, select 'Departure'.
+            # If the toggle is not present, the flight is a turnaround flight ('Turnaround' displayed).
+            resolved_alert_type = "Turnaround"
+            departure_toggle = self.page.locator(self.ALERT_TYPE_DEPARTURE).first
+            arrival_toggle = self.page.locator(self.ALERT_TYPE_ARRIVAL).first
 
-            expect(toggle).to_be_visible(timeout=5000)
-            toggle.click()
-            logger.info(f"Selected Alert Type Toggle: '{alert_type}'")
-            self.page.wait_for_timeout(500)
+            if departure_toggle.count() > 0 and departure_toggle.is_visible():
+                logger.info("Alert Type Departure toggle is present. Selecting 'Departure'...")
+                departure_toggle.click()
+                resolved_alert_type = "Departure"
+                self.page.wait_for_timeout(400)
+            elif arrival_toggle.count() > 0 and arrival_toggle.is_visible():
+                logger.info("Departure toggle not visible, but Arrival toggle is visible. Selecting Arrival...")
+                arrival_toggle.click()
+                resolved_alert_type = "Arrival"
+                self.page.wait_for_timeout(400)
+            else:
+                logger.info("Alert Type toggle is NOT present -> Flight is a Turnaround flight ('Turnaround' displayed).")
+                resolved_alert_type = "Turnaround"
 
             self.attach_screenshot(f"Alert_Form_Filled_{task_name}")
-            return task_name
+            return task_name, resolved_alert_type
 
         except Exception as e:
             self.attach_screenshot("fill_alert_form_failed")
@@ -494,7 +546,7 @@ class List_View_Create_Alert_Page(BasePage):
 
         with allure.step(f"Create Alert for Flight: {flight_number}"):
             self.open_add_alert_dialog(flight_card)
-            resolved_task_name = self.fill_alert_form(
+            resolved_task_name, resolved_alert_type = self.fill_alert_form(
                 category=category,
                 task_name=task_name,
                 alert_type=alert_type
@@ -505,13 +557,13 @@ class List_View_Create_Alert_Page(BasePage):
             is_success, msg_text = self.is_success_message_displayed(timeout_sec=7)
 
             logger.info(
-                f"--- Alert creation submitted for '{flight_number}' (Task Name: '{resolved_task_name}', Success Message: '{msg_text}') ---"
+                f"--- Alert creation submitted for '{flight_number}' (Task Name: '{resolved_task_name}', Alert Type: '{resolved_alert_type}', Success Message: '{msg_text}') ---"
             )
             return {
                 "flight_number": flight_number,
                 "category": category,
                 "task_name": resolved_task_name,
-                "alert_type": alert_type,
+                "alert_type": resolved_alert_type,
                 "is_success": is_success,
                 "success_message": msg_text,
             }

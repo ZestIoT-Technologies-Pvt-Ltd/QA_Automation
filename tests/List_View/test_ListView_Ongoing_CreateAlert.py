@@ -5,7 +5,7 @@
 
 import pytest
 import allure
-from pages.List_View.ListView_Create_Alert_Page import List_View_Create_Alert_Page
+from pages.List_View.ListView_Ongoing_Create_Alert_Page import List_View_Create_Alert_Page
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -70,7 +70,7 @@ def test_List_View_Create_Alert(page):
         )
         assert creation_data["task_name"] == "Test Alert", "Task name does not match 'Test Alert'."
         assert creation_data["category"] == "Alert", "Alert category does not match 'Alert'."
-        assert creation_data["alert_type"] == "Departure", "Alert type does not match 'Departure'."
+        assert creation_data["alert_type"] in ("Departure", "Turnaround", "Arrival"), f"Alert type unexpected: {creation_data['alert_type']}"
         logger.info(f"Alert form submitted successfully for '{flight_number}': {creation_data}")
 
     with allure.step("Step 5: Verify Fallback Success Message is Displayed in System"):

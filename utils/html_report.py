@@ -71,7 +71,8 @@ def cfg_station(item):
     if values:
         return values[-1]
     from utils.email_sender import EmailSender
-    default_st, _ = EmailSender.get_excel_station_config(item.config.getoption('--project', default='flydubai'))
+    proj = item.config.getoption('--project', default=None) or getattr(item.config, 'framework_project', None)
+    default_st, _ = EmailSender.get_excel_station_config(proj)
     return item.config.getoption('--station', default=default_st)
 
 class HtmlReportPlugin:
@@ -86,6 +87,7 @@ class HtmlReportPlugin:
     # ---- lifecycle
     def pytest_sessionstart(self, session):
         self.started = time.time()
+        self.records.clear()
         import logging
         logging.getLogger().addHandler(self.capture)
 
@@ -122,10 +124,14 @@ class HtmlReportPlugin:
                     scenario_title = line
                     break
 
+        proj_values = [v for k,v in item.user_properties if k == "project"]
+        rec_project = proj_values[-1] if proj_values else (getattr(item.config, "framework_project", "") or "")
+
         record = rc.TestRecord(
             nodeid=item.nodeid,
             name=item.name,
             description=scenario_title or (doc_lines[0] if doc_lines else ""),
+            project=str(rec_project),
             airport=str(params.get("station") or params.get("airport") or ",".join(dict.fromkeys(v for k,v in item.user_properties if k == "stations")) or cfg_station(item) or "-"),
             tc=_tc_label(marker),
             markers=sorted({m.name for m in item.iter_markers() if m.name not in ("tc", "parametrize", "usefixtures")}),
@@ -155,10 +161,13 @@ class HtmlReportPlugin:
                     from utils import report_context
                     station_values=[v for k,v in item.user_properties if k == "stations"]
                     station=station_values[-1] if station_values else cfg_station(item)
-                    path=BasePage.capture_failure(page, project=item.config.getoption('--project'), station=station,
+                    proj_values=[v for k,v in item.user_properties if k == "project"]
+                    proj_val=proj_values[-1] if proj_values else (item.config.getoption('--project') or getattr(item.config, 'framework_project', 'AUTOMATION'))
+                    path=BasePage.capture_failure(page, project=proj_val, station=station,
                                                  test_name=item.name, report_context=report_context,
                                                  error_message=report.longreprtext)
                     if path:
+                        setattr(item, "_failure_screenshot_captured", True)
                         try:
                             import allure
                             allure.attach.file(path, name=f"{item.name} failure", attachment_type=allure.attachment_type.PNG)
@@ -187,24 +196,73 @@ class HtmlReportPlugin:
         self.framework_warnings.append(f"{warning_message.category.__name__}: {warning_message.message}")
 
     # ---- report
-    @pytest.hookimpl(trylast=True)
+    @pytest.hookimpl
     def pytest_sessionfinish(self, session, exitstatus):
         records = list(self.records.values())
         if not records:
             return
         cfg = self.config
         from utils.email_sender import EmailSender
-        excel_code, _ = EmailSender.get_excel_station_config(cfg.getoption("--project", default="flydubai"))
+
+        # Resolve active project(s) and station mapping dynamically
+        station_to_proj = getattr(cfg, "framework_station_to_project", {})
+        fw_project = getattr(cfg, "framework_project", None)
+        cli_project = cfg.getoption("--project", default=None)
+
+        # Helper to reliably resolve which station a test record was executed for
+        def _get_rec_station(r):
+            airport = str(getattr(r, "airport", "")).strip().upper()
+            if airport and airport not in ("-", "DEFAULT", "UNKNOWN", "NONE", "ALL"):
+                return airport
+            name_val = str(getattr(r, "name", ""))
+            m = re.search(r"\[([A-Z0-9_-]+)\]", name_val)
+            if m:
+                return m.group(1).upper()
+            node_val = str(getattr(r, "nodeid", ""))
+            m = re.search(r"\[([A-Z0-9_-]+)\]", node_val)
+            if m:
+                return m.group(1).upper()
+            st_list = [
+                str(s).strip().upper() for s in getattr(r, "stations", [])
+                if str(s).strip().upper() not in ("-", "DEFAULT", "UNKNOWN", "NONE", "ALL")
+            ]
+            if len(st_list) == 1:
+                return st_list[0]
+            return ""
+
+        # Collect distinct projects and stations from executed records
+        executed_projects = []
+        executed_stations = []
+        for r in records:
+            p = getattr(r, "project", None)
+            st = _get_rec_station(r)
+            if not p or str(p).strip() in ("-", "None", ""):
+                p = station_to_proj.get(st, {}).get("project")
+            if p and p not in executed_projects:
+                executed_projects.append(p)
+            if st and st not in executed_stations:
+                executed_stations.append(st)
+
+        resolved_project = cli_project or (executed_projects[0] if len(executed_projects) == 1 else (", ".join(executed_projects) if executed_projects else fw_project))
+        if not resolved_project or resolved_project == "-":
+            resolved_project = fw_project or "AUTOMATION"
+
+        resolved_env = cfg.getoption("--env", default=None) or getattr(cfg, "framework_env", "qa")
+
+        excel_code, _ = EmailSender.get_excel_station_config(cli_project or (executed_projects[0] if executed_projects else fw_project))
         resolved_station = cfg.getoption("--station", default=excel_code) or excel_code
+        if not resolved_station or str(resolved_station).strip().upper() in ("-", "DEFAULT", "UNKNOWN", "NONE"):
+            resolved_station = excel_code or "DXB"
+        resolved_station = str(resolved_station).strip().upper()
         if not getattr(cfg, "framework_stations_requested", []):
             cfg.framework_stations_requested = [resolved_station]
 
         meta = {
             "title": cfg.getoption("--report-title"),
-            "project": cfg.getoption("--project", default="-"),
-            "env": cfg.getoption("--env", default="-"),
+            "project": resolved_project,
+            "env": resolved_env,
             "browser": getattr(cfg, "_framework_execution_settings", {}).get("browser", cfg.getoption("--browser") or "chromium"),
-            "airports": ", ".join(getattr(cfg, "framework_stations_requested", [])) or resolved_station,
+            "airports": ", ".join(executed_stations) if executed_stations else (", ".join(getattr(cfg, "framework_stations_requested", [])) or resolved_station),
             "started": datetime.fromtimestamp(self.started).strftime("%d %b %Y %H:%M:%S"),
             "duration": time.time() - self.started,
             "ended": datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z"),
@@ -225,40 +283,122 @@ class HtmlReportPlugin:
         name = f"{str(meta['project']).upper()}_{str(meta['env']).upper()}_{stamp}.html"
         self.report_path = os.path.join(out_dir, name)
         document = build_html(meta, summary, records)
-        for path in (
-            self.report_path,
-            os.path.join(out_dir, "latest_report.html"),
-            os.path.join(str(cfg.rootpath), "reports", "Extent_Report.html"),
-            os.path.join(str(cfg.rootpath), "reports", "latest_report.html"),
-        ):
-            write_html(path, document)
-        cfg._extent_report_path = self.report_path
-        write_json(os.path.join(out_dir, "summary.json"), {
-            "meta": {k: v for k, v in meta.items() if k not in ("warnings", "plan_warnings")},
-            "summary": summary})
+        write_html(self.report_path, document)
+        write_html(os.path.join(out_dir, "latest_report.html"), document)
 
-        # Expand records into station-specific views without changing the original result.
+        # Remove any legacy comma-joined multi-station files (e.g. DXB,BFS,SZG_Report.html)
+        import glob
+        for comma_pattern in (
+            os.path.join(str(cfg.rootpath), "reports", "*[,]*"),
+            os.path.join(out_dir, "*[,]*"),
+        ):
+            for comma_file in glob.glob(comma_pattern):
+                try:
+                    os.remove(comma_file)
+                except Exception:
+                    pass
+
+        # Helper to reliably resolve which station a test record was executed for
+        def _get_rec_station(r):
+            airport = str(getattr(r, "airport", "")).strip().upper()
+            if airport and airport not in ("-", "DEFAULT", "UNKNOWN", "NONE", "ALL"):
+                return airport
+            name_val = str(getattr(r, "name", ""))
+            m = re.search(r"\[([A-Z0-9_-]+)\]", name_val)
+            if m:
+                return m.group(1).upper()
+            node_val = str(getattr(r, "nodeid", ""))
+            m = re.search(r"\[([A-Z0-9_-]+)\]", node_val)
+            if m:
+                return m.group(1).upper()
+            st_list = [
+                str(s).strip().upper() for s in getattr(r, "stations", [])
+                if str(s).strip().upper() not in ("-", "DEFAULT", "UNKNOWN", "NONE", "ALL")
+            ]
+            if len(st_list) == 1:
+                return st_list[0]
+            return ""
+
+        # Expand records into station-specific views without mixing station results
         import copy
         station_reports = {}
         base = os.path.splitext(self.report_path)[0]
-        requested = getattr(cfg, "framework_stations_requested", [])
-        for station in requested or list(dict.fromkeys(r.airport for r in records)):
-            subset=[]
+        raw_requested = getattr(cfg, "framework_stations_requested", [])
+        requested = [
+            s.strip().upper() for s in raw_requested
+            if s and str(s).strip().upper() not in ("-", "DEFAULT", "UNKNOWN", "NONE")
+        ]
+        if not requested:
+            requested = [resolved_station]
+
+        for station in requested:
+            subset = []
             for record in records:
-                mapped=getattr(record, "stations", [record.airport])
-                if station in mapped or "ALL" in mapped or (len(mapped)==1 and mapped[0]==station):
-                    clone=copy.copy(record); clone.airport=station; subset.append(clone)
+                st = _get_rec_station(record)
+                if st == station:
+                    clone = copy.copy(record)
+                    clone.airport = station
+                    subset.append(clone)
+                elif not st:
+                    mapped = [str(s).strip().upper() for s in getattr(record, "stations", [])]
+                    if station in mapped or "ALL" in mapped or not mapped:
+                        clone = copy.copy(record)
+                        clone.airport = station
+                        subset.append(clone)
+
             if not subset:
                 continue
-            station_meta = dict(meta, airports=station, title=f"{meta['title']} - {station}", duration=sum(r.duration for r in subset))
+
+            # Determine project and environment specific to this station
+            st_info = station_to_proj.get(station, {})
+            st_project = st_info.get("project")
+            if not st_project:
+                for r in subset:
+                    p = getattr(r, "project", None)
+                    if p and str(p).strip() not in ("-", "None", ""):
+                        st_project = p
+                        break
+            if not st_project:
+                st_project = resolved_project
+
+            st_env = st_info.get("env") or meta.get("env", "qa")
+
+            station_meta = dict(
+                meta,
+                project=st_project,
+                env=st_env,
+                airports=station,
+                title=f"{meta['title']} - {station}",
+                duration=sum(r.duration for r in subset),
+            )
             station_file = os.path.join(out_dir, f"{station}_Report.html")
-            station_reports[station] = station_file
-            station_summary=summarize(subset)
-            station_summary["selected"]=len(subset)
-            station_summary["deselected"]=getattr(cfg, "framework_deselected_count", 0)
+            root_station_file = os.path.join(str(cfg.rootpath), "reports", f"{station}_Report.html")
+            station_reports[station] = root_station_file
+
+            station_summary = summarize(subset)
+            station_summary["selected"] = len(subset)
+            station_summary["deselected"] = 0
             station_doc = build_html(station_meta, station_summary, subset)
+
             write_html(station_file, station_doc)
+            write_html(root_station_file, station_doc)
             write_html(f"{base}_{station}.html", station_doc)
+
+        # Set primary report and sync Extent_Report.html to the primary station's report
+        primary_station = executed_stations[0] if executed_stations else (requested[0] if requested else resolved_station)
+        primary_report = station_reports.get(primary_station, os.path.join(str(cfg.rootpath), "reports", f"{primary_station}_Report.html"))
+        if os.path.exists(primary_report):
+            with open(primary_report, "r", encoding="utf-8") as f:
+                primary_doc = f.read()
+            write_html(os.path.join(str(cfg.rootpath), "reports", "Extent_Report.html"), primary_doc)
+            write_html(os.path.join(str(cfg.rootpath), "reports", "latest_report.html"), primary_doc)
+
+        cfg._extent_report_path = primary_report
+        cfg._station_reports = station_reports
+
+        write_json(os.path.join(out_dir, "summary.json"), {
+            "meta": {k: v for k, v in meta.items() if k not in ("warnings", "plan_warnings")},
+            "summary": summary})
 
         if not cfg.getoption("--no-email"):
             if not getattr(cfg, "_email_delivered", False):
@@ -269,7 +409,7 @@ class HtmlReportPlugin:
                         meta=meta,
                         records=records,
                         station_reports=station_reports,
-                        consolidated_report=self.report_path,
+                        consolidated_report=None,
                     )
                     cfg._email_delivered = True
                 except Exception as error:
@@ -277,7 +417,12 @@ class HtmlReportPlugin:
                     print(f"\n[report] E-mail delivery problem: {type(error).__name__}: {error}")
 
     def pytest_terminal_summary(self, terminalreporter):
-        if self.report_path:
+        station_reports = getattr(self.config, "_station_reports", {})
+        if station_reports:
+            terminalreporter.write_sep("-", "Station HTML Reports")
+            for st, p in sorted(station_reports.items()):
+                terminalreporter.write_line(f"{st}: {p}")
+        elif self.report_path:
             terminalreporter.write_sep("-", "HTML report")
             terminalreporter.write_line(self.report_path)
 
@@ -401,8 +546,10 @@ def build_html(meta: dict, summary: dict, records) -> str:
     os_name = f"{platform.system()} {platform.release()}"
     python_version = platform.python_version()
     host_name = platform.node()
-    project = str(meta.get("project", "FLYDUBAI")).upper()
-    env = str(meta.get("env", "QA")).upper()
+    raw_project = meta.get("project")
+    project = str(raw_project if raw_project and raw_project != "-" else "AUTOMATION").upper()
+    raw_env = meta.get("env")
+    env = str(raw_env if raw_env and raw_env != "-" else "QA").upper()
     browser = str(meta.get("browser", "chromium")).capitalize()
 
     total_count = summary.get("total", len(records))

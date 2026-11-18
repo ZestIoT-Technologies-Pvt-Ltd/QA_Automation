@@ -7,7 +7,7 @@
 import pytest
 import allure
 
-from pages.List_View.Listview_DepartedSection_AccesstoAIMedia import Listview_DepartedSection_AccesstoAIMedia
+from pages.List_View.Listview_Departed_AccesstoAIMedia import Listview_DepartedSection_AccesstoAIMedia
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

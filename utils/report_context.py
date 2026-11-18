@@ -55,6 +55,7 @@ class TestRecord:
     nodeid: str
     name: str
     description: str = ""
+    project: str = ""
     airport: str = "-"
     tc: str = ""
     markers: list = field(default_factory=list)

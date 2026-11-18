@@ -225,7 +225,15 @@ class BasePage:
             raise
 
     def assert_not_visible(self, locator, timeout=None):
-        expect(self._locator(locator)).not_to_be_visible(timeout=timeout)
+        loc = self._locator(locator)
+        try:
+            expect(loc).not_to_be_visible(timeout=timeout)
+        except Exception:
+            try:
+                setattr(self.page, "_last_failed_locator", loc)
+            except Exception:
+                pass
+            raise
 
     def assert_enabled(self, locator, timeout=None):
         loc = self._locator(locator)
@@ -328,42 +336,146 @@ class BasePage:
     # Red Border Box Highlighting & Screenshot Capture (Self-Contained in POM)
     # -------------------------------------------------------------------------
 
-    @staticmethod
-    def highlight_element(page: Page | None, locator: Any = None, error_message: str = "") -> None:
-        """
-        Highlight target element with a 2px solid red border box before capturing failure screenshot.
+    @classmethod
+    def _extract_locator_from_error(cls, error_text: str) -> str | None:
+        """Extract failing locator/selector or domain element from error tracebacks."""
+        if not error_text:
+            return None
+        text = str(error_text)
 
-        1. Clears any previous red borders across the page DOM.
-        2. Identifies the failing element via passed locator, page._last_failed_locator,
-           or locator pattern in error_message.
-        3. Applies '2px solid red' border to the element.
+        # 1. Playwright: waiting for locator("...") or selector('...')
+        m = re.search(r'(?:locator|selector)\((["\'])(.*?)\1\)', text, re.DOTALL)
+        if m:
+            return m.group(2).strip()
+
+        # 2. Playwright expect: Locator: locator("...")
+        m = re.search(r'Locator:\s*locator\((["\'])(.*?)\1\)', text, re.DOTALL)
+        if m:
+            return m.group(2).strip()
+
+        # 3. Playwright expect with get_by_*: Locator: get_by_role("button", name="...")
+        m = re.search(r'Locator:\s*([^\r\n]+)', text)
+        if m:
+            raw_loc = m.group(1).strip()
+            m_inner = re.search(r'\((["\'])(.*?)\1', raw_loc)
+            if m_inner:
+                return m_inner.group(2).strip()
+            return raw_loc
+
+        # 4. Flight failure: Flight '<flight_no>'
+        m_flight = re.search(r"[Ff]light\s*['\"]([A-Za-z0-9_\s\-]+)['\"]", text)
+        if m_flight:
+            flight_str = m_flight.group(1).strip()
+            token = flight_str.split()[0].strip() if flight_str else flight_str
+            return f"//div[contains(@class, 'flight-card') and .//*[contains(text(), '{token}')]] | //*[contains(text(), '{token}')]"
+
+        # 5. Activity group failure: Activity group '<group_name>'
+        m_group = re.search(r"[Aa]ctivity\s+group\s*['\"]([^'\"]+)['\"]", text)
+        if m_group:
+            group_str = m_group.group(1).strip()
+            return f"//div[contains(@class,'grp-button') and normalize-space()='{group_str}'] | //*[contains(text(), '{group_str}')]"
+
+        # 6. Logger or action failed log: locator=...
+        m = re.search(r'locator=([^\s|\r\n]+)', text)
+        if m:
+            return m.group(1).strip()
+
+        # 7. Look for XPath or CSS selector in error text
+        m = re.search(r'(?://[a-zA-Z0-9_\-\[\]@=\'\"\s\.\*\(\)]+|[#.][a-zA-Z0-9_-]+)', text)
+        if m:
+            cand = m.group(0).strip()
+            if len(cand) > 2:
+                return cand
+
+        return None
+
+    @classmethod
+    def highlight_element(cls, page: Page | None, locator: Any = None, error_message: str = "") -> None:
+        """
+        Highlight target failed element with a prominent 3px solid red outline, 2px red border,
+        and glowing red box-shadow before capturing failure screenshot.
+
+        1. Clears any previous highlight borders or banners.
+        2. Resolves target locator from passed locator, page._last_failed_locator,
+           or by parsing error_message / stack trace.
+        3. If target element exists in DOM:
+           - Scrolls element into view.
+           - Applies '3px solid red' outline and '2px solid red' border with !important.
+        4. If target element is not in DOM:
+           - Injects a red overlay banner at top of viewport displaying the missing locator.
         """
         try:
             if page is None or page.is_closed():
                 return
 
-            # 1. Clear previous borders
+            # 1. Clear previous failure highlights and banners
             try:
-                page.evaluate("() => document.querySelectorAll('*').forEach(el => { el.style.border = ''; })")
+                page.evaluate("""() => {
+                    const banner = document.getElementById('__pw_failure_banner__');
+                    if (banner) banner.remove();
+                    document.querySelectorAll('.__pw_failed_element__').forEach(el => {
+                        el.style.removeProperty('outline');
+                        el.style.removeProperty('border');
+                        el.style.removeProperty('box-shadow');
+                        el.style.removeProperty('background-color');
+                        el.classList.remove('__pw_failed_element__');
+                    });
+                }""")
             except Exception:
                 pass
 
             target = None
+            extracted_loc_str = ""
+
             # 2. Determine target locator
             if locator is not None:
                 target = locator if hasattr(locator, "first") else page.locator(str(locator))
+                extracted_loc_str = str(locator)
             elif getattr(page, "_last_failed_locator", None) is not None:
                 target = page._last_failed_locator
+                extracted_loc_str = str(getattr(target, "_selector", "") or target)
             elif error_message:
-                m = re.search(r'(?:locator|selector)\(["\']([^"\']+)["\']\)', str(error_message))
-                if m:
-                    target = page.locator(m.group(1))
+                extracted = cls._extract_locator_from_error(error_message)
+                if extracted:
+                    extracted_loc_str = extracted
+                    try:
+                        target = page.locator(extracted)
+                    except Exception:
+                        target = None
 
-            # 3. Apply 2px solid red border if target element exists
+            # 3. Apply highlighting
             if target is not None:
                 try:
-                    if target.count() > 0:
-                        target.first.evaluate("el => { el.style.border = '2px solid red'; }")
+                    count = target.count()
+                    if count > 0:
+                        elem = target.first
+                        elem.scroll_into_view_if_needed(timeout=2000)
+                        elem.evaluate("""el => {
+                            try { el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' }); } catch(e){}
+                            el.classList.add('__pw_failed_element__');
+                            el.style.setProperty('outline', '3px solid #ff0000', 'important');
+                            el.style.setProperty('outline-offset', '2px', 'important');
+                            el.style.setProperty('border', '2px solid #ff0000', 'important');
+                            el.style.setProperty('box-shadow', '0 0 16px 4px rgba(255, 0, 0, 0.85)', 'important');
+                            el.style.setProperty('background-color', 'rgba(255, 0, 0, 0.08)', 'important');
+                        }""")
+                        logger.info("Highlighted failed element with red border: %s", extracted_loc_str)
+                        return
+                except Exception as ex:
+                    logger.debug("Could not highlight element in DOM: %s", ex)
+
+            # 4. If element was not found in DOM or locator failed to match an existing node,
+            # display a red failure banner across the viewport so the missing element is immediately obvious.
+            if extracted_loc_str:
+                try:
+                    clean_msg = extracted_loc_str.replace("`", "'").replace("\\", "\\\\")[:120]
+                    page.evaluate(f"""() => {{
+                        const banner = document.createElement('div');
+                        banner.id = '__pw_failure_banner__';
+                        banner.innerHTML = '&#10060; FAILED LOCATOR NOT FOUND: <span style="font-family:monospace;background:#fff;color:#c00;padding:2px 6px;border-radius:4px;margin-left:6px;">{clean_msg}</span>';
+                        banner.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:2147483647;background:#dc3545;color:#ffffff;padding:10px 20px;border:2px solid #721c24;border-radius:6px;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.4);text-align:center;max-width:92%;';
+                        document.body.appendChild(banner);
+                    }}""")
                 except Exception:
                     pass
         except Exception:
