@@ -9,7 +9,6 @@ logger = get_logger()
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_flights_view_ongoing(page):
     
     logger.info("Starting Flights View Ongoing Test")

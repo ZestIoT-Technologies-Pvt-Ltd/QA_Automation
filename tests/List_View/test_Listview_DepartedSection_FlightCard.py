@@ -15,7 +15,6 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_Listview_DepartedSection_FlightCard(page):
 
     logger.info("Starting List View Departed Flight Card Test")

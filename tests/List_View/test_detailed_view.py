@@ -9,7 +9,6 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_detailed_view(page):
 
     logger.info("Starting Detailed View Test")

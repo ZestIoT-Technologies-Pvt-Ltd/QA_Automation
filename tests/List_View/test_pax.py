@@ -9,7 +9,6 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_pax_count(page):
    
     logger.info("Starting Detailed View Test")
