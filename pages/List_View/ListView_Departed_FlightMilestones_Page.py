@@ -12,7 +12,7 @@ Description: Page Object Model for the Departed section in Flights List View.
 
 Scenario & Workflow Capabilities:
 1. Navigation: Route to Flights List View and select Departed section.
-2. Action Menu: Click the 3-dots ('more_vert') menu on departed flight cards.
+2. Action Menu: Click the ellipsis ('more_vert') menu on departed flight cards.
 3. Open Milestones: Click 'Flight Milestones' option to display the milestones dialog popup.
 4. Milestone Verification:
    - Verify milestones are present in the popup screen.
@@ -52,12 +52,18 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
     }
 
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
-    FLIGHT_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
     SYNC_ICON = "//i[@ptooltip='Refresh Flight'] | //i[contains(@class,'pi-sync')]"
     NO_FLIGHTS_AVAILABLE = "//div[contains(text(),'No Flights Available')]"
 
-    # 3-dots action menu on flight card
-    THREE_DOTS_MENU_ICON = "mat-icon:has-text('more_vert')"
+    # Ellipsis action menu on flight card
+    ELLIPSIS_MENU_ICON = "mat-icon:has-text('more_vert')"
+    THREE_DOTS_MENU_ICON = ELLIPSIS_MENU_ICON  # Backwards compatibility
 
     # Flight Milestones Dialog / Popup (PrimeNG p-dialog or dialog container with Milestone header)
     MILESTONES_DIALOG = (
@@ -68,15 +74,29 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
 
     @allure.step("Navigate to Flights List View Dashboard")
     def navigate_to_list_view_page(self):
-        """Navigates to the Flights List View dashboard via the main navigation menu."""
+        """
+        Navigates from the home dashboard to the Flights List View screen.
+
+        What this function does:
+        Opens the main navigation menu on the top-left and clicks on the 'Flights' option
+        so that the user is brought directly to the Flights List View dashboard.
+
+        Step-by-step actions:
+        1. Hovers over the top-left navigation menu icon.
+        2. Clicks on the 'Flights' menu option.
+        3. Moves the mouse away towards the center of the screen so the menu drawer closes.
+        4. Waits for any loading spinners to complete.
+        """
         logger.info("Navigating to Flights List View dashboard")
         self.page.wait_for_timeout(2000)
 
+        # Locate and hover over the navigation menu icon
         menu = self.page.locator(self.MENU).first
         expect(menu).to_be_visible(timeout=20000)
         menu.hover()
         self.page.wait_for_timeout(500)
 
+        # Locate and click on the 'Flights' option
         list_view = self.page.locator(self.LIST_VIEW).first
         if not list_view.is_visible():
             logger.info("List View menu item not visible after hover; clicking hamburger menu")
@@ -102,12 +122,26 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
     @allure.step("Select Departed Section and Ensure Flights Loaded")
     def ensure_departed_section_loaded(self) -> int:
         """
-        Switches to the Departed section tab, waits for cards to load,
-        and clicks the Refresh Flight sync icon if needed. Returns count of departed flight cards.
+        Switches to the 'Departed' flights section and verifies flight cards are loaded.
+
+        What this function does:
+        Clicks on the 'Departed' tab at the top of the Flights List View screen to display
+        all flights that have departed. It counts how many departed flight cards are visible.
+
+        Step-by-step actions:
+        1. Finds and clicks the 'Departed' tab button.
+        2. Waits for any loading spinners to finish.
+        3. If flight cards do not appear immediately, clicks the Refresh Flight icon to reload them.
+        4. Checks if there is a 'No Flights Available' message. If so, returns 0.
+        5. Returns the total count of departed flight cards displayed on the screen.
+
+        Returns:
+            int: The total count of departed flight cards currently loaded.
         """
         logger.info("Selecting Departed section tab")
         self.page.wait_for_timeout(1000)
 
+        # Locate and click the 'Departed' tab button
         departed_tab = self.page.locator(self.DEPARTED_TAB).first
         if departed_tab.count() == 0 or not departed_tab.is_visible():
             departed_tab = self.page.locator(
@@ -126,6 +160,7 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
         except Exception:
             pass
 
+        # Check if flight cards are visible; if not, try clicking the refresh icon
         card_loc = self.page.locator(self.FLIGHT_ROW_CARDS)
         try:
             card_loc.first.wait_for(state="visible", timeout=8000)
@@ -136,6 +171,7 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
                 sync_icon.click()
                 self.page.wait_for_timeout(3500)
 
+        # Check if no flights are available in this section
         no_flights = self.page.locator(self.NO_FLIGHTS_AVAILABLE).first
         if no_flights.count() > 0 and no_flights.is_visible():
             logger.info("Departed section currently has 0 flights available.")
@@ -147,27 +183,57 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
 
     @allure.step("Extract Flight Number for Card")
     def get_flight_number(self, flight_card: Locator) -> str:
-        """Extracts flight number string from flight card."""
+        """
+        Reads and returns the flight number from a flight card.
+
+        What this function does:
+        Inspects the flight card element and extracts the flight number text
+        (for example, 'FZ-0215').
+
+        Inputs:
+            flight_card (Locator): The flight card web element to read from.
+
+        Returns:
+            str: The flight number text, or 'Unknown Flight' if not found.
+        """
+        num = super().get_flight_number(flight_card)
+        if num and num != "Unknown Flight":
+            return num
         num_loc = flight_card.locator(self.FLIGHT_NUMBER).first
         if num_loc.count() > 0:
             return num_loc.inner_text().strip()
         return "Unknown Flight"
 
-    @allure.step("Open Flight Milestones Popup from 3-Dots Menu")
+    @allure.step("Open Flight Milestones Popup from Ellipsis Menu")
     def open_flight_milestones_popup(self, flight_card: Locator) -> bool:
         """
-        Clicks the 3-dots ('more_vert') menu on the specified flight card,
-        then clicks the 'Flight Milestones' menu item to open the popup.
+        Opens the Flight Milestones popup window for a flight card.
+
+        What this function does:
+        Clicks the three-dot ellipsis menu button on the flight card, then clicks the
+        'Flight Milestones' option to open the milestone details popup dialog.
+
+        Step-by-step actions:
+        1. Scrolls the flight card into view.
+        2. Clicks the ellipsis (more_vert) menu button on the card.
+        3. Clicks the 'Flight Milestones' item in the menu dropdown.
+        4. Verifies that the Flight Milestones dialog window appears on the screen.
+
+        Inputs:
+            flight_card (Locator): The flight card whose milestones we want to view.
+
+        Returns:
+            bool: True if the popup opened successfully.
         """
         flight_card.scroll_into_view_if_needed()
         flight_no = self.get_flight_number(flight_card)
-        logger.info(f"Opening 3-dots menu for flight '{flight_no}'")
+        logger.info(f"Opening ellipsis menu for flight '{flight_no}'")
 
-        # 1. Locate 3-dots menu icon strictly on the target flight card
-        three_dots = flight_card.locator(self.THREE_DOTS_MENU_ICON).first
-        expect(three_dots).to_be_visible(timeout=10000)
-        three_dots.scroll_into_view_if_needed()
-        three_dots.click()
+        # 1. Locate and click ellipsis menu icon strictly on the target flight card
+        ellipsis_menu = flight_card.locator(self.ELLIPSIS_MENU_ICON).first
+        expect(ellipsis_menu).to_be_visible(timeout=10000)
+        ellipsis_menu.scroll_into_view_if_needed()
+        ellipsis_menu.click()
         self.page.wait_for_timeout(400)
 
         # 2. Locate and click 'Flight Milestones' option in the menu dropdown
@@ -180,24 +246,31 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
             ).first
 
         expect(milestone_option).to_be_visible(timeout=10000)
-        logger.info(f"Clicking 'Flight Milestones' option in 3-dots menu for flight '{flight_no}'")
+        logger.info(f"Clicking 'Flight Milestones' option in ellipsis menu for flight '{flight_no}'")
         milestone_option.click()
         self.page.wait_for_timeout(1000)
 
-        # 3. Verify Milestones popup appears
+        # 3. Verify Milestones popup appears on the screen
         dialog = self.page.locator(self.MILESTONES_DIALOG).first
         try:
             expect(dialog).to_be_visible(timeout=15000)
             logger.info(f"Flight Milestones popup displayed successfully for flight '{flight_no}'")
             return True
         except Exception:
-            setattr(self.page, "_last_failed_locator", three_dots)
+            setattr(self.page, "_last_failed_locator", ellipsis_menu)
             raise AssertionError(f"Flight Milestones popup did not appear after clicking menu item for flight '{flight_no}'")
 
     @allure.step("Close Flight Milestones Popup")
     def close_flight_milestones_popup(self) -> bool:
         """
-        Closes the Flight Milestones dialog popup and confirms it is dismissed.
+        Closes the Flight Milestones dialog popup.
+
+        What this function does:
+        Finds and clicks the 'X' (close) button at the top corner of the milestone popup
+        dialog, or presses the Escape key on the keyboard to dismiss the popup window.
+
+        Returns:
+            bool: True once the popup is closed.
         """
         logger.info("Closing Flight Milestones dialog popup")
         dialog = self.page.locator(self.MILESTONES_DIALOG).first
@@ -226,7 +299,7 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
             if not dialog.is_visible():
                 closed = True
 
-        # Fallback: Press Escape
+        # Fallback: Press Escape on the keyboard
         if not closed and dialog.is_visible():
             logger.info("Pressing Escape to dismiss Flight Milestones popup")
             self.page.keyboard.press("Escape")
@@ -247,8 +320,11 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
     @allure.step("Click Anywhere on Screen to Dismiss Tooltips")
     def dismiss_lingering_tooltip(self):
         """
-        Clicks anywhere on the screen (neutral coordinate) to dismiss any lingering
-        menu tooltip or hover overlay after closing the milestone popup.
+        Clicks anywhere on a neutral area of the screen to dismiss leftover tooltips.
+
+        What this function does:
+        Clicks on an empty space on the screen so that any remaining tooltip, hover box,
+        or menu overlay disappears before we move on to inspect the next flight.
         """
         try:
             # Click at neutral coordinates on the screen
@@ -260,12 +336,21 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
     @allure.step("Parse and Validate Flight Milestones Sequence & Timestamps in Popup")
     def parse_and_validate_milestones_popup(self) -> dict:
         """
-        Inspects the open Flight Milestones popup screen:
-        1. Checks whether milestones are present.
-        2. Validates sequence: Ten Nautical Miles -> Touchdown -> Airborne (if airborne).
-        3. Validates whether completion status bar / milestone items are displayed.
-        4. Validates whether actual timestamps are displayed for milestones.
-        Returns a dictionary with milestone details.
+        Inspects the open Flight Milestones popup window and verifies its content.
+
+        What this function does:
+        Reads all text and elements inside the milestones popup to confirm:
+        1. That flight milestones are present on the screen.
+        2. That they appear in the correct chronological order:
+           - First: 'Ten Nautical Miles' (flight is approaching)
+           - Second: 'Touchdown' (flight has landed)
+           - Third: 'Airborne' (flight has taken off again, if applicable)
+        3. That the milestone completion status bar / milestone items are visible.
+        4. That actual times (timestamps like '14:30') are recorded and displayed.
+
+        Returns:
+            dict: A detailed results dictionary containing sequence verification,
+                  completion status bar check, timestamps found, and raw text.
         """
         dialog = self.page.locator(self.MILESTONES_DIALOG).first
         expect(dialog).to_be_visible(timeout=10000)
@@ -379,7 +464,7 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
     def validate_flight_milestones_card(self, flight_card: Locator) -> dict:
         """
         Executes end-to-end validation for a departed flight card:
-        1. Opens Flight Milestones popup from 3-dots menu.
+        1. Opens Flight Milestones popup from ellipsis menu.
         2. Validates milestone presence & sequence (Ten Nautical Miles -> Touchdown -> Airborne).
         3. Validates completion status bar / milestones displayed.
         4. Validates actual timestamps are displayed.
@@ -390,7 +475,7 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
         flight_no = self.get_flight_number(flight_card)
         logger.info(f"--- Validating Milestones for Flight: '{flight_no}' ---")
 
-        # Step 1: Open popup from 3-dots menu
+        # Step 1: Open popup from ellipsis menu
         self.open_flight_milestones_popup(flight_card)
 
         # Step 2: Parse milestones popup

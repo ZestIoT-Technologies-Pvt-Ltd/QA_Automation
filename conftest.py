@@ -86,16 +86,12 @@ def page(request, station):
 
         page = context.new_page()
         request.node._framework_page = page
+        page._framework_config = config
+        page._framework_project = project
+        page._framework_env = env
 
         base = BasePage(page, config["url"])
-
         base.open_application()
-
-        if "login" in request.keywords:
-
-            login_page = LoginPage(page, config["url"])
-
-            login_page.login_user(config["username"], config["password"])
 
         yield page
 
@@ -107,6 +103,14 @@ def page(request, station):
 
         context.close()
         browser.close()
+
+
+@pytest.fixture(scope="function")
+def logged_in_page(page):
+    """Prerequisite fixture that returns an authenticated page context."""
+    login_page = LoginPage(page)
+    login_page.login_user()
+    return page
 
 
 def pytest_sessionstart(session):

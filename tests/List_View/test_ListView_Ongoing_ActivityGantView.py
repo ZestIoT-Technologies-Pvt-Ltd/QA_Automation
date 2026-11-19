@@ -6,20 +6,20 @@
 import pytest
 import allure
 from pages.List_View.ListView_Ongoing_ActivityGantView_Page import ListView_Ongoing_ActivityGantView_Page
+from pages.Login.Login_Page import LoginPage
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_listview_ongoing_activity_gant_view(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify whether the Gantt View represents planned and actual activities, dependencies, progress and delays accurately.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login).
+    1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
     2. Navigate to Flights List View dashboard.
     3. Ensure Ongoing Section is active and flight cards are loaded.
     4. Locate and enable the Gantt View toggle in the List View toolbar.
@@ -33,6 +33,10 @@ def test_listview_ongoing_activity_gant_view(page):
     8. Assert validation results across all activity groups.
     """
     logger.info("Starting List View Ongoing Section Gantt View Activities Validation Test")
+
+    with allure.step("Prerequisite: Login to application"):
+        login_page = LoginPage(page)
+        login_page.login_user()
 
     gantt_page = ListView_Ongoing_ActivityGantView_Page(page, None)
 
@@ -57,7 +61,7 @@ def test_listview_ongoing_activity_gant_view(page):
         logger.info(f"Gantt View chart expanded for flight: '{flight_number}'")
 
     # Step 5: Validate All Activity Groups and Planned/Actual Activities
-    with allure.step("Step 5: Navigate Activity Groups and Validate Planned & Actual Activities"):
+    with allure.step(f"Step 5: Validate Planned & Actual Gantt Activities for Flight '{flight_number}'"):
         validation_summary = gantt_page.validate_gantt_activities_all_groups()
 
         # Assertions

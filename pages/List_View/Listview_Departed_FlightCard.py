@@ -13,7 +13,7 @@ Description: Page Object Model for the Departed section in Flights List View. Ma
 Scenario & Workflow Capabilities:
 1. Navigation: Route to Flights List View dashboard via navigation menu.
 2. Section Selection: Switch to the Departed Flights tab and await flight card loading.
-3. Actions Menu: Click the three-dots menu ('more_vert') on departed flight rows.
+3. Actions Menu: Click the ellipsis menu ('more_vert') on departed flight rows.
 4. Flight Card Trigger: Click 'Flight Card' menu item and handle popup page lifecycle in a new tab.
 5. Verification & Cleanup: Verify Flight Card container visibility, take screenshot evidence, and close popup tab.
 """
@@ -45,6 +45,12 @@ class Listview_DepartedSection_FlightCard(BasePage):
     DEPARTED_TAB = "text=Departed"
 
     FLIGHT_DETAILS = ".flight-details.ng-star-inserted"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
 
     FLIGHT_MENU_ICON = "//mat-icon[normalize-space()='more_vert']"
 
@@ -145,7 +151,7 @@ class Listview_DepartedSection_FlightCard(BasePage):
             )
 
             self.page.wait_for_selector(
-                '[mattooltip="Flight Arrival Departure Numbers"]',
+                '.flightno-col, [mattooltip="Flight Arrival Departure Numbers"]',
                 timeout=90000
             )
 
@@ -183,7 +189,7 @@ class Listview_DepartedSection_FlightCard(BasePage):
 
     # ==================== OPEN AND VALIDATE ONE FLIGHT CARD ====================
 
-    @allure.step("Open and validate Flight Card {flight_number}")
+    @allure.step("Open and validate Flight Card '{flight_number}'")
     def open_and_validate_flight_card(
         self,
         flight,
@@ -291,12 +297,6 @@ class Listview_DepartedSection_FlightCard(BasePage):
             validated_flights = 0
 
             for index in range(total_flights):
-                flight_number = index + 1
-
-                logger.info(
-                    f"Processing flight {flight_number}/{total_flights}"
-                )
-
                 # Re-query the locator in case the DOM has updated.
                 current_flights = self.page.locator(
                     self.FLIGHT_DETAILS
@@ -305,7 +305,7 @@ class Listview_DepartedSection_FlightCard(BasePage):
                 if index >= current_flights.count():
                     pytest.fail(
                         f"Flight list changed while processing "
-                        f"flight {flight_number}"
+                        f"flight index {index + 1}"
                     )
 
                 flight = current_flights.nth(index)
@@ -313,6 +313,12 @@ class Listview_DepartedSection_FlightCard(BasePage):
                 expect(
                     flight
                 ).to_be_visible(timeout=15000)
+
+                flight_number = self.get_flight_number(flight) or f"Flight {index + 1}"
+
+                logger.info(
+                    f"Processing flight '{flight_number}' ({index + 1}/{total_flights})"
+                )
 
                 self.open_and_validate_flight_card(
                     flight,

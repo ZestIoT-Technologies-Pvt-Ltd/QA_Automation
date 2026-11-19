@@ -1,59 +1,79 @@
 # Author : Tilak Badsheshi
 # Created Date : 2026-11-09
 # Modified By : Tilak Badsheshi
-# Modified Date : 2026-11-10
+# Modified Date : 2026-11-19
 
 import pytest
 import allure
 from pages.List_View.ListView_Ongoing_Lock_Unlock_Flight_Page import (
     List_View_Ongoing_Lock_Unlock_Flight_Page,
 )
+from pages.Login.Login_Page import LoginPage
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_List_View_Ongoing_Lock_Unlock_Flight(page):
     """
-    ==============  INTRODUCTION ================
-    Test Scenario: Verify end-to-end flight locking and unlocking (First Lock -> Then Unlock) in Flights List View (Ongoing Section).
+        ==============  TEST OVERVIEW ================
+
+    Test Scenario: Verify sequential lock and unlock workflow for an ongoing flight.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login).
-    2. Navigate to Flights List View.
-    3. Ensure Ongoing Section is active (do not navigate to any other section).
-    4. Locate the target flight card on the dashboard and ensure it is in an unlocked state (reset if initially locked).
-    5. Lock the flight by clicking Three-Dots menu ('more_vert') -> 'Lock Flight', filling Reason ('Test') and Remarks ('Testing Flight'), and clicking Lock.
-    6. Verify and assert that the flight is now in LOCKED state (lock icon button is displayed).
-    7. Unlock the flight by clicking the lock icon button on the flight card, entering Remarks ('Testing Unlock'), and clicking Unlock.
-    8. Verify and assert that the flight is now in UNLOCKED state (lock icon button is absent).
+      1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
+      2. Navigate to Flights List View screen.
+      3. Ensure Ongoing flights section is active.
+      4. Locate target flight card and ensure it starts in an unlocked state.
+      5. Lock the flight via ellipsis menu with reason and remarks.
+      6. Confirm that the flight card displays the locked state icon.
+      7. Unlock the flight directly via lock icon with remarks.
+      8. Confirm that the flight card returns to the unlocked state.
     """
-    logger.info("Starting List View Ongoing Section Sequential Lock & Unlock Flight Test")
+    logger.info("=== Starting Test: Ongoing Section Sequential Lock & Unlock Flight ===")
 
+    # -------------------------------------------------------------------------
+    # Prerequisite: Sign in to the AviLeap application with valid credentials
+    # -------------------------------------------------------------------------
+    with allure.step("Prerequisite: Login to application"):
+        login_page = LoginPage(page)
+        login_page.login_user()
+
+    # Create an instance of the Ongoing Lock/Unlock page object
     lock_page = List_View_Ongoing_Lock_Unlock_Flight_Page(page)
 
+    # -------------------------------------------------------------------------
+    # Step 1: Open the Flights List View screen
+    # -------------------------------------------------------------------------
     with allure.step("Step 1: Navigate to Flights List View"):
         lock_page.navigate_to_list_view_page()
 
+    # -------------------------------------------------------------------------
+    # Step 2: Make sure the 'Ongoing' section tab is active
+    # -------------------------------------------------------------------------
     with allure.step("Step 2: Ensure Ongoing Section is Selected"):
         total_flights = lock_page.ensure_ongoing_section()
         assert total_flights > 0, "No flights available in Ongoing section."
 
+    # -------------------------------------------------------------------------
+    # Step 3: Find a flight card and ensure it starts in an unlocked state
+    # -------------------------------------------------------------------------
     with allure.step("Step 3: Locate Target Flight Card and Ensure Unlocked State"):
         flight_cards = lock_page.page.locator(lock_page.FLIGHT_ROW_CARDS)
         target_flight = flight_cards.first
         flight_number = lock_page.get_flight_number(target_flight)
         logger.info(f"Selected flight for test: '{flight_number}' in Ongoing section")
 
-        # Ensure flight is in UNLOCKED state before starting sequence
+        # If the flight is already locked from a previous run, unlock it first so the test starts clean
         if lock_page.is_flight_locked(target_flight):
             logger.info(f"Flight '{flight_number}' is initially LOCKED. Resetting to UNLOCKED state first...")
             lock_page.unlock_flight(flight_card=target_flight, remarks="Resetting to unlocked state")
             lock_page.wait_for_lock_state(flight_card=target_flight, expected_locked=False, timeout_ms=10000)
 
-    # FIRST: LOCK THE FLIGHT
+    # -------------------------------------------------------------------------
+    # Step 4: Lock the flight
+    # -------------------------------------------------------------------------
     with allure.step(f"Step 4: Lock Flight '{flight_number}'"):
         logger.info(f"Proceeding to LOCK Flight '{flight_number}'...")
         lock_result = lock_page.lock_flight(
@@ -65,7 +85,9 @@ def test_List_View_Ongoing_Lock_Unlock_Flight(page):
         assert lock_result["reason"] == "Test", "Reason did not match expected value 'Test'."
         assert lock_result["remarks"] == "Testing Flight", "Remarks did not match expected value 'Testing Flight'."
 
-    # VERIFY FLIGHT IS LOCKED
+    # -------------------------------------------------------------------------
+    # Step 5: Verify that the flight is now LOCKED
+    # -------------------------------------------------------------------------
     with allure.step(f"Step 5: Verify Flight '{flight_number}' is in LOCKED State"):
         flight_cards = lock_page.page.locator(lock_page.FLIGHT_ROW_CARDS)
         target_flight = flight_cards.first
@@ -79,7 +101,9 @@ def test_List_View_Ongoing_Lock_Unlock_Flight(page):
         )
         logger.info(f"Verification Passed: Flight '{flight_number}' is now successfully LOCKED.")
 
-    # SECOND: UNLOCK THE FLIGHT
+    # -------------------------------------------------------------------------
+    # Step 6: Unlock the flight
+    # -------------------------------------------------------------------------
     with allure.step(f"Step 6: Unlock Flight '{flight_number}'"):
         logger.info(f"Proceeding to UNLOCK Flight '{flight_number}'...")
         flight_cards = lock_page.page.locator(lock_page.FLIGHT_ROW_CARDS)
@@ -92,7 +116,9 @@ def test_List_View_Ongoing_Lock_Unlock_Flight(page):
             "Remarks did not match expected value 'Testing Unlock'."
         )
 
-    # VERIFY FLIGHT IS UNLOCKED
+    # -------------------------------------------------------------------------
+    # Step 7: Verify that the flight is now UNLOCKED
+    # -------------------------------------------------------------------------
     with allure.step(f"Step 7: Verify Flight '{flight_number}' is in UNLOCKED State"):
         flight_cards = lock_page.page.locator(lock_page.FLIGHT_ROW_CARDS)
         target_flight = flight_cards.first
@@ -106,4 +132,4 @@ def test_List_View_Ongoing_Lock_Unlock_Flight(page):
         )
         logger.info(f"Verification Passed: Flight '{flight_number}' is now successfully UNLOCKED.")
 
-    logger.info("List View Ongoing Section Sequential Lock & Unlock Flight Test completed successfully")
+    logger.info("=== Completed Test: Ongoing Section Sequential Lock & Unlock Flight successfully ===")

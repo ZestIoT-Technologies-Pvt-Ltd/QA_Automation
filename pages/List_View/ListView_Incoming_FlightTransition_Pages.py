@@ -58,7 +58,12 @@ class ListView_Incoming_FlightTransition_Pages(BasePage):
     SYNC_ICON = "//i[@ptooltip='Refresh Flight'] | //i[contains(@class,'pi-sync')]"
 
     # Flight card metadata & time columns
-    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
     BAY_NUMBER = "//div[contains(@class,'bay-col')]"
     GATE_NUMBER = "//div[contains(@class,'gate-col')]"
 
@@ -147,6 +152,9 @@ class ListView_Incoming_FlightTransition_Pages(BasePage):
     @allure.step("Extract Flight Number for Card")
     def get_flight_number(self, flight_card: Locator) -> str:
         """Extracts arrival and departure flight number from the flight card."""
+        num = super().get_flight_number(flight_card)
+        if num and num != "Unknown Flight":
+            return num
         num_loc = flight_card.locator(self.ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER).first
         if num_loc.count() > 0:
             return num_loc.inner_text().strip()

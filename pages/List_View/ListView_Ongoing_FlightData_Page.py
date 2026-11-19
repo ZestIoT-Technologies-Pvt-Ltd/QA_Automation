@@ -52,7 +52,12 @@ class Flights_View_Ongoing_Page(BasePage):
     SEARCH_BUTTON = "//div[@class='ng-star-inserted']//i[@ptooltip='Search']"
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
     NO_FLIGHTS_AVAILABLE = "//div[contains(text(),'No Flights Available')]"
-    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
     AIRCRAFT_TYPE = "//div[@class='aircraft_type']"
     AIRCRAFT_STATUS = "//div[contains(@class,'fefoclass')]//div[@class = 'fefodiv']" # NA For NOP Section
     BAY_NUMBER = "//div[contains(@class,'bay-col')]"

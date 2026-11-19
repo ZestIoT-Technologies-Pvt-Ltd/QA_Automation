@@ -14,7 +14,7 @@ Scenario & Workflow Capabilities:
 1. Navigation: Route to Flights List View dashboard via navigation menu.
 2. Section Assertion: Ensure Ongoing section is active and flights are visible.
 3. Alert Creation Workflow:
-   - Click Three-Dots menu ('more_vert') on the flight card.
+   - Click Ellipsis menu ('more_vert') on the flight card.
    - Select 'Add Alert/Task' menu option.
    - Enter Task Name ('Test Alert'), select Category ('Alert') from PrimeNG dropdown, select Alert Type ('Departure').
    - Save alert form and verify success toast feedback.
@@ -53,10 +53,16 @@ class List_View_Create_Alert_Page(BasePage):
     # ==================== FLIGHT CARD LOCATORS ====================
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
     NO_FLIGHTS_AVAILABLE = "//div[contains(text(),'No Flights Available')]"
-    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = "p[mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "p[mattooltip='Flight Arrival Departure Numbers']"
+    )
 
-    # ==================== THREE-DOTS MENU (ACTIONS COLUMN) ====================
-    THREE_DOTS_MENU_ICON = "mat-icon:has-text('more_vert'), mat-icon[mattooltip='Edit Flight']"
+    # ==================== ELLIPSIS MENU (ACTIONS COLUMN) ====================
+    ELLIPSIS_MENU_ICON = "mat-icon:has-text('more_vert'), mat-icon[mattooltip='Edit Flight']"
+    THREE_DOTS_MENU_ICON = ELLIPSIS_MENU_ICON  # Backwards compatibility
 
     # Menu items inside mat-menu-content
     MENU_PANEL = "//div[contains(@class,'mat-menu-content')]"
@@ -151,12 +157,37 @@ class List_View_Create_Alert_Page(BasePage):
 
     # ==================== CONSTRUCTOR ====================
     def __init__(self, page: Page, base_url: str | None = None):
+        """
+        Initializes the Ongoing Flights Create Alert page object.
+
+        What this function does:
+        Sets up the web page controller and prepares all tools needed to interact with the
+        Flights List View screen and its Ongoing tab.
+
+        Why we use it:
+        This is the starting point whenever a test needs to interact with ongoing flights
+        and create new alerts.
+        """
         super().__init__(page, base_url)
         self.page = page
 
     # ==================== SCREENSHOT ====================
     def attach_screenshot(self, name: str, full_page: bool = True):
-        """Attaches a screenshot to the Allure report."""
+        """
+        Captures a picture of the current browser screen and attaches it to the test report.
+
+        What this function does:
+        Takes an image of what is currently displayed on the screen and attaches it directly
+        to the Allure test report.
+
+        Why we use it:
+        This allows non-technical managers and testers to visually verify what happened at each
+        step of the test, and provides clear visual proof if any step fails.
+
+        Inputs:
+            name (str): A simple name describing what is shown in the image (for example, 'ongoing_alert_form_filled').
+            full_page (bool): Set to True to capture the entire web page from top to bottom.
+        """
         try:
             screenshot = self.page.screenshot(full_page=full_page)
             allure.attach(
@@ -170,7 +201,20 @@ class List_View_Create_Alert_Page(BasePage):
 
     # ==================== LOADING ====================
     def wait_for_loading_to_finish(self, timeout: int = 15000):
-        """Waits for any active loading spinners to disappear."""
+        """
+        Waits for all loading spinners on the page to disappear.
+
+        What this function does:
+        Checks if any loading circles or spinners are active on the screen. If they are, it
+        pauses and waits patiently until the system finishes loading before continuing.
+
+        Why we use it:
+        Prevents test actions from failing while the application is still fetching flight
+        data from the server.
+
+        Inputs:
+            timeout (int): Maximum time in milliseconds to wait for spinners to disappear (defaults to 15 seconds).
+        """
         try:
             for selector in self.SPINNER_SELECTORS:
                 spinners = self.page.locator(selector)
@@ -185,7 +229,21 @@ class List_View_Create_Alert_Page(BasePage):
     # ==================== NAVIGATION ====================
     @allure.step("Navigate to Flights List View")
     def navigate_to_list_view_page(self):
-        """Navigates from Dashboard to Flights List View via side navigation menu."""
+        """
+        Navigates from the home dashboard to the Flights List View screen.
+
+        What this function does:
+        Opens the main navigation menu on the top-left and clicks on the 'Flights' option
+        so that the user is brought directly to the Flights List View table.
+
+        Step-by-step actions:
+        1. Checks if the page is currently on the login screen. If so, clicks Submit to finish logging in.
+        2. Hovers the mouse over the top-left hamburger menu icon to open the navigation drawer.
+        3. Clicks on the 'Flights' menu option.
+        4. Moves the mouse away towards the center of the screen so the navigation drawer closes smoothly.
+        5. Waits for any loading spinners to complete.
+        6. Confirms that flight cards are visible on the screen.
+        """
         logger.info("Navigating to Flights List View")
         try:
             # If still on login page after fixture setup, ensure login submission completes
@@ -196,11 +254,13 @@ class List_View_Create_Alert_Page(BasePage):
                     login_btn.click()
                 self.page.wait_for_timeout(3000)
 
+            # Locate and hover over the top-left navigation menu icon
             menu = self.page.locator(self.MENU).first
             expect(menu).to_be_visible(timeout=30000)
             menu.hover()
             self.page.wait_for_timeout(1000)
 
+            # Locate the Flights option in the opened menu
             flights = self.page.locator(self.FLIGHTS).first
             if not flights.is_visible():
                 logger.warning("Flights option not visible after hover, clicking Menu")
@@ -230,7 +290,23 @@ class List_View_Create_Alert_Page(BasePage):
     # ==================== SECTION HANDLING ====================
     @allure.step("Ensure Ongoing Section is selected")
     def ensure_ongoing_section(self) -> int:
-        """Ensures that the Ongoing section tab is active; does not navigate away to any other section."""
+        """
+        Switches to the 'Ongoing' flights section and verifies flight cards are loaded.
+
+        What this function does:
+        Clicks on the 'Ongoing' tab at the top of the Flights List View screen to display
+        all currently active flights. It counts how many ongoing flight cards are visible.
+
+        Step-by-step actions:
+        1. Moves the mouse to the center of the screen to close any open menus.
+        2. Finds and clicks the 'Ongoing' tab button.
+        3. Waits for the system loading animation to complete.
+        4. Confirms that ongoing flight cards are displayed on the screen.
+        5. Returns the total count of ongoing flight cards available.
+
+        Returns:
+            int: The total count of ongoing flight cards currently visible on the screen.
+        """
         logger.info("Ensuring Ongoing section tab is active")
         try:
             # Move mouse away to ensure any opened navigation/drawer is collapsed
@@ -259,7 +335,16 @@ class List_View_Create_Alert_Page(BasePage):
 
     @allure.step("Ensure Incoming Section is selected")
     def ensure_incoming_section(self) -> int:
-        """Ensures that the Incoming section tab is active."""
+        """
+        Switches to the 'Incoming' flights section and verifies flight cards are loaded.
+
+        What this function does:
+        Clicks on the 'Incoming' tab at the top of the Flights List View screen to display
+        all arriving flights. It counts how many incoming flight cards are currently visible.
+
+        Returns:
+            int: The total count of incoming flight cards displayed on the screen.
+        """
         logger.info("Ensuring Incoming section tab is active")
         try:
             self.page.mouse.move(600, 500)
@@ -294,27 +379,46 @@ class List_View_Create_Alert_Page(BasePage):
     # ==================== FLIGHT CARD HELPERS ====================
     def get_flight_card_with_actions_menu(self):
         """
-        Finds and returns the first flight card in the current view that has
-        the Three-Dots menu available and visible (i.e. not locked/disabled).
+        Finds the first flight card that has an active actions (ellipsis) menu.
+
+        What this function does:
+        Scans through all ongoing flight cards on the screen from top to bottom. It returns
+        the first flight card that has an enabled three-dot menu button.
+
+        Why we use it:
+        Some flights might be locked or may not allow new alerts. This function guarantees
+        that we pick a valid, editable flight card to create our alert on.
+
+        Returns:
+            Locator: The web element representing the eligible flight card.
         """
         flights = self.page.locator(self.FLIGHT_ROW_CARDS)
         total = flights.count()
         logger.info(f"Searching for an unlocked flight card with actions menu among {total} cards...")
         for i in range(total):
             card = flights.nth(i)
-            three_dots = card.locator(self.THREE_DOTS_MENU_ICON).first
-            if three_dots.count() > 0 and three_dots.is_visible():
+            ellipsis_btn = card.locator(self.ELLIPSIS_MENU_ICON).first
+            if ellipsis_btn.count() > 0 and ellipsis_btn.is_visible():
                 flight_num = self.get_flight_number(card)
-                logger.info(f"Selected flight card #{i} ('{flight_num}') with available Three-Dots menu")
+                logger.info(f"Selected flight card #{i} ('{flight_num}') with available ellipsis menu")
                 return card
 
-        logger.warning("No flight card found with explicitly visible Three-Dots; falling back to first card.")
+        logger.warning("No flight card found with explicitly visible ellipsis menu; falling back to first card.")
         return flights.first
 
     def get_flight_card_by_number(self, flight_number: str):
         """
-        Locates and returns the flight card matching the given flight_number.
-        If not found by exact text, matches flight number tokens or returns the first available card.
+        Finds a specific flight card on the screen using its flight number.
+
+        What this function does:
+        Looks through all visible flight cards and matches the one that has the requested
+        flight number (for example, 'FZ-0215').
+
+        Inputs:
+            flight_number (str): The flight number text to search for.
+
+        Returns:
+            Locator: The matching flight card web element.
         """
         logger.info(f"Locating flight card for flight number: '{flight_number}'")
         cards = self.page.locator(self.FLIGHT_ROW_CARDS)
@@ -335,8 +439,23 @@ class List_View_Create_Alert_Page(BasePage):
         return cards.first
 
     def get_flight_number(self, flight_card) -> str:
-        """Extracts the Arrival / Departure flight number from a flight card."""
+        """
+        Reads and returns the flight number from a flight card.
+
+        What this function does:
+        Inspects the flight card element and extracts the text displaying the flight's
+        arrival and departure numbers (for example, 'FZ-0215').
+
+        Inputs:
+            flight_card: The flight card web element to read from.
+
+        Returns:
+            str: The flight number text, or 'Unknown Flight' if not found.
+        """
         try:
+            num = super().get_flight_number(flight_card)
+            if num and num != "Unknown Flight":
+                return num
             flight_num_loc = flight_card.locator(self.ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER).first
             if flight_num_loc.count() > 0 and flight_num_loc.is_visible():
                 return flight_num_loc.inner_text().strip()
@@ -345,7 +464,19 @@ class List_View_Create_Alert_Page(BasePage):
         return "Unknown Flight"
 
     def get_alert_count(self, flight_card) -> str:
-        """Extracts the numeric alert count string displayed on the flight card."""
+        """
+        Reads the current alert count number displayed on a flight card.
+
+        What this function does:
+        Finds the alert counter badge or button on the flight card and reads its number
+        (for example, '00', '01', or '02').
+
+        Inputs:
+            flight_card: The flight card web element to inspect.
+
+        Returns:
+            str: The alert count text as displayed on the screen (defaults to '00').
+        """
         try:
             # First check the exact number element (<p class='alerts-list'>)
             count_loc = flight_card.locator(self.ALERT_COUNT_ELEMENT).first
@@ -365,49 +496,94 @@ class List_View_Create_Alert_Page(BasePage):
         return "00"
 
     def parse_alert_count(self, count_str: str) -> int:
-        """Parses the integer value of an alert count string, e.g. '00' -> 0, '01' -> 1."""
+        """
+        Converts an alert count text into a regular whole number (integer).
+
+        What this function does:
+        Takes an alert count string like '01' or '02' and extracts its digits to return
+        a normal number like 1 or 2. This allows tests to compare whether the number increased.
+
+        Inputs:
+            count_str (str): The text representation of the number (e.g., '01').
+
+        Returns:
+            int: The numeric value (e.g., 1).
+        """
         try:
             digits = "".join(ch for ch in str(count_str) if ch.isdigit())
             return int(digits) if digits else 0
         except Exception:
             return 0
 
-    # ==================== THREE-DOTS MENU ACTIONS ====================
-    @allure.step("Click Three-Dots Menu on flight card")
-    def open_three_dots_menu(self, flight_card):
-        """Locates and clicks the three-dots (more_vert / Edit Flight) menu icon on the flight card."""
+    # ==================== ELLIPSIS MENU ACTIONS ====================
+    @allure.step("Click Ellipsis Menu on flight card")
+    def open_ellipsis_menu(self, flight_card):
+        """
+        Clicks the three-dot ellipsis menu button on a flight card.
+
+        What this function does:
+        Locates the three vertical dots (ellipsis menu icon) on the right side of a flight
+        card and clicks it to open the actions menu popup.
+
+        Step-by-step actions:
+        1. Scrolls the flight card into view so it is clearly visible on the screen.
+        2. Clicks the three-dot ellipsis menu button.
+        3. Waits for the menu dropdown list to appear.
+
+        Inputs:
+            flight_card: The flight card whose menu we want to open.
+        """
         flight_number = self.get_flight_number(flight_card)
-        logger.info(f"Opening Three-Dots menu for flight '{flight_number}'")
+        logger.info(f"Opening ellipsis menu for flight '{flight_number}'")
         try:
             flight_card.scroll_into_view_if_needed()
             self.page.wait_for_timeout(500)
 
-            three_dots = flight_card.locator(self.THREE_DOTS_MENU_ICON).first
-            expect(three_dots).to_be_visible(timeout=10000)
-            three_dots.click()
-            logger.info(f"Clicked Three-Dots menu icon on flight '{flight_number}'")
+            ellipsis_btn = flight_card.locator(self.ELLIPSIS_MENU_ICON).first
+            expect(ellipsis_btn).to_be_visible(timeout=10000)
+            ellipsis_btn.click()
+            logger.info(f"Clicked ellipsis menu icon on flight '{flight_number}'")
 
             menu_panel = self.page.locator(self.MENU_PANEL)
             expect(menu_panel).to_be_visible(timeout=5000)
             logger.info("Menu panel is visible")
 
         except Exception as e:
-            self.attach_screenshot(f"three_dots_click_failed_{flight_number}")
-            logger.error(f"Failed to open Three-Dots menu for flight '{flight_number}': {e}")
+            self.attach_screenshot(f"ellipsis_menu_click_failed_{flight_number}")
+            logger.error(f"Failed to open ellipsis menu for flight '{flight_number}': {e}")
             raise
+
+    # Backwards compatibility alias
+    open_three_dots_menu = open_ellipsis_menu
 
     # ==================== ADD ALERT / TASK DIALOG ACTIONS ====================
     @allure.step("Select 'Add Alert/Task' from menu")
     def open_add_alert_dialog(self, flight_card):
-        """Opens the Three-Dots menu and clicks 'Add Alert/Task' option."""
-        self.open_three_dots_menu(flight_card)
+        """
+        Opens the ellipsis menu and selects the 'Add Alert/Task' option.
+
+        What this function does:
+        Clicks the three-dot menu on the flight card, then clicks the 'Add Alert/Task'
+        menu option to open the alert creation popup form.
+
+        Step-by-step actions:
+        1. Clicks the ellipsis menu button on the flight card.
+        2. Locates and clicks the 'Add Alert/Task' item in the menu dropdown.
+        3. Waits for the alert popup window and its task name text box to appear on screen.
+
+        Inputs:
+            flight_card: The flight card element we want to create an alert for.
+        """
+        self.open_ellipsis_menu(flight_card)
         logger.info("Selecting 'Add Alert/Task' from menu")
         try:
+            # Click 'Add Alert/Task' in the menu dropdown
             add_alert_opt = self.page.locator(self.ADD_ALERT_TASK_MENU_ITEM).first
             expect(add_alert_opt).to_be_visible(timeout=5000)
             add_alert_opt.click()
             logger.info("Clicked 'Add Alert/Task' menu option")
 
+            # Verify that the dialog's task name input field is visible
             task_input = self.page.locator(self.TASK_NAME_INPUT).first
             expect(task_input).to_be_visible(timeout=10000)
             logger.info("Add Alert/Task dialog is visible")
@@ -423,16 +599,35 @@ class List_View_Create_Alert_Page(BasePage):
         category: str = "Alert",
         task_name: str | None = None,
         alert_type: str = "Departure"
-    ) -> str:
+    ) -> tuple[str, str]:
         """
-        Fills the Add Alert/Task popup:
-        - If Category is 'Alert' -> Task Name = 'Test Alert'
-        - If Category is 'Incident' -> Task Name = 'Test Incident'
-        - If Category is 'Task' -> Task Name = 'Test Task'
-        - Sets Alert Type to Departure toggle.
-        Returns the resolved task_name.
+        Fills out the alert creation form with all required details.
+
+        What this function does:
+        Enters the alert name, selects the category from the dropdown menu, and selects
+        the appropriate alert type (Departure, Arrival, or Turnaround).
+
+        Business Rules & Behavior:
+        1. Task Name:
+           - If Category is 'Alert', the name defaults to 'Test Alert'.
+           - If Category is 'Incident', the name defaults to 'Test Incident'.
+           - If Category is 'Task', the name defaults to 'Test Task'.
+        2. Alert Category:
+           - Opens the category dropdown and selects the matching option (e.g., 'Alert').
+        3. Alert Type Toggle:
+           - If the Departure toggle button is present on the screen, it clicks 'Departure'.
+           - If the Departure button is missing but Arrival is present, it clicks 'Arrival'.
+           - If no toggle buttons are present, this flight is a turnaround flight, so 'Turnaround' is selected.
+
+        Inputs:
+            category (str): The category of the alert ('Alert', 'Task', or 'Incident').
+            task_name (str | None): Optional custom name. If not provided, it is chosen automatically based on category.
+            alert_type (str): The desired alert type (defaults to 'Departure').
+
+        Returns:
+            tuple[str, str]: A pair containing (the resolved task name, the resolved alert type).
         """
-        # Resolve task name based on user rules if not explicitly supplied
+        # Determine default task name if not explicitly provided
         if not task_name:
             cat_lower = category.lower()
             if "alert" in cat_lower:
@@ -448,20 +643,20 @@ class List_View_Create_Alert_Page(BasePage):
             f"Filling Alert form -> Category: '{category}', Task Name: '{task_name}', Alert Type: '{alert_type}'"
         )
         try:
-            # 1. Fill Task Name
+            # 1. Type the Task Name into the input box
             name_input = self.page.locator(self.TASK_NAME_INPUT).first
             expect(name_input).to_be_visible(timeout=5000)
             name_input.fill(task_name)
             logger.info(f"Entered Task Name: '{task_name}'")
             self.page.wait_for_timeout(300)
 
-            # 2. Select Alert Category from PrimeNG dropdown
+            # 2. Open the Alert Category dropdown list
             category_dd = self.page.locator(self.ALERT_CATEGORY_DROPDOWN).first
             expect(category_dd).to_be_visible(timeout=5000)
             category_dd.click()
             self.page.wait_for_timeout(800)
 
-            # Find matching option in dropdown list
+            # Locate and click the desired category option in the dropdown list
             cat_lower = category.lower()
             if "alert" in cat_lower:
                 opt = self.page.locator(self.CATEGORY_OPTION_ALERT).first
@@ -479,9 +674,9 @@ class List_View_Create_Alert_Page(BasePage):
             logger.info(f"Selected Alert Category: '{category}'")
             self.page.wait_for_timeout(500)
 
-            # 3. Alert Type Handling:
-            # If the toggle is present, select 'Departure'.
-            # If the toggle is not present, the flight is a turnaround flight ('Turnaround' displayed).
+            # 3. Handle Alert Type:
+            # If the toggle buttons exist, click the appropriate direction (Departure or Arrival).
+            # If no toggle button is present, the flight is a turnaround flight.
             resolved_alert_type = "Turnaround"
             departure_toggle = self.page.locator(self.ALERT_TYPE_DEPARTURE).first
             arrival_toggle = self.page.locator(self.ALERT_TYPE_ARRIVAL).first
@@ -510,7 +705,13 @@ class List_View_Create_Alert_Page(BasePage):
 
     @allure.step("Click 'Save' button in Add Alert/Task dialog")
     def click_save_alert(self):
-        """Clicks the Save button in the Add Alert/Task popup."""
+        """
+        Clicks the Save button in the alert form to submit the new alert.
+
+        What this function does:
+        Finds the 'Save' button at the bottom of the Add Alert dialog and clicks it.
+        It then pauses briefly to let the application process the submission.
+        """
         logger.info("Clicking Save button in Add Alert/Task dialog")
         try:
             save_btn = self.page.locator(self.ADD_ALERT_SAVE_BUTTON).first
@@ -535,11 +736,25 @@ class List_View_Create_Alert_Page(BasePage):
         alert_type: str = "Departure"
     ) -> dict:
         """
-        Executes end-to-end Alert/Task creation on a flight card:
-        1. Opens Three-Dots menu and clicks 'Add Alert/Task'.
-        2. Fills Task Name, Alert Category, and Departure toggle.
-        3. Clicks Save button.
-        Returns dictionary with flight_number, category, task_name, and alert_type.
+        Performs the complete alert creation process from start to finish.
+
+        What this function does:
+        Orchestrates all actions needed to create an alert for an ongoing flight:
+        1. Opens the three-dot ellipsis menu on the flight card.
+        2. Selects 'Add Alert/Task' to open the form.
+        3. Fills in the task name, category, and alert type.
+        4. Clicks the 'Save' button.
+        5. Checks if a confirmation success message appears on screen.
+
+        Inputs:
+            flight_card: The flight card element to attach the alert to.
+            category (str): The alert category (defaults to 'Alert').
+            task_name (str | None): The name of the alert (defaults to 'Test Alert').
+            alert_type (str): The flight direction (defaults to 'Departure').
+
+        Returns:
+            dict: A summary dictionary with flight number, category, task name, alert type,
+                  and whether the success message was displayed.
         """
         flight_number = self.get_flight_number(flight_card)
         logger.info(f"--- Starting Alert Creation for Flight: '{flight_number}' ---")
@@ -571,10 +786,21 @@ class List_View_Create_Alert_Page(BasePage):
     @allure.step("Verify Fallback Success Message after Alert creation")
     def is_success_message_displayed(self, expected_keyword: str = "successfully", timeout_sec: int = 7) -> tuple[bool, str]:
         """
-        Verifies whether the system fallback message (e.g., 'Alert raised successfully')
-        is displayed in the system after clicking Save.
+        Checks if a success confirmation banner appears on screen after saving an alert.
+
+        What this function does:
+        Monitors the screen for up to a few seconds looking for a notification popup
+        (such as 'Alert raised successfully').
+
+        Why we use it:
+        This confirms that the application successfully registered the new alert in the backend.
+
+        Inputs:
+            expected_keyword (str): A word that should be in the message (e.g., 'successfully').
+            timeout_sec (int): Maximum seconds to wait for the message (defaults to 7 seconds).
+
         Returns:
-            (is_displayed: bool, message_text: str)
+            tuple[bool, str]: (True if message was found, the actual text of the message).
         """
         logger.info(f"Checking for fallback success message containing '{expected_keyword}'...")
         start_time = time.time()
@@ -596,7 +822,13 @@ class List_View_Create_Alert_Page(BasePage):
     # ==================== REFRESH FLIGHTS & VERIFY ALERT ====================
     @allure.step("Click Refresh Flight icon on List View")
     def refresh_flights_list(self):
-        """Clicks the Refresh Flight icon (pi-sync) on the List View toolbar and waits for loading to complete."""
+        """
+        Clicks the Refresh Flight icon to reload all flight cards on the screen.
+
+        What this function does:
+        Locates the circular sync/refresh button in the Flights toolbar and clicks it.
+        It then waits for the loading animation to finish and ensures the flight cards are visible.
+        """
         logger.info("Clicking Refresh Flight icon on List View...")
         try:
             # Move mouse away to ensure toolbar is not hovered/obstructed
@@ -634,14 +866,27 @@ class List_View_Create_Alert_Page(BasePage):
         max_attempts: int = 4,
     ) -> tuple[bool, str, any]:
         """
-        Refreshes the Ongoing page using the List View refresh icon and checks if the alert count is updated:
-        1. Waits initial_wait_sec for backend submission to register.
-        2. Clicks the Refresh Flight icon and waits for the loading spinner to complete.
-        3. Relocates the target flight card by flight number or uses provided locator.
-        4. Checks if the alert count has increased.
-        5. If not updated yet, waits retry_interval_sec and clicks refresh icon again (up to max_attempts).
+        Refreshes the flights list and verifies that the flight's alert count has increased.
+
+        What this function does:
+        After creating an alert, the flight card's alert counter needs to increase (for example, from '00' to '01').
+        This function:
+        1. Clicks the Refresh Flight icon.
+        2. Waits for the new flight data to load.
+        3. Reads the flight's new alert count.
+        4. If the number increased, the check passes immediately.
+        5. If not updated yet, it waits and retries refreshing up to 4 times.
+
+        Inputs:
+            flight_number (str): The flight number being verified.
+            initial_count (str): The starting count before creating the alert (e.g., '00').
+            flight_card: The flight card element.
+            initial_wait_sec (int): Seconds to wait before the very first refresh.
+            retry_interval_sec (int): Seconds to wait between refresh attempts.
+            max_attempts (int): Maximum number of refresh retries allowed.
+
         Returns:
-            (is_updated: bool, current_count: str, target_flight_card)
+            tuple[bool, str, any]: (True if count increased, the updated count text, the updated flight card).
         """
         init_num = self.parse_alert_count(initial_count)
         logger.info(
@@ -700,7 +945,13 @@ class List_View_Create_Alert_Page(BasePage):
     # ==================== RELOAD & WAIT FOR ALERT COUNT UPDATE ====================
     @allure.step("Reload page and refresh Ongoing section")
     def reload_and_refresh_ongoing_view(self):
-        """Reloads the current page, waits for DOM and spinners, and ensures Ongoing section is active."""
+        """
+        Reloads the current page, waits for DOM and spinners, and ensures Ongoing section is active.
+
+        What this function does:
+        Reloads the browser window from scratch, waits for all scripts and images to finish loading,
+        and ensures that the Ongoing flights table is selected and visible.
+        """
         logger.info("Reloading page to refresh flight data...")
         try:
             self.page.reload(wait_until="domcontentloaded")
@@ -733,12 +984,22 @@ class List_View_Create_Alert_Page(BasePage):
         max_attempts: int = 4,
     ) -> tuple[bool, str, any]:
         """
-        Verifies whether the flight alert count is updated without passively waiting for notifications:
+        Verifies whether the flight alert count is updated by reloading the page if necessary.
+
+        What this function does:
         1. Checks the alert count on the card after initial_wait_sec.
         2. If not updated, reloads the page, ensures Ongoing section, relocates the card, and checks again.
         3. Repeats for up to max_attempts.
+
+        Inputs:
+            flight_number (str): The flight number being verified.
+            initial_count (str): The starting count before creating the alert (e.g., '00').
+            initial_wait_sec (int): Seconds to wait before the first check.
+            reload_wait_sec (int): Seconds to wait before reloading the page.
+            max_attempts (int): Maximum number of reload attempts.
+
         Returns:
-            (is_updated: bool, current_count: str, updated_flight_card_locator)
+            tuple[bool, str, any]: (True if updated, current count string, updated flight card).
         """
         init_num = self.parse_alert_count(initial_count)
         logger.info(
@@ -796,9 +1057,19 @@ class List_View_Create_Alert_Page(BasePage):
         timeout_sec: int = 120
     ) -> str:
         """
-        Polls the alert count button on the flight card for up to timeout_sec
-        (between 30 seconds and 2 minutes) until the count updates.
-        Returns the updated count string.
+        Polls the alert count button on the flight card for up to timeout_sec until the count updates.
+
+        What this function does:
+        Continuously checks the alert count on the card every few seconds to see if it changes.
+        Returns the updated count string once it changes.
+
+        Inputs:
+            flight_card: The flight card element to watch.
+            initial_count (str): The starting alert count (e.g., '00').
+            timeout_sec (int): Maximum seconds to wait (defaults to 120 seconds).
+
+        Returns:
+            str: The final alert count string.
         """
         flight_number = self.get_flight_number(flight_card)
         logger.info(
@@ -830,7 +1101,16 @@ class List_View_Create_Alert_Page(BasePage):
     # ==================== RIGHT-SIDE ALERT POPUP VERIFICATION ====================
     @allure.step("Click Alert Count Number to open right-side Alert Details popup")
     def open_alert_details_popup(self, flight_card):
-        """Clicks the Alert count number element on the flight card to open the right-side notification popup."""
+        """
+        Opens the right-side Alert Details panel by clicking the alert number on the flight card.
+
+        What this function does:
+        Clicks on the alert counter number (e.g., '01') on the flight card. This opens a slide-out
+        panel on the right side of the screen that lists all alerts created for this flight.
+
+        Inputs:
+            flight_card: The flight card whose alert details we want to open.
+        """
         flight_number = self.get_flight_number(flight_card)
         logger.info(f"Clicking Alert Count number for flight '{flight_number}'")
         try:
@@ -859,9 +1139,22 @@ class List_View_Create_Alert_Page(BasePage):
     @allure.step("Check whether alert '{expected_task_name}' is displayed in right popup")
     def is_alert_displayed_in_popup(self, expected_task_name: str, timeout_sec: int = 30) -> bool:
         """
-        Verifies whether the created alert (by Task Name) is displayed in the
-        right-side Alert Details popup list.
-        Polls up to timeout_sec for the alert card to appear in the list.
+        Verifies that our new alert is listed inside the right-side Alert Details panel.
+
+        What this function does:
+        Looks inside the open right-side panel and checks whether the name of our alert
+        (such as 'Test Alert') is displayed in the list of alert cards.
+
+        Why we use it:
+        This confirms that the alert was not just saved in the background, but is visible
+        and readable by users who view the flight's alert details.
+
+        Inputs:
+            expected_task_name (str): The alert title to check for (e.g., 'Test Alert').
+            timeout_sec (int): Maximum seconds to wait for the alert to show up in the panel.
+
+        Returns:
+            bool: True if the alert is found in the panel, False otherwise.
         """
         logger.info(f"Checking if Alert '{expected_task_name}' is displayed in right popup...")
         start_time = time.time()
@@ -899,7 +1192,13 @@ class List_View_Create_Alert_Page(BasePage):
 
     @allure.step("Close right-side Alert Details popup")
     def close_alert_details_popup(self):
-        """Closes the right-side Alert Details popup via its close icon."""
+        """
+        Closes the right-side Alert Details panel.
+
+        What this function does:
+        Finds and clicks the 'X' (close) button at the top corner of the right-side alert
+        panel so that the screen returns to its normal view.
+        """
         try:
             close_btn = self.page.locator(self.ALERT_POPUP_CLOSE_BUTTON).first
             if close_btn.is_visible(timeout=3000):
@@ -908,5 +1207,10 @@ class List_View_Create_Alert_Page(BasePage):
                 self.page.wait_for_timeout(1000)
         except Exception as e:
             logger.debug(f"Close alert details popup notice: {e}")
+
+
+# Alias to support both class naming conventions
+ListView_Ongoing_Create_Alert_Page = List_View_Create_Alert_Page
+
 
 

@@ -8,6 +8,7 @@ from playwright.sync_api import expect
 import pytest
 import allure
 from pages.Detailed_View.Detailed_View_Flight_Card_Page import DetailViewPage
+from pages.Login.Login_Page import LoginPage
 from utils.logger import get_logger
 import time
 
@@ -15,14 +16,13 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_detailed_view(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify Detailed View flight card navigation and flight attribute validation across Ongoing and Departed sections.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login).
+    1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
     2. Navigate to Flights List View dashboard.
     3. Iterate through Ongoing and Departed sections.
     4. For each section, locate flight cards and click Detail View arrow.
@@ -30,6 +30,10 @@ def test_detailed_view(page):
     6. Click Back Arrow to return to List View and verify Turnaround List visibility.
     """
     logger.info("Starting Detailed View Test")
+
+    with allure.step("Prerequisite: Login to application"):
+        login_page = LoginPage(page)
+        login_page.login_user()
 
     detail_view_page = DetailViewPage(page, None)
 
@@ -62,11 +66,12 @@ def test_detailed_view(page):
 
             for i in range(number_of_flights):
                 try:
-                    with allure.step(f"Step 3: Validating Details for Flight {i + 1} in {section_name}"):
-                        ongoing_flights = detail_view_page.page.locator(detail_view_page.FLIGHTS_CARDS)
-                        flights = ongoing_flights.nth(i)
-                        flights.scroll_into_view_if_needed()
+                    ongoing_flights = detail_view_page.page.locator(detail_view_page.FLIGHTS_CARDS)
+                    flights = ongoing_flights.nth(i)
+                    flights.scroll_into_view_if_needed()
+                    flight_num = detail_view_page.get_flight_number(flights) or f"Flight {i + 1}"
 
+                    with allure.step(f"Step 3.{i+1}: Validating Details for Flight '{flight_num}' in {section_name}"):
                         # Check lock icon before clicking forward arrow
                         if detail_view_page.is_lock_icon_visible(flights):
                             logger.warning(f"Flight {i+1} is locked. Skipping detail view.")

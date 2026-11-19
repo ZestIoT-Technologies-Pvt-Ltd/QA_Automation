@@ -8,6 +8,7 @@ from playwright.sync_api import expect
 import pytest
 import allure
 from pages.List_View.ListView_Ongoing_PaxCount_Page import PAX_Count_Page
+from pages.Login.Login_Page import LoginPage
 from utils.logger import get_logger
 import time
 
@@ -15,14 +16,13 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_pax_count(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify Passenger (PAX) count validation and segregation across Ongoing, Incoming, and Departed sections.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login).
+    1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
     2. Navigate to Flights List View dashboard.
     3. Iterate through Ongoing, Incoming, and Departed sections.
     4. For each flight card, validate arrival and departure flight numbers.
@@ -30,6 +30,10 @@ def test_pax_count(page):
     6. Validate PAX segregation breakdown (Adults, Children, Infants).
     """
     logger.info("Starting PAX Count Test")
+
+    with allure.step("Prerequisite: Login to application"):
+        login_page = LoginPage(page)
+        login_page.login_user()
 
     pax_count = PAX_Count_Page(page, None)
 
@@ -63,14 +67,13 @@ def test_pax_count(page):
             for i in range(number_of_flights):
                 print("==============================Flight Change==============================")
                 try:
-                    with allure.step(f"Step 3: Validating PAX Details for Flight {i + 1} in {section_name}"):
-                        ongoing_flights = pax_count.page.locator(pax_count.FLIGHTS_CARDS)
-                        flights = ongoing_flights.nth(i)
-                        flights.scroll_into_view_if_needed()
+                    ongoing_flights = pax_count.page.locator(pax_count.FLIGHTS_CARDS)
+                    flights = ongoing_flights.nth(i)
+                    flights.scroll_into_view_if_needed()
+                    arrival_number, departure_number = pax_count.arrival_and_departure_number(flights)
+                    flight_label = f"{arrival_number} - {departure_number}" if (arrival_number and departure_number and arrival_number != '-' and departure_number != '-') else (arrival_number if arrival_number != '-' else (departure_number if departure_number != '-' else f"Flight {i + 1}"))
 
-                        # Check Arrival Number and Departure Number
-                        arrival_number, departure_number = pax_count.arrival_and_departure_number(flights)
-
+                    with allure.step(f"Step 3.{i+1}: Validating PAX Details for Flight '{flight_label}' in {section_name}"):
                         # Check Arrival PAX and Departure PAX
                         arrival_pax_count, departure_pax_count, total_pax = pax_count.arrival_and_departure_pax(flights)
 

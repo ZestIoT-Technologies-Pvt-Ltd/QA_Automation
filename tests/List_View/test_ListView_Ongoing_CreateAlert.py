@@ -1,79 +1,97 @@
 # Author : Tilak Badsheshi
 # Created Date : 2026-11-09
 # Modified By : Tilak Badsheshi
-# Modified Date : 2026-11-10
+# Modified Date : 2026-11-19
 
 import pytest
 import allure
 from pages.List_View.ListView_Ongoing_Create_Alert_Page import List_View_Create_Alert_Page
+from pages.Login.Login_Page import LoginPage
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_List_View_Create_Alert(page):
-
     """
-    ==============  INTRODUCTION ================
-    Test Scenario: Verify whether a flight-level alert can be created against a flight in Flights List View.
+        ==============  TEST OVERVIEW ================
 
+    Test Scenario: Verify creating and validating a flight-level alert in the Ongoing section.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login).
-    2. Navigate to Flights List View.
-    3. Ensure Ongoing Section is active (do not navigate to other sections).
-    4. Select an eligible flight card with an available action menu.
-    5. Record the initial alert count from the flight card.
-    6. Click the Three-Dots menu ('more_vert') on the flight card.
-    7. Select 'Add Alert/Task' from the menu.
-    8. In the Add Alert/Task popup:
-       - Enter Task Name as 'Test Alert' (based on category 'Alert').
-       - Select Alert Category as 'Alert' from the PrimeNG dropdown.
-       - Select Alert Type toggle as 'Departure'.
-       - Click 'Save' button to create the alert.
-    9. Refresh the Ongoing page using the Refresh icon ('Refresh Flight' / 'pi-sync') on the List View:
-       - After refreshing, the system loading spinner will be displayed.
-       - Wait for the loading spinner to complete.
-       - Verify that the alert count has updated / increased for the flight.
-    10. Click on the Alert count column of the same flight to open the right-side Alert Details popup.
-    11. Verify whether the created alert ('Test Alert') is displayed in the right popup:
-        - If displayed -> Test PASSED.
-        - If not displayed -> Test FAILED.
-    12. Close the right-side Alert Details popup.
+      1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
+      2. Navigate to Flights List View screen.
+      3. Ensure Ongoing flights section is active.
+      4. Select eligible flight card and record initial alert count.
+      5. Create flight-level alert ('Test Alert' under 'Alert' category).
+      6. Verify fallback success message is displayed.
+      7. Refresh ongoing flights list and verify alert count increases by 1.
+      8. Open right-side Alert Details popup for the flight.
+      9. Verify created alert is displayed in the popup.
+     10. Close right-side Alert Details popup.
     """
     logger.info("=== Starting Test: Create Flight-Level Alert in Ongoing Section ===")
 
+    # -------------------------------------------------------------------------
+    # Prerequisite: Sign in to the AviLeap application with valid credentials
+    # -------------------------------------------------------------------------
+    with allure.step("Prerequisite: Login to application"):
+        # Create an instance of the Login page and log in
+        login_page = LoginPage(page)
+        login_page.login_user()
+
+    # Create an instance of the Ongoing Create Alert page object
     alert_page = List_View_Create_Alert_Page(page)
 
+    # -------------------------------------------------------------------------
+    # Step 1: Open the Flights List View screen
+    # -------------------------------------------------------------------------
     with allure.step("Step 1: Navigate to Flights List View"):
+        # Clicks the main menu and navigates to the Flights screen
         alert_page.navigate_to_list_view_page()
 
+    # -------------------------------------------------------------------------
+    # Step 2: Make sure the 'Ongoing' section tab is active
+    # -------------------------------------------------------------------------
     with allure.step("Step 2: Ensure Ongoing Section is Active"):
+        # Clicks on the 'Ongoing' tab and checks that flight cards are displayed on the screen
         total_flights = alert_page.ensure_ongoing_section()
         assert total_flights > 0, "No flights available in Ongoing section."
         logger.info(f"Ongoing section active with {total_flights} flight cards.")
 
+    # -------------------------------------------------------------------------
+    # Step 3: Find a flight card that has an available actions menu
+    # -------------------------------------------------------------------------
     with allure.step("Step 3: Select Eligible Flight Card"):
+        # Selects the first flight card that has an ellipsis (three-dots) menu ready to be clicked
         target_flight = alert_page.get_flight_card_with_actions_menu()
         flight_number = alert_page.get_flight_number(target_flight)
+        # Record the starting alert count so we can verify it increases later
         initial_count = alert_page.get_alert_count(target_flight)
-        logger.info(f"Target Flight: '{flight_number}' | Initial Alert Count: '{initial_count}'")
+        logger.info(f"Target Ongoing Flight: '{flight_number}' | Initial Alert Count: '{initial_count}'")
 
+    # -------------------------------------------------------------------------
+    # Step 4: Open the form and create a new alert for this flight
+    # -------------------------------------------------------------------------
     with allure.step(f"Step 4: Create Flight-Level Alert for Flight '{flight_number}'"):
+        # Opens the ellipsis menu, clicks 'Add Alert/Task', enters details, and clicks Save
         creation_data = alert_page.create_flight_alert(
             flight_card=target_flight,
             category="Alert",
             task_name="Test Alert",
             alert_type="Departure",
         )
+        # Check that the form entered the exact task name and category we asked for
         assert creation_data["task_name"] == "Test Alert", "Task name does not match 'Test Alert'."
         assert creation_data["category"] == "Alert", "Alert category does not match 'Alert'."
         assert creation_data["alert_type"] in ("Departure", "Turnaround", "Arrival"), f"Alert type unexpected: {creation_data['alert_type']}"
         logger.info(f"Alert form submitted successfully for '{flight_number}': {creation_data}")
 
-    with allure.step("Step 5: Verify Fallback Success Message is Displayed in System"):
+    # -------------------------------------------------------------------------
+    # Step 5: Check that the system displayed a success confirmation popup
+    # -------------------------------------------------------------------------
+    with allure.step(f"Step 5: Verify Fallback Success Message is Displayed for Flight '{flight_number}'"):
         assert creation_data["is_success"], (
             "FAILED: Fallback success message (e.g. 'Alert raised successfully') was NOT displayed "
             f"after submitting alert for flight '{flight_number}'."
@@ -82,8 +100,11 @@ def test_List_View_Create_Alert(page):
             f"PASSED: Fallback success message '{creation_data['success_message']}' displayed in system!"
         )
 
-    with allure.step(f"Step 6: Refresh Ongoing Flights via Refresh Icon & Check Alert Count"):
-        # Refresh the Ongoing page from the system refresh icon on List View
+    # -------------------------------------------------------------------------
+    # Step 6: Click the Refresh icon and verify the alert number increases by 1
+    # -------------------------------------------------------------------------
+    with allure.step(f"Step 6: Refresh Ongoing Flights & Check Alert Count for Flight '{flight_number}'"):
+        # Clicks the refresh flight icon and waits until the alert count number goes up
         is_updated, updated_count, updated_card = alert_page.refresh_and_wait_for_alert_count_update(
             flight_number=flight_number,
             initial_count=initial_count,
@@ -101,10 +122,16 @@ def test_List_View_Create_Alert(page):
             f"and refreshing flights list. Initial count: '{initial_count}', Current count: '{updated_count}'"
         )
 
-    with allure.step(f"Step 7: Open Right-Side Alert Details Popup by Clicking Alert Column"):
+    # -------------------------------------------------------------------------
+    # Step 7: Click on the alert count number to open the right-side details panel
+    # -------------------------------------------------------------------------
+    with allure.step(f"Step 7: Open Right-Side Alert Details Popup for Flight '{flight_number}'"):
         alert_page.open_alert_details_popup(updated_card)
 
-    with allure.step("Step 8: Verify Alert 'Test Alert' is Displayed in Right Popup"):
+    # -------------------------------------------------------------------------
+    # Step 8: Verify that our created alert appears in the right-side panel
+    # -------------------------------------------------------------------------
+    with allure.step(f"Step 8: Verify Alert 'Test Alert' is Displayed in Right Popup for Flight '{flight_number}'"):
         is_displayed = alert_page.is_alert_displayed_in_popup(
             expected_task_name="Test Alert",
             timeout_sec=30,
@@ -115,7 +142,10 @@ def test_List_View_Create_Alert(page):
         )
         logger.info(f"PASSED: Alert 'Test Alert' is displayed in right popup for flight '{flight_number}'!")
 
-    with allure.step("Step 9: Close Right-Side Alert Details Popup"):
+    # -------------------------------------------------------------------------
+    # Step 9: Close the right-side alert details panel
+    # -------------------------------------------------------------------------
+    with allure.step(f"Step 9: Close Right-Side Alert Details Popup for Flight '{flight_number}'"):
         alert_page.close_alert_details_popup()
 
-    logger.info("=== Test Completed Successfully: Flight Alert Created and Verified ===")
+    logger.info("=== Completed Test: Create Flight-Level Alert in Ongoing Section successfully ===")

@@ -93,6 +93,19 @@ class BasePage:
     def wait_for_element(self, target, state="visible", timeout=None):
         return self.wait_for(target, state=state, timeout=timeout)
 
+    def login(self, username: str | None = None, password: str | None = None):
+        """
+        Prerequisite method to authenticate / log into the application.
+
+        What this function does:
+        Creates an instance of the LoginPage object and runs the login_user() workflow.
+        This provides a convenient shorthand for any page object or test that needs to ensure
+        the user is authenticated before proceeding.
+        """
+        from pages.Login.Login_Page import LoginPage
+        login_page = LoginPage(self.page, self.base_url)
+        return login_page.login_user(username, password)
+
     # -------------------------------------------------------------------------
     # Basic User Actions
     # -------------------------------------------------------------------------
@@ -540,3 +553,114 @@ class BasePage:
         except Exception:
             logger.exception("Unable to capture failure screenshot | url=%s", getattr(self.page, "url", "unknown"))
             return None
+
+    # -------------------------------------------------------------------------
+    # Flight Card Attribute Extractions (Flight Number, Arrival & Departure)
+    # -------------------------------------------------------------------------
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
+
+    def get_arrival_and_departure_flight_numbers(self, flight_card: Locator | None = None) -> tuple[str, str]:
+        """
+        Extracts both the Arrival Flight Number and Departure Flight Number from a flight card.
+
+        What this function does:
+        1. Finds the flight number container element (class="flightno-col") within the flight card.
+        2. Extracts the text content or child elements (including tooltip paragraphs).
+        3. Parses and returns the separate Arrival and Departure flight numbers.
+
+        Inputs:
+            flight_card (Locator, optional): The flight card web element. If None, queries the page.
+
+        Returns:
+            tuple[str, str]: (arrival_flight_number, departure_flight_number).
+        """
+        target = flight_card if flight_card is not None else self.page
+        try:
+            # 1. Primary check: class="flightno-col"
+            col = target.locator(".flightno-col, //div[contains(@class,'flightno-col')]").first
+            raw_text = ""
+            if col.count() > 0:
+                # Check for child paragraph with tooltip inside flightno-col
+                p_elem = col.locator("p[mattooltip='Flight Arrival Departure Numbers'], p").first
+                if p_elem.count() > 0:
+                    raw_text = p_elem.inner_text().strip()
+                if not raw_text:
+                    raw_text = col.inner_text().strip()
+
+            # 2. Secondary check: mattooltip locator directly
+            if not raw_text:
+                tooltip_elem = target.locator("//p[@mattooltip='Flight Arrival Departure Numbers']").first
+                if tooltip_elem.count() > 0:
+                    raw_text = tooltip_elem.inner_text().strip()
+
+            if raw_text:
+                # Normalize spaces and newlines
+                clean_text = " ".join(raw_text.split())
+                # Handle separator: ' - ' or ' / ' or '-'
+                if " - " in clean_text:
+                    parts = clean_text.split(" - ", 1)
+                    arr = parts[0].strip()
+                    dep = parts[1].strip() if len(parts) > 1 else ""
+                    return (arr if arr != "-" else ""), (dep if dep != "-" else "")
+                elif " / " in clean_text:
+                    parts = clean_text.split(" / ", 1)
+                    arr = parts[0].strip()
+                    dep = parts[1].strip() if len(parts) > 1 else ""
+                    return (arr if arr != "-" else ""), (dep if dep != "-" else "")
+                elif "-" in clean_text and not clean_text.startswith("FZ-") and not clean_text.startswith("EK-"):
+                    parts = clean_text.split("-", 1)
+                    arr = parts[0].strip()
+                    dep = parts[1].strip() if len(parts) > 1 else ""
+                    return (arr if arr != "-" else ""), (dep if dep != "-" else "")
+                else:
+                    return clean_text, ""
+        except Exception as e:
+            logger.warning("Error fetching arrival and departure flight numbers: %s", e)
+        return "", ""
+
+    def get_flight_number(self, flight_card: Locator | None = None) -> str:
+        """
+        Extracts and formats the flight number from the dashboard / flight card.
+
+        What this function does:
+        Fetches both the Arrival Flight Number and Departure Flight Number from class="flightno-col",
+        and returns a clean, human-readable flight number string to display in test steps and reports.
+        - If both arrival and departure numbers are present: '8500 - 863' or 'FZ-0215 - FZ-0216'
+        - If only arrival number is present: 'FZ-0215'
+        - If only departure number is present: 'FZ-0216'
+
+        Inputs:
+            flight_card (Locator, optional): The flight card web element.
+
+        Returns:
+            str: The flight number string (e.g. '8500 - 863' or 'FZ-0215').
+        """
+        arr, dep = self.get_arrival_and_departure_flight_numbers(flight_card)
+        if arr and dep:
+            return f"{arr} - {dep}"
+        if arr:
+            return arr
+        if dep:
+            return dep
+
+        # Fallback to direct text if splitting didn't yield values
+        target = flight_card if flight_card is not None else self.page
+        try:
+            col = target.locator(".flightno-col, //div[contains(@class,'flightno-col')]").first
+            if col.count() > 0:
+                txt = col.inner_text().strip()
+                if txt and txt != "-":
+                    return " ".join(txt.split())
+            tooltip_elem = target.locator("//p[@mattooltip='Flight Arrival Departure Numbers']").first
+            if tooltip_elem.count() > 0:
+                txt = tooltip_elem.inner_text().strip()
+                if txt and txt != "-":
+                    return " ".join(txt.split())
+        except Exception:
+            pass
+        return "Unknown Flight"

@@ -53,7 +53,12 @@ class ListView_Ongoing_ActivityGantView_Page(BasePage):
     GANTT_SLIDE_TOGGLE = "//div[contains(@class,'gantt-view-toggle-div')]//mat-slide-toggle"
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]//div[@id='selectedCard']"
     SYNC_ICON = "//i[@ptooltip='Refresh Flight'] | //i[contains(@class,'pi-sync')]"
-    FLIGHT_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
 
     # Gantt Chart Component and Elements
     GANTT_CHART = "app-flight-activities-ganttchart"
@@ -178,7 +183,9 @@ class ListView_Ongoing_ActivityGantView_Page(BasePage):
         target_card.scroll_into_view_if_needed()
 
         try:
-            flight_no = target_card.locator(self.FLIGHT_NUMBER).inner_text().strip()
+            flight_no = self.get_flight_number(target_card)
+            if not flight_no:
+                flight_no = target_card.locator(self.FLIGHT_NUMBER).inner_text().strip()
         except Exception:
             flight_no = f"Flight_Index_{card_index}"
 

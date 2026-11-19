@@ -108,21 +108,7 @@ class HtmlReportPlugin:
         params = getattr(getattr(item, "callspec", None), "params", {}) or {}
         marker = item.get_closest_marker("tc")
         raw_doc = (getattr(item.function, "__doc__", "") or "").strip()
-        doc_lines = [l.strip() for l in raw_doc.splitlines() if l.strip()]
-        scenario_title = ""
-        for line in doc_lines:
-            low = line.lower()
-            if low.startswith("test scenario:"):
-                scenario_title = line[14:].strip()
-                break
-            elif low.startswith("scenario:"):
-                scenario_title = line[9:].strip()
-                break
-        if not scenario_title and doc_lines:
-            for line in doc_lines:
-                if not line.startswith("=") and not line.lower().startswith("introduction"):
-                    scenario_title = line
-                    break
+        scenario_title, _ = extract_clean_scenario(raw_doc, item.name)
 
         proj_values = [v for k,v in item.user_properties if k == "project"]
         rec_project = proj_values[-1] if proj_values else (getattr(item.config, "framework_project", "") or "")
@@ -130,7 +116,7 @@ class HtmlReportPlugin:
         record = rc.TestRecord(
             nodeid=item.nodeid,
             name=item.name,
-            description=scenario_title or (doc_lines[0] if doc_lines else ""),
+            description=scenario_title,
             project=str(rec_project),
             airport=str(params.get("station") or params.get("airport") or ",".join(dict.fromkeys(v for k,v in item.user_properties if k == "stations")) or cfg_station(item) or "-"),
             tc=_tc_label(marker),
@@ -520,6 +506,109 @@ def _clean_log_text(msg: str) -> str:
     return s.strip()
 
 
+def extract_clean_scenario(raw_doc: str, fallback_name: str) -> tuple[str, str]:
+    """
+    Extracts a clean scenario title and secondary details/steps from a docstring.
+    Guarantees:
+      - Never repeats the scenario title inside the details block.
+      - Strips decorative banners like '=== INTRODUCTION ===' or '=== TEST OVERVIEW ==='.
+      - Strips 'What this test does:' or 'Test Scenario:' headers.
+      - Returns (clean_scenario_title, clean_details_text).
+    """
+    if not raw_doc or not raw_doc.strip():
+        return fallback_name, ""
+
+    lines = [line.strip() for line in raw_doc.strip().splitlines()]
+    content_lines = []
+    for line in lines:
+        if not line:
+            content_lines.append("")
+            continue
+        # Remove divider lines like "==============  INTRODUCTION ================"
+        if re.match(r"^[=\-*~#]{3,}.*[=\-*~#]{3,}$", line):
+            continue
+        content_lines.append(line)
+
+    scenario_title = ""
+    scenario_idx = -1
+    for i, line in enumerate(content_lines):
+        clean_l = line.strip()
+        if not clean_l:
+            continue
+        low = clean_l.lower()
+        if low.startswith("test scenario:"):
+            scenario_title = clean_l[14:].strip()
+            scenario_idx = i
+            break
+        elif low.startswith("scenario:"):
+            scenario_title = clean_l[9:].strip()
+            scenario_idx = i
+            break
+        elif low.startswith("what this test does:"):
+            for j in range(i + 1, len(content_lines)):
+                next_l = content_lines[j].strip()
+                if next_l:
+                    scenario_title = next_l
+                    scenario_idx = j
+                    break
+            if scenario_title:
+                break
+
+    # If still not found, pick the first descriptive line
+    if not scenario_title:
+        for i, line in enumerate(content_lines):
+            clean_l = line.strip()
+            if not clean_l:
+                continue
+            low = clean_l.lower()
+            if any(low.startswith(k) for k in ("introduction", "test overview", "author", "created", "modified")):
+                continue
+            scenario_title = clean_l
+            scenario_idx = i
+            break
+
+    if not scenario_title:
+        scenario_title = fallback_name
+
+    # Clean up multi-line scenario title if ending in colon
+    if scenario_title.endswith(":"):
+        scenario_title = scenario_title[:-1].strip()
+
+    # Now extract details/steps (if any), strictly excluding the scenario title
+    details_lines = []
+    start_collecting = False
+    for i, line in enumerate(content_lines):
+        clean_l = line.strip()
+        if not clean_l:
+            if start_collecting and details_lines and details_lines[-1] != "":
+                details_lines.append("")
+            continue
+        if i <= scenario_idx:
+            continue
+        low = clean_l.lower()
+        if low.startswith("what this test does:") or low.startswith("test scenario:"):
+            continue
+        if clean_l == scenario_title:
+            continue
+        if low.startswith("it checks the entire workflow") or low.startswith("steps:"):
+            start_collecting = True
+            details_lines.append(clean_l)
+            continue
+        if start_collecting or re.match(r"^\d+[\.\)]", clean_l) or clean_l.startswith(("-", "*", "•")):
+            start_collecting = True
+            details_lines.append(clean_l)
+
+    clean_details = "\n".join(details_lines).strip()
+    return scenario_title, clean_details
+
+
+def normalize_step_name(name: str) -> str:
+    """Normalize step text for deduplication comparison."""
+    s = re.sub(r"^(step\s*\d+[\.\d*]*\s*:\s*|prerequisite\s*:\s*)", "", str(name).strip(), flags=re.IGNORECASE)
+    s = re.sub(r"[\s_-]+", " ", s).strip().lower()
+    return s
+
+
 def build_html(meta: dict, summary: dict, records) -> str:
     """Generate modern, self-contained ExtentReports HTML report."""
     template_file = Path(__file__).resolve().parent / "extent_template.html"
@@ -580,25 +669,10 @@ def build_html(meta: dict, summary: dict, records) -> str:
             status_label = "PASSED"
 
         # Scenario extraction
-        scenario_title = getattr(r, "description", "").strip()
-        full_doc = getattr(r, "full_doc", "").strip()
-        if (not scenario_title or scenario_title.startswith("=")) and full_doc:
-            doc_lines = [l.strip() for l in full_doc.splitlines() if l.strip()]
-            for line in doc_lines:
-                low = line.lower()
-                if low.startswith("test scenario:"):
-                    scenario_title = line[14:].strip()
-                    break
-                elif low.startswith("scenario:"):
-                    scenario_title = line[9:].strip()
-                    break
-            if (not scenario_title or scenario_title.startswith("=")) and doc_lines:
-                for line in doc_lines:
-                    if not line.startswith("=") and not line.lower().startswith("introduction"):
-                        scenario_title = line
-                        break
-        if not scenario_title or scenario_title.startswith("="):
-            scenario_title = name
+        scenario_title, scenario_details = extract_clean_scenario(
+            getattr(r, "full_doc", "") or getattr(r, "description", ""),
+            name
+        )
 
         rec_start = getattr(r, "start", 0.0)
         if not rec_start or rec_start < 86400:
@@ -625,11 +699,10 @@ def build_html(meta: dict, summary: dict, records) -> str:
 </div>"""
         nav_items.append(nav_item_html)
 
-        # Right Detail Pane
-        # Scenario details block
+        # Right Detail Pane - Scenario details block (only when distinct details exist)
         scenario_details_html = ""
-        if full_doc and full_doc != scenario_title:
-            scenario_details_html = f"<div class='scenario-details'>{_e(full_doc)}</div>"
+        if scenario_details:
+            scenario_details_html = f"<div class='scenario-details'>{_e(scenario_details)}</div>"
 
         # Failure banner (if failed)
         failure_alert_html = ""
@@ -648,13 +721,53 @@ def build_html(meta: dict, summary: dict, records) -> str:
   {traceback_block}
 </div>"""
 
-        # Steps Table
+        # Steps Table with intelligent deduplication
         rendered_screenshot_names = set()
         step_rows = []
-        steps_list = getattr(r, "steps", None)
+        raw_steps = getattr(r, "steps", None) or []
 
-        if steps_list:
-            for s in steps_list:
+        if raw_steps:
+            processed_steps = []
+            for s in raw_steps:
+                s_name = getattr(s, "name", "").strip()
+                if not s_name:
+                    continue
+
+                if processed_steps:
+                    prev = processed_steps[-1]
+                    norm_curr = normalize_step_name(s_name)
+                    norm_prev = normalize_step_name(prev.name)
+
+                    # Check if exact duplicate or child duplication of parent step
+                    is_dup = (
+                        norm_curr == norm_prev
+                        or (len(norm_curr) > 8 and len(norm_prev) > 8 and (norm_curr in norm_prev or norm_prev in norm_curr))
+                    )
+
+                    if is_dup:
+                        # Transfer any screenshots to previous step
+                        for shot in getattr(s, "screenshots", []):
+                            if not any(x.name == shot.name for x in prev.screenshots):
+                                prev.screenshots.append(shot)
+                        # Transfer failure status/error
+                        if s.status == "failed" and prev.status != "failed":
+                            prev.status = "failed"
+                            prev.error = s.error
+                        continue
+
+                    # If this is an internal sub-step (depth > 0) and not an explicitly numbered step (e.g. Step X.Y)
+                    if s.depth > 0 and not re.match(r"^step\s*\d+\.\d+", s_name, flags=re.IGNORECASE):
+                        for shot in getattr(s, "screenshots", []):
+                            if not any(x.name == shot.name for x in prev.screenshots):
+                                prev.screenshots.append(shot)
+                        if s.status == "failed" and prev.status != "failed":
+                            prev.status = "failed"
+                            prev.error = s.error
+                        continue
+
+                processed_steps.append(s)
+
+            for s in processed_steps:
                 s_time = datetime.fromtimestamp(getattr(s, "start", rec_start)).strftime("%H:%M:%S")
                 s_name = _e(getattr(s, "name", ""))
                 s_status = getattr(s, "status", "passed")
@@ -734,15 +847,37 @@ def build_html(meta: dict, summary: dict, records) -> str:
   <div class="screenshots-row">{''.join(cards)}</div>
 </div>"""
 
-        # Execution Logs Block
+        # Execution Logs Block - deduplicated from steps and STEP: prefixes
         logs_html = ""
         log_lines = getattr(r, "logs", [])
         if log_lines:
             log_entries = []
+            all_step_texts = set()
+            for s in (getattr(r, "steps", []) or []):
+                s_name = getattr(s, "name", "").strip()
+                if s_name:
+                    all_step_texts.add(s_name.lower())
+                    norm_s = normalize_step_name(s_name)
+                    if norm_s:
+                        all_step_texts.add(norm_s)
+
             for l in log_lines:
                 msg = _clean_log_text(l.message)
                 if not msg:
                     continue
+                # Skip internal report step logger outputs
+                if msg.startswith("STEP: "):
+                    continue
+                # Skip pytest protocol / teardown markers
+                if any(p in msg for p in ("TEST START |", "TEST TEARDOWN |")):
+                    continue
+
+                # Skip logs that merely echo an allure step title
+                msg_lower = msg.strip().lower()
+                norm_msg = normalize_step_name(msg)
+                if msg_lower in all_step_texts or (norm_msg and norm_msg in all_step_texts):
+                    continue
+
                 t_str = datetime.fromtimestamp(l.ts).strftime("%H:%M:%S")
                 log_entries.append(f"<div class='log-line {l.level}'>[{t_str}] [{l.level}] {_e(msg)}</div>")
             if log_entries:

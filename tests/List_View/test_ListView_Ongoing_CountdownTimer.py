@@ -6,20 +6,20 @@
 import pytest
 import allure
 from pages.List_View.ListView_Ongoing_CountdownTimer_Page import ListView_Ongoing_CountdownTimer_Page
+from pages.Login.Login_Page import LoginPage
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_listview_ongoing_countdown_timer(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify whether countdown timers are calculated correctly based on STD and ETD and updated in real time.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login).
+    1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
     2. Navigate to Flights List View dashboard.
     3. Ensure Ongoing Section is active and flights are loaded.
     4. Extract and validate Header Timings (Station Code, Date, Station Local Time, and UTC Time).
@@ -34,6 +34,10 @@ def test_listview_ongoing_countdown_timer(page):
     6. Verify real-time dynamic clock updates for both Local Time and UTC Time.
     """
     logger.info("Starting List View Ongoing Section Countdown Timer Validation Test")
+
+    with allure.step("Prerequisite: Login to application"):
+        login_page = LoginPage(page)
+        login_page.login_user()
 
     countdown_page = ListView_Ongoing_CountdownTimer_Page(page, None)
 
@@ -82,19 +86,20 @@ def test_listview_ongoing_countdown_timer(page):
         for i in range(flights_to_inspect):
             card = flight_cards[i]
             card.scroll_into_view_if_needed()
+            fl_num = countdown_page.get_flight_number(card)
+            with allure.step(f"Step 4.{i+1}: Validate Countdown Timer for Flight '{fl_num}'"):
+                res = countdown_page.validate_countdown_timer_for_card(card, local_dt)
+                validation_results.append(res)
 
-            res = countdown_page.validate_countdown_timer_for_card(card, local_dt)
-            validation_results.append(res)
-
-            # Assert individual card properties
-            assert res.get("passed", False), (
-                f"Countdown timer validation failed for Flight '{res.get('flight_number')}': "
-                f"Target={res.get('target_source')}({res.get('target_dt')}), "
-                f"Diff={res.get('diff_minutes')}m, Displayed='{res.get('displayed_text')}' "
-                f"(Title='{res.get('title_attr')}'), ValueMatch={res.get('value_matches')}, "
-                f"ColorExp={res.get('expected_color')}, ColorAct={res.get('actual_color')}, "
-                f"ColorMatch={res.get('color_matches')}"
-            )
+                # Assert individual card properties
+                assert res.get("passed", False), (
+                    f"Countdown timer validation failed for Flight '{res.get('flight_number')}': "
+                    f"Target={res.get('target_source')}({res.get('target_dt')}), "
+                    f"Diff={res.get('diff_minutes')}m, Displayed='{res.get('displayed_text')}' "
+                    f"(Title='{res.get('title_attr')}'), ValueMatch={res.get('value_matches')}, "
+                    f"ColorExp={res.get('expected_color')}, ColorAct={res.get('actual_color')}, "
+                    f"ColorMatch={res.get('color_matches')}"
+                )
 
     # Step 5: Verify Real-Time Dynamic Updates for Local and UTC Clocks
     with allure.step("Step 5: Verify Real-Time Dynamic Updates for Local and UTC Clocks"):

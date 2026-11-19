@@ -43,7 +43,12 @@ class PAX_Count_Page(BasePage):
         {"name": "Departed", "tab": "//div[contains(text(),'Departed')]"}
     ]
 
-    ARRIVAL_AND_DEPARTURE_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
     ARRIVAL_AND_DEPARTURE_PAX = "//div[contains(@class,'pax_count-col')]/div[@class='dropdown']/div[@class='dropbtn']"
     PAX_COUNT_POPUP = "//div[contains(@class,'pax_count-col')]/div[@class='dropdown']/div[@class='dropdown-content']"
     NO_FLIGHTS_AVAILABLE = "//div[contains(text(),'No Flights Available')]"
@@ -100,23 +105,35 @@ class PAX_Count_Page(BasePage):
             logger.info("Flights are Visible")
 
     def arrival_and_departure_number(self, flights):
+        """
+        Extracts Arrival and Departure flight numbers from the flight card.
 
-        try :
-            with allure.step(f"Check Arrival and Departure Number"):
-                arr_and_dep = flights.locator(self.ARRIVAL_AND_DEPARTURE_NUMBER)
-                expect(arr_and_dep).to_be_visible()
-                flight_number = arr_and_dep.inner_text().split('-')
-                arrival_number = flight_number[0].strip()
-                departure_number = flight_number[1].strip()
+        What this function does:
+        1. Uses class="flightno-col" via get_arrival_and_departure_flight_numbers() to safely parse
+           both the arrival and departure flight numbers.
+        2. Logs the extracted arrival and departure flight numbers.
+        3. Returns the arrival and departure numbers as a tuple.
+        """
+        arr_and_dep = flights.locator(self.ARRIVAL_AND_DEPARTURE_NUMBER)
+        try:
+            with allure.step("Check Arrival and Departure Number"):
+                arrival_number, departure_number = self.get_arrival_and_departure_flight_numbers(flights)
+                if not arrival_number and not departure_number:
+                    # Fallback to direct inner text if helper didn't locate
+                    expect(arr_and_dep).to_be_visible()
+                    text = arr_and_dep.inner_text().strip()
+                    parts = text.split("-")
+                    arrival_number = parts[0].strip() if len(parts) > 0 else ""
+                    departure_number = parts[1].strip() if len(parts) > 1 else ""
+
                 logger.info(f"Arrival Number = {arrival_number} & Departure Number = {departure_number}")
+                return arrival_number, departure_number
 
-            return arrival_number, departure_number
-        
-        except Exception as e :
+        except Exception as e:
             self.capture_failure_screenshot(
-                locator = arr_and_dep,
-                flight_name = "Arrival_Departure_Number",
-                error_message = str(e)
+                locator=arr_and_dep,
+                flight_name="Arrival_Departure_Number",
+                error_message=str(e),
             )
             raise
 

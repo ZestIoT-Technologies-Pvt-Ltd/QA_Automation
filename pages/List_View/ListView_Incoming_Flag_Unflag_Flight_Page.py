@@ -46,7 +46,12 @@ class ListView_Incoming_Flag_Unflag_Flight_Page(BasePage):
     # ==================== FLIGHT CARD LOCATORS ====================
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
     NO_FLIGHTS_AVAILABLE = "//div[contains(text(),'No Flights Available')]"
-    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
     REFRESH_FLIGHTS_ICON = "//i[@ptooltip='Refresh Flight'] | //i[contains(@class,'pi-sync')]"
 
     # ==================== BOOKMARK / FLAGGING LOCATORS ====================
@@ -259,6 +264,9 @@ class ListView_Incoming_Flag_Unflag_Flight_Page(BasePage):
     def get_flight_number(self, flight_card) -> str:
         """Extracts the Arrival / Departure flight number from a flight card."""
         try:
+            num = super().get_flight_number(flight_card)
+            if num and num != "Unknown Flight":
+                return num
             flight_num_loc = flight_card.locator(self.ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER).first
             if flight_num_loc.count() > 0 and flight_num_loc.is_visible():
                 return flight_num_loc.inner_text().strip()

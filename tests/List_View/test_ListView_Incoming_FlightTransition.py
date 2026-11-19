@@ -19,7 +19,7 @@ Business Rules & Test Criteria:
      then the flight should be present in the Departed Section (turnaround completed, pushed back).
 
 Steps:
-1. Authenticate / Login to application (managed via @pytest.mark.login).
+1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
 2. Navigate to Flights List View dashboard.
 3. Validate Ongoing Section:
    - Ensure Ongoing section is loaded.
@@ -36,19 +36,22 @@ Steps:
 import pytest
 import allure
 from pages.List_View.ListView_Incoming_FlightTransition_Pages import ListView_Incoming_FlightTransition_Pages
+from pages.Login.Login_Page import LoginPage
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_listview_incoming_flight_transition(page):
     """
-    Test Scenario: Verify that flight presence across Incoming, Ongoing, and Departed sections
-    strictly follows the On-Block (ONBL) and Off-Block (OFBL) lifecycle rules.
+    Test Scenario: Verify that flight presence across Incoming, Ongoing, and Departed sections strictly follows the On-Block (ONBL) and Off-Block (OFBL) lifecycle rules.
     """
     logger.info("Starting Flights List View Section Transition & Block-Time Rules Validation Test")
+
+    with allure.step("Prerequisite: Login to application"):
+        login_page = LoginPage(page)
+        login_page.login_user()
 
     transition_page = ListView_Incoming_FlightTransition_Pages(page, None)
 

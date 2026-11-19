@@ -6,20 +6,20 @@
 import pytest
 import allure
 from pages.List_View.ListView_Incoming_Flag_Unflag_Flight_Page import ListView_Incoming_Flag_Unflag_Flight_Page
+from pages.Login.Login_Page import LoginPage
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
 def test_ListView_Incoming_Flag_Unflag_Flight(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify end-to-end flight flagging and unflagging (First Flag -> Then Unflag) in the Incoming section.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login).
+    1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
     2. Navigate to Flights List View.
     3. Ensure Incoming section is active.
     4. Validate flight cards are visible.
@@ -30,6 +30,10 @@ def test_ListView_Incoming_Flag_Unflag_Flight(page):
     9. Verify and assert that the flight is now in UNFLAGGED state.
     """
     logger.info("Starting List View Sequential Flagging & Unflagging Test for Incoming section")
+
+    with allure.step("Prerequisite: Login to application"):
+        login_page = LoginPage(page)
+        login_page.login_user()
 
     flag_page = ListView_Incoming_Flag_Unflag_Flight_Page(page)
 

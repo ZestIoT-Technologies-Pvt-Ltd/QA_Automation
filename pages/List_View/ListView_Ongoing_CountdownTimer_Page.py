@@ -61,7 +61,12 @@ class ListView_Ongoing_CountdownTimer_Page(BasePage):
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
     SYNC_ICON = "//i[@ptooltip='Refresh Flight'] | //i[contains(@class,'pi-sync')]"
 
-    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
     DEPARTURE_TIME_COL = ".departure-time-col"
     DEPARTURE_DROPDOWN_CONTENT = ".departure-time-col .dropdown-content"
     COUNTDOWN_TIMER_CONTAINER = ".countdown-col-incoming"
@@ -315,7 +320,7 @@ class ListView_Ongoing_CountdownTimer_Page(BasePage):
         4. Display value check within +/- 2 minutes tolerance.
         """
         try:
-            flight_no = flight_card.locator(self.ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER).inner_text().strip()
+            flight_no = self.get_flight_number(flight_card)
         except Exception:
             flight_no = "Unknown Flight"
 
