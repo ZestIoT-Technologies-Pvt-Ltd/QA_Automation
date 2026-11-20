@@ -6,21 +6,21 @@
 import pytest
 import allure
 from pages.List_View.ListView_Ongoing_Create_Alert_Page import List_View_Create_Alert_Page
-from pages.Login.Login_Page import LoginPage
+from utils.common_methods import login_to_application
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
+@pytest.mark.list_view
 def test_List_View_Create_Alert(page):
     """
-        ==============  TEST OVERVIEW ================
-
+    ==============  TEST OVERVIEW ================
     Test Scenario: Verify creating and validating a flight-level alert in the Ongoing section.
 
     Steps:
-      1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
+      1. Prerequisite: Authenticate / Login to application using common login method.
       2. Navigate to Flights List View screen.
       3. Ensure Ongoing flights section is active.
       4. Select eligible flight card and record initial alert count.
@@ -33,13 +33,8 @@ def test_List_View_Create_Alert(page):
     """
     logger.info("=== Starting Test: Create Flight-Level Alert in Ongoing Section ===")
 
-    # -------------------------------------------------------------------------
-    # Prerequisite: Sign in to the AviLeap application with valid credentials
-    # -------------------------------------------------------------------------
-    with allure.step("Prerequisite: Login to application"):
-        # Create an instance of the Login page and log in
-        login_page = LoginPage(page)
-        login_page.login_user()
+    # Prerequisite: Sign into application using common login method
+    login_to_application(page)
 
     # Create an instance of the Ongoing Create Alert page object
     alert_page = List_View_Create_Alert_Page(page)

@@ -438,10 +438,10 @@ class EmailSender:
         }
 
         if not active_summaries:
-            return "Automation Smoke Test Summary\n\nNo tests were executed."
+            return "Automation Test Execution Summary\n\nNo tests were executed."
 
         lines = [
-            "Automation Smoke Test Summary",
+            "Automation Test Execution Summary",
             "",
         ]
 
@@ -578,7 +578,7 @@ class EmailSender:
 </head>
 <body style="margin:0;padding:20px;font-family:Arial,'Segoe UI',sans-serif;color:#111111;background-color:#ffffff;line-height:1.4;">
   <div style="max-width:800px;margin:0 auto;">
-    <div style="font-size:18px;font-weight:bold;color:#111111;margin-bottom:20px;">Automation Smoke Test Summary</div>
+    <div style="font-size:18px;font-weight:bold;color:#111111;margin-bottom:20px;">Automation Test Execution Summary</div>
     {body_content}
   </div>
 </body>
@@ -758,7 +758,7 @@ class EmailSender:
         env = meta.get("env") or "QA"
         stations_label = ", ".join(summaries.keys()) if len(summaries) <= 3 else "MULTI-STATION"
 
-        subject = f"Automation Smoke Test Summary - [{str(project).upper()}] [{str(env).upper()}] [{stations_label}] - {verdict}"
+        subject = f"Automation Test Execution Summary"
 
         message = MIMEMultipart("mixed")
         message["From"] = self.sender_email
@@ -833,7 +833,7 @@ class EmailSender:
         stations_label = ", ".join(summaries.keys()) if len(summaries) <= 3 else "MULTI-STATION"
         proj_label = str(project or "AUTOMATION").upper()
         env_label = str(env or "QA").upper()
-        subject = f"Automation Smoke Test Summary - [{proj_label}] [{env_label}] [{stations_label}] - {verdict}"
+        subject = f"Automation Test Execution Summary"
 
         message = MIMEMultipart("mixed")
         message["From"] = self.sender_email
@@ -921,7 +921,7 @@ class EmailSender:
         total_failed = sum(s["failed"] for s in summaries.values())
         verdict = "FAILED" if total_failed else "PASSED"
 
-        subject = f"Automation Smoke Test Summary - [{str(project).upper()}] [{str(env).upper()}] [{station.upper()}] - {verdict}"
+        subject = f"Automation Test Execution Summary"
 
         message = MIMEMultipart("mixed")
         message["From"] = self.sender_email

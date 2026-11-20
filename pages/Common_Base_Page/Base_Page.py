@@ -27,13 +27,19 @@ from typing import Any, Iterable
 
 from playwright.sync_api import Locator, Page, expect
 from utils.logger import get_logger
+from utils.common_methods import (
+    CommonMethods,
+    is_valid_timestamp,
+    parse_flight_numbers_from_text,
+    login_to_application,
+)
 
 logger = get_logger(__name__)
 
 
-class BasePage:
+class BasePage(CommonMethods):
     def __init__(self, page: Page, base_url: str | None = None):
-        self.page = page
+        super().__init__(page)
         self.base_url = base_url
 
     def _locator(self, target: str | Locator) -> Locator:

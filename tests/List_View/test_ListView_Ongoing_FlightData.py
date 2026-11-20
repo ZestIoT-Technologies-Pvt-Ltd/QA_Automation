@@ -7,21 +7,21 @@ from playwright.sync_api import expect
 import pytest
 import allure
 from pages.List_View.ListView_Ongoing_FlightData_Page import Flights_View_Ongoing_Page
-from pages.Login.Login_Page import LoginPage
+from utils.common_methods import login_to_application
 from utils.logger import get_logger
-import time
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
+@pytest.mark.list_view
 def test_flights_view_ongoing(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Comprehensive validation of Flights List View across Ongoing and Departed sections.
 
     Steps:
-    1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
+    1. Prerequisite: Authenticate / Login to application using common login method.
     2. Navigate to Flights List View dashboard.
     3. Load all flights and verify that all section tabs (Ongoing, Incoming, Departed, Non Operational) are visible.
     4. In Ongoing Section, check Activity Dropdown and PTS names list for turnaround and split flights.
@@ -32,9 +32,8 @@ def test_flights_view_ongoing(page):
     """
     logger.info("Starting Flights View Ongoing Test")
 
-    with allure.step("Prerequisite: Login to application"):
-        login_page = LoginPage(page)
-        login_page.login_user()
+    # Prerequisite: Sign into application using common login method
+    login_to_application(page)
 
     flights_view_ongoing_page = Flights_View_Ongoing_Page(page, None)
 
@@ -52,17 +51,13 @@ def test_flights_view_ongoing(page):
         logger.info("All Sections are Displayed Successfully")
 
     with allure.step("Step 3: Check Activity Dropdowns & PTS List in Ongoing Section"):
-        number_of_flights = flights_view_ongoing_page.count_of_flights()
-        if number_of_flights == 0:
-            logger.warning("No Flights Found in Ongoing section")
-        elif 0 < number_of_flights <= 15:
-            logger.info(f"Number of Flights in Ongoing is {number_of_flights}")
-        else:
-            number_of_flights = 15
-            logger.info(f"Number of Flights capped at {number_of_flights}")
+        total_found = flights_view_ongoing_page.count_of_flights()
+        number_of_flights = min(total_found, 15) if total_found > 0 else 0
+        logger.info(f"Number of Flights to validate in Ongoing: {number_of_flights}")
 
+        flight_cards = flights_view_ongoing_page.get_flight_cards()
         for i in range(number_of_flights):
-            flight_card = flights_view_ongoing_page.page.locator(flights_view_ongoing_page.FLIGHT_ROW_CARDS).nth(i)
+            flight_card = flight_cards.nth(i)
             fl_num = flights_view_ongoing_page.get_flight_number(flight_card) or f"Flight {i + 1}"
             count_of_activity_dropdowns = flights_view_ongoing_page.activity_dropdown_is_displayed(flight_card)
 
@@ -79,13 +74,13 @@ def test_flights_view_ongoing(page):
 
     with allure.step("Step 4: Validate Onblock Time (STA Hover) in Ongoing Section"):
         for i in range(number_of_flights):
-            flight_card = flights_view_ongoing_page.page.locator(flights_view_ongoing_page.FLIGHT_ROW_CARDS).nth(i)
+            flight_card = flight_cards.nth(i)
             fl_num = flights_view_ongoing_page.get_flight_number(flight_card) or f"Flight {i + 1}"
             sta_element = flight_card.locator(flights_view_ongoing_page.STA)
 
             if sta_element.count() > 0 and sta_element.first.is_visible():
                 sta_element.first.hover()
-                time.sleep(2)
+                page.wait_for_timeout(1000)
 
                 onblock_time = flight_card.locator(flights_view_ongoing_page.ONBLOCK_TIME)
                 if onblock_time.count() > 0 and onblock_time.first.is_visible():
@@ -93,6 +88,9 @@ def test_flights_view_ongoing(page):
                     logger.info(f"Onblock Time is displayed for Flight '{fl_num}'")
                 else:
                     logger.info(f"Onblock Time is not displayed for Flight '{fl_num}'")
+
+                # Dismiss hover overlay to avoid blocking next elements
+                flights_view_ongoing_page.dismiss_lingering_tooltip()
 
         logger.info("Onblock Time Validation Completed for Ongoing Section")
 
@@ -105,12 +103,11 @@ def test_flights_view_ongoing(page):
         flights_view_ongoing_page.flight_are_visible()
 
     with allure.step("Step 6: Validate Offblock Time (ETD Hover) and Flight Card in Departed Section"):
-        number_of_departed = flights_view_ongoing_page.count_of_flights()
-        if number_of_departed > 15:
-            number_of_departed = 15
+        number_of_departed = min(flights_view_ongoing_page.count_of_flights(), 15)
+        departed_cards = flights_view_ongoing_page.get_flight_cards()
 
         for i in range(number_of_departed):
-            flight_card = flights_view_ongoing_page.page.locator(flights_view_ongoing_page.FLIGHT_ROW_CARDS).nth(i)
+            flight_card = departed_cards.nth(i)
             expect(flight_card).to_be_visible()
             fl_num = flights_view_ongoing_page.get_flight_number(flight_card) or f"Flight {i + 1}"
 
@@ -118,7 +115,7 @@ def test_flights_view_ongoing(page):
             etd_element = flight_card.locator(flights_view_ongoing_page.ETD)
             if etd_element.count() > 0 and etd_element.first.is_visible():
                 etd_element.first.hover()
-                time.sleep(2)
+                page.wait_for_timeout(1000)
 
                 offblock_time = flight_card.locator(flights_view_ongoing_page.OFFBLOCK_TIME)
                 if offblock_time.count() > 0 and offblock_time.first.is_visible():
@@ -126,6 +123,8 @@ def test_flights_view_ongoing(page):
                     logger.info(f"Offblock Time is displayed for Departed Flight '{fl_num}'")
                 else:
                     logger.info(f"Offblock Time is not displayed for Departed Flight '{fl_num}'")
+
+                flights_view_ongoing_page.dismiss_lingering_tooltip()
 
             # Open Flight Menu for the Same Flight Card
             flight_menu = flight_card.locator(flights_view_ongoing_page.FLIGHT_MENU_ICON)
@@ -146,11 +145,11 @@ def test_flights_view_ongoing(page):
                         logger.info(f"Flight Card opened in a new tab for Flight '{fl_num}'")
                         flight_card_page.close()
                     except Exception as pe:
-                        logger.warning(f"Popup handling notice for Flight {i + 1}: {pe}")
+                        logger.warning(f"Popup handling notice for Flight '{fl_num}': {pe}")
                 else:
-                    logger.warning(f"Flight Card Option is not displayed for Flight {i + 1}")
+                    logger.warning(f"Flight Card Option is not displayed for Flight '{fl_num}'")
             else:
-                logger.warning(f"Flight Menu is not displayed for Flight Card {i + 1}")
+                logger.warning(f"Flight Menu is not displayed for Flight Card '{fl_num}'")
 
         logger.info("Offblock Time and Flight Card Validation Completed for Departed Section")
 

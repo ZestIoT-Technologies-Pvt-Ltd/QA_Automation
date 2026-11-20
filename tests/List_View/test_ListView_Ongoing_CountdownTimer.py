@@ -6,20 +6,21 @@
 import pytest
 import allure
 from pages.List_View.ListView_Ongoing_CountdownTimer_Page import ListView_Ongoing_CountdownTimer_Page
-from pages.Login.Login_Page import LoginPage
+from utils.common_methods import login_to_application
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
+@pytest.mark.list_view
 def test_listview_ongoing_countdown_timer(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify whether countdown timers are calculated correctly based on STD and ETD and updated in real time.
 
     Steps:
-    1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
+    1. Prerequisite: Authenticate / Login to application using common login method.
     2. Navigate to Flights List View dashboard.
     3. Ensure Ongoing Section is active and flights are loaded.
     4. Extract and validate Header Timings (Station Code, Date, Station Local Time, and UTC Time).
@@ -35,9 +36,8 @@ def test_listview_ongoing_countdown_timer(page):
     """
     logger.info("Starting List View Ongoing Section Countdown Timer Validation Test")
 
-    with allure.step("Prerequisite: Login to application"):
-        login_page = LoginPage(page)
-        login_page.login_user()
+    # Prerequisite: Sign into application using common login method
+    login_to_application(page)
 
     countdown_page = ListView_Ongoing_CountdownTimer_Page(page, None)
 

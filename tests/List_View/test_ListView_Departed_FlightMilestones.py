@@ -29,25 +29,22 @@ This test verifies that departed flights show their flight milestone progression
 import pytest
 import allure
 from pages.List_View.ListView_Departed_FlightMilestones_Page import ListView_Departed_FlightMilestones_Page
-from pages.Login.Login_Page import LoginPage
+from utils.common_methods import login_to_application
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
+@pytest.mark.list_view
 def test_listview_departed_flight_milestones(page):
     """
     Test Scenario: Verify milestone sequence, completion status bar, and actual timestamps for departed flights.
     """
     logger.info("=== Starting Test: Departed Section Flight Milestones Validation ===")
 
-    # -------------------------------------------------------------------------
-    # Prerequisite: Sign in to the AviLeap application with valid credentials
-    # -------------------------------------------------------------------------
-    with allure.step("Prerequisite: Login to application"):
-        login_page = LoginPage(page)
-        login_page.login_user()
+    # Prerequisite: Sign into application using common login method
+    login_to_application(page)
 
     # Create an instance of the Departed Flight Milestones page object
     milestones_page = ListView_Departed_FlightMilestones_Page(page, None)

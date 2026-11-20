@@ -6,20 +6,21 @@
 import pytest
 import allure
 from pages.List_View.ListView_Ongoing_ActivityGantView_Page import ListView_Ongoing_ActivityGantView_Page
-from pages.Login.Login_Page import LoginPage
+from utils.common_methods import login_to_application
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
+@pytest.mark.list_view
 def test_listview_ongoing_activity_gant_view(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify whether the Gantt View represents planned and actual activities, dependencies, progress and delays accurately.
 
     Steps:
-    1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
+    1. Prerequisite: Authenticate / Login to application using common login method.
     2. Navigate to Flights List View dashboard.
     3. Ensure Ongoing Section is active and flight cards are loaded.
     4. Locate and enable the Gantt View toggle in the List View toolbar.
@@ -34,9 +35,8 @@ def test_listview_ongoing_activity_gant_view(page):
     """
     logger.info("Starting List View Ongoing Section Gantt View Activities Validation Test")
 
-    with allure.step("Prerequisite: Login to application"):
-        login_page = LoginPage(page)
-        login_page.login_user()
+    # Prerequisite: Sign into application using common login method
+    login_to_application(page)
 
     gantt_page = ListView_Ongoing_ActivityGantView_Page(page, None)
 

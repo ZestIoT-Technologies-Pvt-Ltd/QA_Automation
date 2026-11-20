@@ -8,21 +8,21 @@ from playwright.sync_api import expect
 import pytest
 import allure
 from pages.Detailed_View.Detailed_View_Flight_Card_Page import DetailViewPage
-from pages.Login.Login_Page import LoginPage
+from utils.common_methods import login_to_application
 from utils.logger import get_logger
-import time
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
+@pytest.mark.detailed_view
 def test_detailed_view(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify Detailed View flight card navigation and flight attribute validation across Ongoing and Departed sections.
 
     Steps:
-    1. Prerequisite: Authenticate / Login to application using LoginPage.login_user().
+    1. Prerequisite: Authenticate / Login to application using common login method.
     2. Navigate to Flights List View dashboard.
     3. Iterate through Ongoing and Departed sections.
     4. For each section, locate flight cards and click Detail View arrow.
@@ -31,9 +31,8 @@ def test_detailed_view(page):
     """
     logger.info("Starting Detailed View Test")
 
-    with allure.step("Prerequisite: Login to application"):
-        login_page = LoginPage(page)
-        login_page.login_user()
+    # Prerequisite: Sign into application using common login method
+    login_to_application(page)
 
     detail_view_page = DetailViewPage(page, None)
 
@@ -84,7 +83,8 @@ def test_detailed_view(page):
                         detail_view_arrow.click()
                         logger.info(f"Clicked the Detail View Arrow for Flight {i + 1}")
 
-                        time.sleep(5)
+                        detail_view_page.wait_for_loading_to_finish()
+                        detail_view_page.page.wait_for_timeout(1500)
 
                         # Validate Arrival and Departure Flight Number
                         arrival_flight, departure_flight = detail_view_page.arrival_and_departure_flight_number()
