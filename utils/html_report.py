@@ -71,7 +71,8 @@ def cfg_station(item):
     if values:
         return values[-1]
     from utils.email_sender import EmailSender
-    default_st, _ = EmailSender.get_excel_station_config(item.config.getoption('--project', default='flydubai'))
+    proj = item.config.getoption('--project', default=None) or getattr(item.config, 'framework_project', None)
+    default_st, _ = EmailSender.get_excel_station_config(proj)
     return item.config.getoption('--station', default=default_st)
 
 class HtmlReportPlugin:
@@ -86,6 +87,7 @@ class HtmlReportPlugin:
     # ---- lifecycle
     def pytest_sessionstart(self, session):
         self.started = time.time()
+        self.records.clear()
         import logging
         logging.getLogger().addHandler(self.capture)
 
@@ -106,26 +108,16 @@ class HtmlReportPlugin:
         params = getattr(getattr(item, "callspec", None), "params", {}) or {}
         marker = item.get_closest_marker("tc")
         raw_doc = (getattr(item.function, "__doc__", "") or "").strip()
-        doc_lines = [l.strip() for l in raw_doc.splitlines() if l.strip()]
-        scenario_title = ""
-        for line in doc_lines:
-            low = line.lower()
-            if low.startswith("test scenario:"):
-                scenario_title = line[14:].strip()
-                break
-            elif low.startswith("scenario:"):
-                scenario_title = line[9:].strip()
-                break
-        if not scenario_title and doc_lines:
-            for line in doc_lines:
-                if not line.startswith("=") and not line.lower().startswith("introduction"):
-                    scenario_title = line
-                    break
+        scenario_title, _ = extract_clean_scenario(raw_doc, item.name)
+
+        proj_values = [v for k,v in item.user_properties if k == "project"]
+        rec_project = proj_values[-1] if proj_values else (getattr(item.config, "framework_project", "") or "")
 
         record = rc.TestRecord(
             nodeid=item.nodeid,
             name=item.name,
-            description=scenario_title or (doc_lines[0] if doc_lines else ""),
+            description=scenario_title,
+            project=str(rec_project),
             airport=str(params.get("station") or params.get("airport") or ",".join(dict.fromkeys(v for k,v in item.user_properties if k == "stations")) or cfg_station(item) or "-"),
             tc=_tc_label(marker),
             markers=sorted({m.name for m in item.iter_markers() if m.name not in ("tc", "parametrize", "usefixtures")}),
@@ -155,10 +147,13 @@ class HtmlReportPlugin:
                     from utils import report_context
                     station_values=[v for k,v in item.user_properties if k == "stations"]
                     station=station_values[-1] if station_values else cfg_station(item)
-                    path=BasePage.capture_failure(page, project=item.config.getoption('--project'), station=station,
+                    proj_values=[v for k,v in item.user_properties if k == "project"]
+                    proj_val=proj_values[-1] if proj_values else (item.config.getoption('--project') or getattr(item.config, 'framework_project', 'AUTOMATION'))
+                    path=BasePage.capture_failure(page, project=proj_val, station=station,
                                                  test_name=item.name, report_context=report_context,
                                                  error_message=report.longreprtext)
                     if path:
+                        setattr(item, "_failure_screenshot_captured", True)
                         try:
                             import allure
                             allure.attach.file(path, name=f"{item.name} failure", attachment_type=allure.attachment_type.PNG)
@@ -187,24 +182,73 @@ class HtmlReportPlugin:
         self.framework_warnings.append(f"{warning_message.category.__name__}: {warning_message.message}")
 
     # ---- report
-    @pytest.hookimpl(trylast=True)
+    @pytest.hookimpl
     def pytest_sessionfinish(self, session, exitstatus):
         records = list(self.records.values())
         if not records:
             return
         cfg = self.config
         from utils.email_sender import EmailSender
-        excel_code, _ = EmailSender.get_excel_station_config(cfg.getoption("--project", default="flydubai"))
+
+        # Resolve active project(s) and station mapping dynamically
+        station_to_proj = getattr(cfg, "framework_station_to_project", {})
+        fw_project = getattr(cfg, "framework_project", None)
+        cli_project = cfg.getoption("--project", default=None)
+
+        # Helper to reliably resolve which station a test record was executed for
+        def _get_rec_station(r):
+            airport = str(getattr(r, "airport", "")).strip().upper()
+            if airport and airport not in ("-", "DEFAULT", "UNKNOWN", "NONE", "ALL"):
+                return airport
+            name_val = str(getattr(r, "name", ""))
+            m = re.search(r"\[([A-Z0-9_-]+)\]", name_val)
+            if m:
+                return m.group(1).upper()
+            node_val = str(getattr(r, "nodeid", ""))
+            m = re.search(r"\[([A-Z0-9_-]+)\]", node_val)
+            if m:
+                return m.group(1).upper()
+            st_list = [
+                str(s).strip().upper() for s in getattr(r, "stations", [])
+                if str(s).strip().upper() not in ("-", "DEFAULT", "UNKNOWN", "NONE", "ALL")
+            ]
+            if len(st_list) == 1:
+                return st_list[0]
+            return ""
+
+        # Collect distinct projects and stations from executed records
+        executed_projects = []
+        executed_stations = []
+        for r in records:
+            p = getattr(r, "project", None)
+            st = _get_rec_station(r)
+            if not p or str(p).strip() in ("-", "None", ""):
+                p = station_to_proj.get(st, {}).get("project")
+            if p and p not in executed_projects:
+                executed_projects.append(p)
+            if st and st not in executed_stations:
+                executed_stations.append(st)
+
+        resolved_project = cli_project or (executed_projects[0] if len(executed_projects) == 1 else (", ".join(executed_projects) if executed_projects else fw_project))
+        if not resolved_project or resolved_project == "-":
+            resolved_project = fw_project or "AUTOMATION"
+
+        resolved_env = cfg.getoption("--env", default=None) or getattr(cfg, "framework_env", "qa")
+
+        excel_code, _ = EmailSender.get_excel_station_config(cli_project or (executed_projects[0] if executed_projects else fw_project))
         resolved_station = cfg.getoption("--station", default=excel_code) or excel_code
+        if not resolved_station or str(resolved_station).strip().upper() in ("-", "DEFAULT", "UNKNOWN", "NONE"):
+            resolved_station = excel_code or "DXB"
+        resolved_station = str(resolved_station).strip().upper()
         if not getattr(cfg, "framework_stations_requested", []):
             cfg.framework_stations_requested = [resolved_station]
 
         meta = {
             "title": cfg.getoption("--report-title"),
-            "project": cfg.getoption("--project", default="-"),
-            "env": cfg.getoption("--env", default="-"),
+            "project": resolved_project,
+            "env": resolved_env,
             "browser": getattr(cfg, "_framework_execution_settings", {}).get("browser", cfg.getoption("--browser") or "chromium"),
-            "airports": ", ".join(getattr(cfg, "framework_stations_requested", [])) or resolved_station,
+            "airports": ", ".join(executed_stations) if executed_stations else (", ".join(getattr(cfg, "framework_stations_requested", [])) or resolved_station),
             "started": datetime.fromtimestamp(self.started).strftime("%d %b %Y %H:%M:%S"),
             "duration": time.time() - self.started,
             "ended": datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z"),
@@ -225,40 +269,122 @@ class HtmlReportPlugin:
         name = f"{str(meta['project']).upper()}_{str(meta['env']).upper()}_{stamp}.html"
         self.report_path = os.path.join(out_dir, name)
         document = build_html(meta, summary, records)
-        for path in (
-            self.report_path,
-            os.path.join(out_dir, "latest_report.html"),
-            os.path.join(str(cfg.rootpath), "reports", "Extent_Report.html"),
-            os.path.join(str(cfg.rootpath), "reports", "latest_report.html"),
-        ):
-            write_html(path, document)
-        cfg._extent_report_path = self.report_path
-        write_json(os.path.join(out_dir, "summary.json"), {
-            "meta": {k: v for k, v in meta.items() if k not in ("warnings", "plan_warnings")},
-            "summary": summary})
+        write_html(self.report_path, document)
+        write_html(os.path.join(out_dir, "latest_report.html"), document)
 
-        # Expand records into station-specific views without changing the original result.
+        # Remove any legacy comma-joined multi-station files (e.g. DXB,BFS,SZG_Report.html)
+        import glob
+        for comma_pattern in (
+            os.path.join(str(cfg.rootpath), "reports", "*[,]*"),
+            os.path.join(out_dir, "*[,]*"),
+        ):
+            for comma_file in glob.glob(comma_pattern):
+                try:
+                    os.remove(comma_file)
+                except Exception:
+                    pass
+
+        # Helper to reliably resolve which station a test record was executed for
+        def _get_rec_station(r):
+            airport = str(getattr(r, "airport", "")).strip().upper()
+            if airport and airport not in ("-", "DEFAULT", "UNKNOWN", "NONE", "ALL"):
+                return airport
+            name_val = str(getattr(r, "name", ""))
+            m = re.search(r"\[([A-Z0-9_-]+)\]", name_val)
+            if m:
+                return m.group(1).upper()
+            node_val = str(getattr(r, "nodeid", ""))
+            m = re.search(r"\[([A-Z0-9_-]+)\]", node_val)
+            if m:
+                return m.group(1).upper()
+            st_list = [
+                str(s).strip().upper() for s in getattr(r, "stations", [])
+                if str(s).strip().upper() not in ("-", "DEFAULT", "UNKNOWN", "NONE", "ALL")
+            ]
+            if len(st_list) == 1:
+                return st_list[0]
+            return ""
+
+        # Expand records into station-specific views without mixing station results
         import copy
         station_reports = {}
         base = os.path.splitext(self.report_path)[0]
-        requested = getattr(cfg, "framework_stations_requested", [])
-        for station in requested or list(dict.fromkeys(r.airport for r in records)):
-            subset=[]
+        raw_requested = getattr(cfg, "framework_stations_requested", [])
+        requested = [
+            s.strip().upper() for s in raw_requested
+            if s and str(s).strip().upper() not in ("-", "DEFAULT", "UNKNOWN", "NONE")
+        ]
+        if not requested:
+            requested = [resolved_station]
+
+        for station in requested:
+            subset = []
             for record in records:
-                mapped=getattr(record, "stations", [record.airport])
-                if station in mapped or "ALL" in mapped or (len(mapped)==1 and mapped[0]==station):
-                    clone=copy.copy(record); clone.airport=station; subset.append(clone)
+                st = _get_rec_station(record)
+                if st == station:
+                    clone = copy.copy(record)
+                    clone.airport = station
+                    subset.append(clone)
+                elif not st:
+                    mapped = [str(s).strip().upper() for s in getattr(record, "stations", [])]
+                    if station in mapped or "ALL" in mapped or not mapped:
+                        clone = copy.copy(record)
+                        clone.airport = station
+                        subset.append(clone)
+
             if not subset:
                 continue
-            station_meta = dict(meta, airports=station, title=f"{meta['title']} - {station}", duration=sum(r.duration for r in subset))
+
+            # Determine project and environment specific to this station
+            st_info = station_to_proj.get(station, {})
+            st_project = st_info.get("project")
+            if not st_project:
+                for r in subset:
+                    p = getattr(r, "project", None)
+                    if p and str(p).strip() not in ("-", "None", ""):
+                        st_project = p
+                        break
+            if not st_project:
+                st_project = resolved_project
+
+            st_env = st_info.get("env") or meta.get("env", "qa")
+
+            station_meta = dict(
+                meta,
+                project=st_project,
+                env=st_env,
+                airports=station,
+                title=f"{meta['title']} - {station}",
+                duration=sum(r.duration for r in subset),
+            )
             station_file = os.path.join(out_dir, f"{station}_Report.html")
-            station_reports[station] = station_file
-            station_summary=summarize(subset)
-            station_summary["selected"]=len(subset)
-            station_summary["deselected"]=getattr(cfg, "framework_deselected_count", 0)
+            root_station_file = os.path.join(str(cfg.rootpath), "reports", f"{station}_Report.html")
+            station_reports[station] = root_station_file
+
+            station_summary = summarize(subset)
+            station_summary["selected"] = len(subset)
+            station_summary["deselected"] = 0
             station_doc = build_html(station_meta, station_summary, subset)
+
             write_html(station_file, station_doc)
+            write_html(root_station_file, station_doc)
             write_html(f"{base}_{station}.html", station_doc)
+
+        # Set primary report and sync Extent_Report.html to the primary station's report
+        primary_station = executed_stations[0] if executed_stations else (requested[0] if requested else resolved_station)
+        primary_report = station_reports.get(primary_station, os.path.join(str(cfg.rootpath), "reports", f"{primary_station}_Report.html"))
+        if os.path.exists(primary_report):
+            with open(primary_report, "r", encoding="utf-8") as f:
+                primary_doc = f.read()
+            write_html(os.path.join(str(cfg.rootpath), "reports", "Extent_Report.html"), primary_doc)
+            write_html(os.path.join(str(cfg.rootpath), "reports", "latest_report.html"), primary_doc)
+
+        cfg._extent_report_path = primary_report
+        cfg._station_reports = station_reports
+
+        write_json(os.path.join(out_dir, "summary.json"), {
+            "meta": {k: v for k, v in meta.items() if k not in ("warnings", "plan_warnings")},
+            "summary": summary})
 
         if not cfg.getoption("--no-email"):
             if not getattr(cfg, "_email_delivered", False):
@@ -269,7 +395,7 @@ class HtmlReportPlugin:
                         meta=meta,
                         records=records,
                         station_reports=station_reports,
-                        consolidated_report=self.report_path,
+                        consolidated_report=None,
                     )
                     cfg._email_delivered = True
                 except Exception as error:
@@ -277,7 +403,12 @@ class HtmlReportPlugin:
                     print(f"\n[report] E-mail delivery problem: {type(error).__name__}: {error}")
 
     def pytest_terminal_summary(self, terminalreporter):
-        if self.report_path:
+        station_reports = getattr(self.config, "_station_reports", {})
+        if station_reports:
+            terminalreporter.write_sep("-", "Station HTML Reports")
+            for st, p in sorted(station_reports.items()):
+                terminalreporter.write_line(f"{st}: {p}")
+        elif self.report_path:
             terminalreporter.write_sep("-", "HTML report")
             terminalreporter.write_line(self.report_path)
 
@@ -375,6 +506,109 @@ def _clean_log_text(msg: str) -> str:
     return s.strip()
 
 
+def extract_clean_scenario(raw_doc: str, fallback_name: str) -> tuple[str, str]:
+    """
+    Extracts a clean scenario title and secondary details/steps from a docstring.
+    Guarantees:
+      - Never repeats the scenario title inside the details block.
+      - Strips decorative banners like '=== INTRODUCTION ===' or '=== TEST OVERVIEW ==='.
+      - Strips 'What this test does:' or 'Test Scenario:' headers.
+      - Returns (clean_scenario_title, clean_details_text).
+    """
+    if not raw_doc or not raw_doc.strip():
+        return fallback_name, ""
+
+    lines = [line.strip() for line in raw_doc.strip().splitlines()]
+    content_lines = []
+    for line in lines:
+        if not line:
+            content_lines.append("")
+            continue
+        # Remove divider lines like "==============  INTRODUCTION ================"
+        if re.match(r"^[=\-*~#]{3,}.*[=\-*~#]{3,}$", line):
+            continue
+        content_lines.append(line)
+
+    scenario_title = ""
+    scenario_idx = -1
+    for i, line in enumerate(content_lines):
+        clean_l = line.strip()
+        if not clean_l:
+            continue
+        low = clean_l.lower()
+        if low.startswith("test scenario:"):
+            scenario_title = clean_l[14:].strip()
+            scenario_idx = i
+            break
+        elif low.startswith("scenario:"):
+            scenario_title = clean_l[9:].strip()
+            scenario_idx = i
+            break
+        elif low.startswith("what this test does:"):
+            for j in range(i + 1, len(content_lines)):
+                next_l = content_lines[j].strip()
+                if next_l:
+                    scenario_title = next_l
+                    scenario_idx = j
+                    break
+            if scenario_title:
+                break
+
+    # If still not found, pick the first descriptive line
+    if not scenario_title:
+        for i, line in enumerate(content_lines):
+            clean_l = line.strip()
+            if not clean_l:
+                continue
+            low = clean_l.lower()
+            if any(low.startswith(k) for k in ("introduction", "test overview", "author", "created", "modified")):
+                continue
+            scenario_title = clean_l
+            scenario_idx = i
+            break
+
+    if not scenario_title:
+        scenario_title = fallback_name
+
+    # Clean up multi-line scenario title if ending in colon
+    if scenario_title.endswith(":"):
+        scenario_title = scenario_title[:-1].strip()
+
+    # Now extract details/steps (if any), strictly excluding the scenario title
+    details_lines = []
+    start_collecting = False
+    for i, line in enumerate(content_lines):
+        clean_l = line.strip()
+        if not clean_l:
+            if start_collecting and details_lines and details_lines[-1] != "":
+                details_lines.append("")
+            continue
+        if i <= scenario_idx:
+            continue
+        low = clean_l.lower()
+        if low.startswith("what this test does:") or low.startswith("test scenario:"):
+            continue
+        if clean_l == scenario_title:
+            continue
+        if low.startswith("it checks the entire workflow") or low.startswith("steps:"):
+            start_collecting = True
+            details_lines.append(clean_l)
+            continue
+        if start_collecting or re.match(r"^\d+[\.\)]", clean_l) or clean_l.startswith(("-", "*", "•")):
+            start_collecting = True
+            details_lines.append(clean_l)
+
+    clean_details = "\n".join(details_lines).strip()
+    return scenario_title, clean_details
+
+
+def normalize_step_name(name: str) -> str:
+    """Normalize step text for deduplication comparison."""
+    s = re.sub(r"^(step\s*\d+[\.\d*]*\s*:\s*|prerequisite\s*:\s*)", "", str(name).strip(), flags=re.IGNORECASE)
+    s = re.sub(r"[\s_-]+", " ", s).strip().lower()
+    return s
+
+
 def build_html(meta: dict, summary: dict, records) -> str:
     """Generate modern, self-contained ExtentReports HTML report."""
     template_file = Path(__file__).resolve().parent / "extent_template.html"
@@ -401,8 +635,10 @@ def build_html(meta: dict, summary: dict, records) -> str:
     os_name = f"{platform.system()} {platform.release()}"
     python_version = platform.python_version()
     host_name = platform.node()
-    project = str(meta.get("project", "FLYDUBAI")).upper()
-    env = str(meta.get("env", "QA")).upper()
+    raw_project = meta.get("project")
+    project = str(raw_project if raw_project and raw_project != "-" else "AUTOMATION").upper()
+    raw_env = meta.get("env")
+    env = str(raw_env if raw_env and raw_env != "-" else "QA").upper()
     browser = str(meta.get("browser", "chromium")).capitalize()
 
     total_count = summary.get("total", len(records))
@@ -433,25 +669,10 @@ def build_html(meta: dict, summary: dict, records) -> str:
             status_label = "PASSED"
 
         # Scenario extraction
-        scenario_title = getattr(r, "description", "").strip()
-        full_doc = getattr(r, "full_doc", "").strip()
-        if (not scenario_title or scenario_title.startswith("=")) and full_doc:
-            doc_lines = [l.strip() for l in full_doc.splitlines() if l.strip()]
-            for line in doc_lines:
-                low = line.lower()
-                if low.startswith("test scenario:"):
-                    scenario_title = line[14:].strip()
-                    break
-                elif low.startswith("scenario:"):
-                    scenario_title = line[9:].strip()
-                    break
-            if (not scenario_title or scenario_title.startswith("=")) and doc_lines:
-                for line in doc_lines:
-                    if not line.startswith("=") and not line.lower().startswith("introduction"):
-                        scenario_title = line
-                        break
-        if not scenario_title or scenario_title.startswith("="):
-            scenario_title = name
+        scenario_title, scenario_details = extract_clean_scenario(
+            getattr(r, "full_doc", "") or getattr(r, "description", ""),
+            name
+        )
 
         rec_start = getattr(r, "start", 0.0)
         if not rec_start or rec_start < 86400:
@@ -478,11 +699,10 @@ def build_html(meta: dict, summary: dict, records) -> str:
 </div>"""
         nav_items.append(nav_item_html)
 
-        # Right Detail Pane
-        # Scenario details block
+        # Right Detail Pane - Scenario details block (only when distinct details exist)
         scenario_details_html = ""
-        if full_doc and full_doc != scenario_title:
-            scenario_details_html = f"<div class='scenario-details'>{_e(full_doc)}</div>"
+        if scenario_details:
+            scenario_details_html = f"<div class='scenario-details'>{_e(scenario_details)}</div>"
 
         # Failure banner (if failed)
         failure_alert_html = ""
@@ -501,13 +721,53 @@ def build_html(meta: dict, summary: dict, records) -> str:
   {traceback_block}
 </div>"""
 
-        # Steps Table
+        # Steps Table with intelligent deduplication
         rendered_screenshot_names = set()
         step_rows = []
-        steps_list = getattr(r, "steps", None)
+        raw_steps = getattr(r, "steps", None) or []
 
-        if steps_list:
-            for s in steps_list:
+        if raw_steps:
+            processed_steps = []
+            for s in raw_steps:
+                s_name = getattr(s, "name", "").strip()
+                if not s_name:
+                    continue
+
+                if processed_steps:
+                    prev = processed_steps[-1]
+                    norm_curr = normalize_step_name(s_name)
+                    norm_prev = normalize_step_name(prev.name)
+
+                    # Check if exact duplicate or child duplication of parent step
+                    is_dup = (
+                        norm_curr == norm_prev
+                        or (len(norm_curr) > 8 and len(norm_prev) > 8 and (norm_curr in norm_prev or norm_prev in norm_curr))
+                    )
+
+                    if is_dup:
+                        # Transfer any screenshots to previous step
+                        for shot in getattr(s, "screenshots", []):
+                            if not any(x.name == shot.name for x in prev.screenshots):
+                                prev.screenshots.append(shot)
+                        # Transfer failure status/error
+                        if s.status == "failed" and prev.status != "failed":
+                            prev.status = "failed"
+                            prev.error = s.error
+                        continue
+
+                    # If this is an internal sub-step (depth > 0) and not an explicitly numbered step (e.g. Step X.Y)
+                    if s.depth > 0 and not re.match(r"^step\s*\d+\.\d+", s_name, flags=re.IGNORECASE):
+                        for shot in getattr(s, "screenshots", []):
+                            if not any(x.name == shot.name for x in prev.screenshots):
+                                prev.screenshots.append(shot)
+                        if s.status == "failed" and prev.status != "failed":
+                            prev.status = "failed"
+                            prev.error = s.error
+                        continue
+
+                processed_steps.append(s)
+
+            for s in processed_steps:
                 s_time = datetime.fromtimestamp(getattr(s, "start", rec_start)).strftime("%H:%M:%S")
                 s_name = _e(getattr(s, "name", ""))
                 s_status = getattr(s, "status", "passed")
@@ -587,15 +847,37 @@ def build_html(meta: dict, summary: dict, records) -> str:
   <div class="screenshots-row">{''.join(cards)}</div>
 </div>"""
 
-        # Execution Logs Block
+        # Execution Logs Block - deduplicated from steps and STEP: prefixes
         logs_html = ""
         log_lines = getattr(r, "logs", [])
         if log_lines:
             log_entries = []
+            all_step_texts = set()
+            for s in (getattr(r, "steps", []) or []):
+                s_name = getattr(s, "name", "").strip()
+                if s_name:
+                    all_step_texts.add(s_name.lower())
+                    norm_s = normalize_step_name(s_name)
+                    if norm_s:
+                        all_step_texts.add(norm_s)
+
             for l in log_lines:
                 msg = _clean_log_text(l.message)
                 if not msg:
                     continue
+                # Skip internal report step logger outputs
+                if msg.startswith("STEP: "):
+                    continue
+                # Skip pytest protocol / teardown markers
+                if any(p in msg for p in ("TEST START |", "TEST TEARDOWN |")):
+                    continue
+
+                # Skip logs that merely echo an allure step title
+                msg_lower = msg.strip().lower()
+                norm_msg = normalize_step_name(msg)
+                if msg_lower in all_step_texts or (norm_msg and norm_msg in all_step_texts):
+                    continue
+
                 t_str = datetime.fromtimestamp(l.ts).strftime("%H:%M:%S")
                 log_entries.append(f"<div class='log-line {l.level}'>[{t_str}] [{l.level}] {_e(msg)}</div>")
             if log_entries:

@@ -27,13 +27,19 @@ from typing import Any, Iterable
 
 from playwright.sync_api import Locator, Page, expect
 from utils.logger import get_logger
+from utils.common_methods import (
+    CommonMethods,
+    is_valid_timestamp,
+    parse_flight_numbers_from_text,
+    login_to_application,
+)
 
 logger = get_logger(__name__)
 
 
-class BasePage:
+class BasePage(CommonMethods):
     def __init__(self, page: Page, base_url: str | None = None):
-        self.page = page
+        super().__init__(page)
         self.base_url = base_url
 
     def _locator(self, target: str | Locator) -> Locator:
@@ -92,6 +98,19 @@ class BasePage:
 
     def wait_for_element(self, target, state="visible", timeout=None):
         return self.wait_for(target, state=state, timeout=timeout)
+
+    def login(self, username: str | None = None, password: str | None = None):
+        """
+        Prerequisite method to authenticate / log into the application.
+
+        What this function does:
+        Creates an instance of the LoginPage object and runs the login_user() workflow.
+        This provides a convenient shorthand for any page object or test that needs to ensure
+        the user is authenticated before proceeding.
+        """
+        from pages.Login.Login_Page import LoginPage
+        login_page = LoginPage(self.page, self.base_url)
+        return login_page.login_user(username, password)
 
     # -------------------------------------------------------------------------
     # Basic User Actions
@@ -225,7 +244,15 @@ class BasePage:
             raise
 
     def assert_not_visible(self, locator, timeout=None):
-        expect(self._locator(locator)).not_to_be_visible(timeout=timeout)
+        loc = self._locator(locator)
+        try:
+            expect(loc).not_to_be_visible(timeout=timeout)
+        except Exception:
+            try:
+                setattr(self.page, "_last_failed_locator", loc)
+            except Exception:
+                pass
+            raise
 
     def assert_enabled(self, locator, timeout=None):
         loc = self._locator(locator)
@@ -328,42 +355,146 @@ class BasePage:
     # Red Border Box Highlighting & Screenshot Capture (Self-Contained in POM)
     # -------------------------------------------------------------------------
 
-    @staticmethod
-    def highlight_element(page: Page | None, locator: Any = None, error_message: str = "") -> None:
-        """
-        Highlight target element with a 2px solid red border box before capturing failure screenshot.
+    @classmethod
+    def _extract_locator_from_error(cls, error_text: str) -> str | None:
+        """Extract failing locator/selector or domain element from error tracebacks."""
+        if not error_text:
+            return None
+        text = str(error_text)
 
-        1. Clears any previous red borders across the page DOM.
-        2. Identifies the failing element via passed locator, page._last_failed_locator,
-           or locator pattern in error_message.
-        3. Applies '2px solid red' border to the element.
+        # 1. Playwright: waiting for locator("...") or selector('...')
+        m = re.search(r'(?:locator|selector)\((["\'])(.*?)\1\)', text, re.DOTALL)
+        if m:
+            return m.group(2).strip()
+
+        # 2. Playwright expect: Locator: locator("...")
+        m = re.search(r'Locator:\s*locator\((["\'])(.*?)\1\)', text, re.DOTALL)
+        if m:
+            return m.group(2).strip()
+
+        # 3. Playwright expect with get_by_*: Locator: get_by_role("button", name="...")
+        m = re.search(r'Locator:\s*([^\r\n]+)', text)
+        if m:
+            raw_loc = m.group(1).strip()
+            m_inner = re.search(r'\((["\'])(.*?)\1', raw_loc)
+            if m_inner:
+                return m_inner.group(2).strip()
+            return raw_loc
+
+        # 4. Flight failure: Flight '<flight_no>'
+        m_flight = re.search(r"[Ff]light\s*['\"]([A-Za-z0-9_\s\-]+)['\"]", text)
+        if m_flight:
+            flight_str = m_flight.group(1).strip()
+            token = flight_str.split()[0].strip() if flight_str else flight_str
+            return f"//div[contains(@class, 'flight-card') and .//*[contains(text(), '{token}')]] | //*[contains(text(), '{token}')]"
+
+        # 5. Activity group failure: Activity group '<group_name>'
+        m_group = re.search(r"[Aa]ctivity\s+group\s*['\"]([^'\"]+)['\"]", text)
+        if m_group:
+            group_str = m_group.group(1).strip()
+            return f"//div[contains(@class,'grp-button') and normalize-space()='{group_str}'] | //*[contains(text(), '{group_str}')]"
+
+        # 6. Logger or action failed log: locator=...
+        m = re.search(r'locator=([^\s|\r\n]+)', text)
+        if m:
+            return m.group(1).strip()
+
+        # 7. Look for XPath or CSS selector in error text
+        m = re.search(r'(?://[a-zA-Z0-9_\-\[\]@=\'\"\s\.\*\(\)]+|[#.][a-zA-Z0-9_-]+)', text)
+        if m:
+            cand = m.group(0).strip()
+            if len(cand) > 2:
+                return cand
+
+        return None
+
+    @classmethod
+    def highlight_element(cls, page: Page | None, locator: Any = None, error_message: str = "") -> None:
+        """
+        Highlight target failed element with a prominent 3px solid red outline, 2px red border,
+        and glowing red box-shadow before capturing failure screenshot.
+
+        1. Clears any previous highlight borders or banners.
+        2. Resolves target locator from passed locator, page._last_failed_locator,
+           or by parsing error_message / stack trace.
+        3. If target element exists in DOM:
+           - Scrolls element into view.
+           - Applies '3px solid red' outline and '2px solid red' border with !important.
+        4. If target element is not in DOM:
+           - Injects a red overlay banner at top of viewport displaying the missing locator.
         """
         try:
             if page is None or page.is_closed():
                 return
 
-            # 1. Clear previous borders
+            # 1. Clear previous failure highlights and banners
             try:
-                page.evaluate("() => document.querySelectorAll('*').forEach(el => { el.style.border = ''; })")
+                page.evaluate("""() => {
+                    const banner = document.getElementById('__pw_failure_banner__');
+                    if (banner) banner.remove();
+                    document.querySelectorAll('.__pw_failed_element__').forEach(el => {
+                        el.style.removeProperty('outline');
+                        el.style.removeProperty('border');
+                        el.style.removeProperty('box-shadow');
+                        el.style.removeProperty('background-color');
+                        el.classList.remove('__pw_failed_element__');
+                    });
+                }""")
             except Exception:
                 pass
 
             target = None
+            extracted_loc_str = ""
+
             # 2. Determine target locator
             if locator is not None:
                 target = locator if hasattr(locator, "first") else page.locator(str(locator))
+                extracted_loc_str = str(locator)
             elif getattr(page, "_last_failed_locator", None) is not None:
                 target = page._last_failed_locator
+                extracted_loc_str = str(getattr(target, "_selector", "") or target)
             elif error_message:
-                m = re.search(r'(?:locator|selector)\(["\']([^"\']+)["\']\)', str(error_message))
-                if m:
-                    target = page.locator(m.group(1))
+                extracted = cls._extract_locator_from_error(error_message)
+                if extracted:
+                    extracted_loc_str = extracted
+                    try:
+                        target = page.locator(extracted)
+                    except Exception:
+                        target = None
 
-            # 3. Apply 2px solid red border if target element exists
+            # 3. Apply highlighting
             if target is not None:
                 try:
-                    if target.count() > 0:
-                        target.first.evaluate("el => { el.style.border = '2px solid red'; }")
+                    count = target.count()
+                    if count > 0:
+                        elem = target.first
+                        elem.scroll_into_view_if_needed(timeout=2000)
+                        elem.evaluate("""el => {
+                            try { el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' }); } catch(e){}
+                            el.classList.add('__pw_failed_element__');
+                            el.style.setProperty('outline', '3px solid #ff0000', 'important');
+                            el.style.setProperty('outline-offset', '2px', 'important');
+                            el.style.setProperty('border', '2px solid #ff0000', 'important');
+                            el.style.setProperty('box-shadow', '0 0 16px 4px rgba(255, 0, 0, 0.85)', 'important');
+                            el.style.setProperty('background-color', 'rgba(255, 0, 0, 0.08)', 'important');
+                        }""")
+                        logger.info("Highlighted failed element with red border: %s", extracted_loc_str)
+                        return
+                except Exception as ex:
+                    logger.debug("Could not highlight element in DOM: %s", ex)
+
+            # 4. If element was not found in DOM or locator failed to match an existing node,
+            # display a red failure banner across the viewport so the missing element is immediately obvious.
+            if extracted_loc_str:
+                try:
+                    clean_msg = extracted_loc_str.replace("`", "'").replace("\\", "\\\\")[:120]
+                    page.evaluate(f"""() => {{
+                        const banner = document.createElement('div');
+                        banner.id = '__pw_failure_banner__';
+                        banner.innerHTML = '&#10060; FAILED LOCATOR NOT FOUND: <span style="font-family:monospace;background:#fff;color:#c00;padding:2px 6px;border-radius:4px;margin-left:6px;">{clean_msg}</span>';
+                        banner.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:2147483647;background:#dc3545;color:#ffffff;padding:10px 20px;border:2px solid #721c24;border-radius:6px;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.4);text-align:center;max-width:92%;';
+                        document.body.appendChild(banner);
+                    }}""")
                 except Exception:
                     pass
         except Exception:
@@ -428,3 +559,114 @@ class BasePage:
         except Exception:
             logger.exception("Unable to capture failure screenshot | url=%s", getattr(self.page, "url", "unknown"))
             return None
+
+    # -------------------------------------------------------------------------
+    # Flight Card Attribute Extractions (Flight Number, Arrival & Departure)
+    # -------------------------------------------------------------------------
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
+
+    def get_arrival_and_departure_flight_numbers(self, flight_card: Locator | None = None) -> tuple[str, str]:
+        """
+        Extracts both the Arrival Flight Number and Departure Flight Number from a flight card.
+
+        What this function does:
+        1. Finds the flight number container element (class="flightno-col") within the flight card.
+        2. Extracts the text content or child elements (including tooltip paragraphs).
+        3. Parses and returns the separate Arrival and Departure flight numbers.
+
+        Inputs:
+            flight_card (Locator, optional): The flight card web element. If None, queries the page.
+
+        Returns:
+            tuple[str, str]: (arrival_flight_number, departure_flight_number).
+        """
+        target = flight_card if flight_card is not None else self.page
+        try:
+            # 1. Primary check: class="flightno-col"
+            col = target.locator(".flightno-col, //div[contains(@class,'flightno-col')]").first
+            raw_text = ""
+            if col.count() > 0:
+                # Check for child paragraph with tooltip inside flightno-col
+                p_elem = col.locator("p[mattooltip='Flight Arrival Departure Numbers'], p").first
+                if p_elem.count() > 0:
+                    raw_text = p_elem.inner_text().strip()
+                if not raw_text:
+                    raw_text = col.inner_text().strip()
+
+            # 2. Secondary check: mattooltip locator directly
+            if not raw_text:
+                tooltip_elem = target.locator("//p[@mattooltip='Flight Arrival Departure Numbers']").first
+                if tooltip_elem.count() > 0:
+                    raw_text = tooltip_elem.inner_text().strip()
+
+            if raw_text:
+                # Normalize spaces and newlines
+                clean_text = " ".join(raw_text.split())
+                # Handle separator: ' - ' or ' / ' or '-'
+                if " - " in clean_text:
+                    parts = clean_text.split(" - ", 1)
+                    arr = parts[0].strip()
+                    dep = parts[1].strip() if len(parts) > 1 else ""
+                    return (arr if arr != "-" else ""), (dep if dep != "-" else "")
+                elif " / " in clean_text:
+                    parts = clean_text.split(" / ", 1)
+                    arr = parts[0].strip()
+                    dep = parts[1].strip() if len(parts) > 1 else ""
+                    return (arr if arr != "-" else ""), (dep if dep != "-" else "")
+                elif "-" in clean_text and not clean_text.startswith("FZ-") and not clean_text.startswith("EK-"):
+                    parts = clean_text.split("-", 1)
+                    arr = parts[0].strip()
+                    dep = parts[1].strip() if len(parts) > 1 else ""
+                    return (arr if arr != "-" else ""), (dep if dep != "-" else "")
+                else:
+                    return clean_text, ""
+        except Exception as e:
+            logger.warning("Error fetching arrival and departure flight numbers: %s", e)
+        return "", ""
+
+    def get_flight_number(self, flight_card: Locator | None = None) -> str:
+        """
+        Extracts and formats the flight number from the dashboard / flight card.
+
+        What this function does:
+        Fetches both the Arrival Flight Number and Departure Flight Number from class="flightno-col",
+        and returns a clean, human-readable flight number string to display in test steps and reports.
+        - If both arrival and departure numbers are present: '8500 - 863' or 'FZ-0215 - FZ-0216'
+        - If only arrival number is present: 'FZ-0215'
+        - If only departure number is present: 'FZ-0216'
+
+        Inputs:
+            flight_card (Locator, optional): The flight card web element.
+
+        Returns:
+            str: The flight number string (e.g. '8500 - 863' or 'FZ-0215').
+        """
+        arr, dep = self.get_arrival_and_departure_flight_numbers(flight_card)
+        if arr and dep:
+            return f"{arr} - {dep}"
+        if arr:
+            return arr
+        if dep:
+            return dep
+
+        # Fallback to direct text if splitting didn't yield values
+        target = flight_card if flight_card is not None else self.page
+        try:
+            col = target.locator(".flightno-col, //div[contains(@class,'flightno-col')]").first
+            if col.count() > 0:
+                txt = col.inner_text().strip()
+                if txt and txt != "-":
+                    return " ".join(txt.split())
+            tooltip_elem = target.locator("//p[@mattooltip='Flight Arrival Departure Numbers']").first
+            if tooltip_elem.count() > 0:
+                txt = tooltip_elem.inner_text().strip()
+                if txt and txt != "-":
+                    return " ".join(txt.split())
+        except Exception:
+            pass
+        return "Unknown Flight"

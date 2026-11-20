@@ -52,7 +52,12 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
     # ==================== FLIGHT CARD LOCATORS ====================
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
     NO_FLIGHTS_AVAILABLE = "//div[contains(text(),'No Flights Available')]"
-    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
 
     # ==================== BOOKMARK / FLAGGING LOCATORS ====================
     # Bookmark icon button on each flight card
@@ -252,6 +257,9 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
     def get_flight_number(self, flight_card) -> str:
         """Extracts the Arrival / Departure flight number from a flight card."""
         try:
+            num = super().get_flight_number(flight_card)
+            if num and num != "Unknown Flight":
+                return num
             flight_num_loc = flight_card.locator(self.ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER)
             if flight_num_loc.count() > 0 and flight_num_loc.first.is_visible():
                 return flight_num_loc.first.inner_text().strip()
@@ -634,5 +642,10 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
                 "verified": post_status,
                 "final_state": "FLAGGED" if post_status else "UNFLAGGED"
             }
+
+
+# Alias to support both class naming conventions
+ListView_Ongoing_Flag_Unflag_Flight_Page = Listview_OngoingSection_Flag_Unflag_Flight
+
 
 

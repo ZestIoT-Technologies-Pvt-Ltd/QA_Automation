@@ -55,6 +55,7 @@ class TestRecord:
     nodeid: str
     name: str
     description: str = ""
+    project: str = ""
     airport: str = "-"
     tc: str = ""
     markers: list = field(default_factory=list)
@@ -162,7 +163,12 @@ class LogCapture(logging.Handler):
         if _current is None:
             return
         try:
+            # Filter out report step logs so they don't duplicate Allure steps in execution logs
+            if record.name == "report" or str(getattr(record, "msg", "")).startswith("STEP: "):
+                return
             message = record.getMessage()
+            if str(message).startswith("STEP: "):
+                return
             if record.exc_info:
                 message += "\n" + "".join(traceback.format_exception(*record.exc_info)).rstrip()
             # Omit huge binary or raw base64 dumps in log lines

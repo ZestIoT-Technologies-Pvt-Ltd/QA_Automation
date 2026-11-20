@@ -119,7 +119,8 @@ def load_workbook_config(path: str):
             e_station = exec_row['Station']
             if e_station != 'ALL':
                 exists = any(
-                    c['Project'] == e_proj and e_station in c['Station_List']
+                    (c['Project'] in (e_proj, 'all') or e_station in c['Station_List'])
+                    and (e_station in c['Station_List'] or 'ALL' in c['Station_List'])
                     for c in cases
                 )
                 if not exists:
@@ -145,11 +146,11 @@ def pytest_addoption(parser):
         if not any(name in existing_opts for name in names):
             group.addoption(*names, **kwargs)
 
-    _safe_add('--project', action='store', default='flydubai', help='Project name; defaults to Execution_Config in Excel.')
-    _safe_add('--env', action='store', default='qa', help='Environment (qa, prod); defaults to Execution_Config in Excel.')
-    _safe_add('--station', action='store', default='DXB', help='Station code; defaults to Execution_Config in Excel.')
-    _safe_add('--browser', action='store', default='chromium', help='Browser to use for tests (chromium, firefox, webkit); defaults to Execution_Config in Excel.')
-    _safe_add('--headless', action='store_true', default='True', help='Run browser in headless mode; defaults to Execution_Config in Excel.')
+    _safe_add('--project', action='store', default=None, help='Project name; defaults to Execution_Config in Excel.')
+    _safe_add('--env', action='store', default=None, help='Environment (qa, prod); defaults to Execution_Config in Excel.')
+    _safe_add('--station', action='store', default=None, help='Station code; defaults to Execution_Config in Excel.')
+    _safe_add('--browser', action='store', default=None, help='Browser to use for tests (chromium, firefox, webkit); defaults to Execution_Config in Excel.')
+    _safe_add('--headless', action='store_true', default=None, help='Run browser in headless mode; defaults to Execution_Config in Excel.')
     _safe_add('--headed', action='store_false', dest='headless', default=None, help='Override Excel and run with a visible browser.')
     _safe_add('--no-email', action='store_true', default=False, help='Disable report email delivery for this run.')
     _safe_add('--execution-config', action='store', default='test_data/execution_config.xlsx', help='Path to the Excel file containing execution configuration.')
@@ -172,35 +173,60 @@ def pytest_configure(config):
     env = (cli_env or default_exec.get('Environment', 'qa')).strip().lower()
 
     cli_station = config.getoption('--station')
-    station_str = (cli_station or default_exec.get('Station', 'DXB')).strip()
-    requested = [s.strip().upper() for s in station_str.split(',') if s.strip()]
+    if cli_station:
+        station_str = cli_station.strip()
+        requested = [s.strip().upper() for s in station_str.split(',') if s.strip()]
+    else:
+        requested = [r['Station'].upper() for r in active_exec]
+        station_str = ','.join(requested)
+
+    cli_browser = config.getoption('--browser')
+    browser = (cli_browser or default_exec.get('Browser', 'chromium')).strip().lower()
+
+    cli_headless = config.getoption('--headless')
+    if cli_headless is not None:
+        headless = bool(cli_headless)
+    else:
+        headless = _yes(default_exec.get('Headless', False))
+
+    station_to_project = {}
+    for r in active_exec:
+        st = r['Station'].upper()
+        station_to_project[st] = {
+            'project': r['Project'].lower(),
+            'env': r['Environment'].lower(),
+            'name': r['Station_Name'],
+        }
+    config.framework_station_to_project = station_to_project
 
     # Populate resolved values back to config options for downstream fixtures & plugins
     config.option.project = project
     config.option.env = env
     config.option.station = station_str
+    config.option.browser = browser
+    config.option.headless = headless
 
     if not requested:
         raise pytest.UsageError('--station must contain at least one station code.')
 
-    known = {code for (proj, code), (name, enabled) in stations.items() if proj == project and enabled}
+    known = {code for (proj, code), (name, enabled) in stations.items() if enabled}
     if requested == ['ALL']:
         requested = sorted(known) if known else ['ALL']
     else:
         if known:
             unknown = [s for s in requested if s != 'ALL' and s not in known]
             if unknown:
-                raise pytest.UsageError(f'Unknown station(s) for {project}: {unknown}; known enabled stations: {sorted(known)}')
+                raise pytest.UsageError(f'Unknown station(s): {unknown}; known enabled stations: {sorted(known)}')
 
     # Filter active cases
     active = [
         r for r in cases
-        if r['Project'] == project and r['Enabled'] and (
+        if r['Enabled'] and (
             'ALL' in r['Station_List'] or any(st in requested for st in r['Station_List'])
         )
     ]
     if not active:
-        raise pytest.UsageError(f'No enabled test mappings for project={project}, station={requested}.')
+        raise pytest.UsageError(f'No enabled test mappings for station={requested}.')
 
     config.framework_sheets = sheets
     config.framework_stations = stations
@@ -220,7 +246,14 @@ def pytest_generate_tests(metafunc):
     config = metafunc.config
     name = metafunc.function.__name__.lower()
     tc_marker = metafunc.definition.get_closest_marker('tc')
-    aliases = {name, metafunc.definition.nodeid.lower(), metafunc.definition.nodeid.split('[', 1)[0].lower()}
+    item_path = getattr(metafunc.definition, "path", None) or Path(str(metafunc.definition.fspath))
+    aliases = {
+        name,
+        metafunc.definition.nodeid.lower(),
+        metafunc.definition.nodeid.split('[', 1)[0].lower(),
+        item_path.name.lower(),
+        item_path.stem.lower(),
+    }
     if tc_marker and tc_marker.args:
         aliases.add(str(tc_marker.args[0]).lower())
 
@@ -235,7 +268,7 @@ def pytest_generate_tests(metafunc):
                 if st in config.framework_stations_requested:
                     station_values.add(st)
     if station_values:
-        values = sorted(station_values, key=config.framework_stations_requested.index)
+        values = sorted(station_values, key=lambda s: config.framework_stations_requested.index(s) if s in config.framework_stations_requested else 999)
         metafunc.parametrize('station', values, ids=values)
 
 
@@ -252,8 +285,16 @@ def pytest_collection_modifyitems(config, items):
             mapping_by_name.setdefault(alias, set()).update(st_list)
 
     for item in items:
-        # Match by node ID, function name, or explicit TC marker. Avoid loose substring matching.
-        names = {item.name.lower(), item.originalname.lower(), item.nodeid.lower(), item.nodeid.split('[', 1)[0].lower()}
+        # Match by node ID, function name, file name, or explicit TC marker. Avoid loose substring matching.
+        item_path = getattr(item, "path", None) or Path(str(item.fspath))
+        names = {
+            item.name.lower(),
+            item.originalname.lower(),
+            item.nodeid.lower(),
+            item.nodeid.split('[', 1)[0].lower(),
+            item_path.name.lower(),
+            item_path.stem.lower(),
+        }
         marker = item.get_closest_marker('tc')
         if marker and marker.args:
             names.add(str(marker.args[0]).lower())
@@ -265,8 +306,19 @@ def pytest_collection_modifyitems(config, items):
         if not ('ALL' in configured_stations or configured_stations.intersection(requested)):
             deselected.append(item)
             continue
-        item.user_properties.append(('project', project))
-        applicable = (configured_stations & requested) if 'ALL' not in configured_stations else requested
+
+        # Determine station for this item (from parametrization if present)
+        item_station = None
+        if hasattr(item, "callspec") and "station" in item.callspec.params:
+            item_station = item.callspec.params["station"]
+        elif "[" in item.name and item.name.endswith("]"):
+            suffix = item.name.split("[")[-1].rstrip("]")
+            if suffix in requested:
+                item_station = suffix
+
+        item_proj = config.framework_station_to_project.get(item_station, {}).get("project", project) if item_station else project
+        item.user_properties.append(('project', item_proj))
+        applicable = {item_station} if item_station else ((configured_stations & requested) if 'ALL' not in configured_stations else requested)
         item.user_properties.append(('stations', ','.join(sorted(applicable or requested))))
         keep.append(item)
 

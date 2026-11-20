@@ -7,26 +7,30 @@
 import pytest
 import allure
 
-from pages.List_View.Listview_DepartedSection_FlightCard import (Listview_DepartedSection_FlightCard)
+from pages.List_View.ListView_Departed_FlightCard import (Listview_DepartedSection_FlightCard)
+from utils.common_methods import login_to_application
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
+@pytest.mark.list_view
 def test_Listview_DepartedSection_FlightCard(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify accessing and validating Flight Cards for departed flights in the Departed section.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login).
+    1. Prerequisite: Authenticate / Login to application using common login method.
     2. Navigate to Flights List View.
     3. Switch to Departed Flights section.
-    4. Validate Flight Cards across all departed flights (opens card via three-dots menu, verifies new window, closes tab).
+    4. Validate Flight Cards across all departed flights (opens card via ellipsis menu, verifies new window, closes tab).
     """
     logger.info("Starting List View Departed Flight Card Test")
+
+    # Prerequisite: Sign into application using common login method
+    login_to_application(page)
 
     departed_page = Listview_DepartedSection_FlightCard(page)
 

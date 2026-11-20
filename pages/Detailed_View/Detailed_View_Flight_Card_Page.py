@@ -49,6 +49,12 @@ class DetailViewPage(BasePage):
     ]
 
     FLIGHTS_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
     DETAIL_VIEW_ARROW = "//div[contains(@class,'moreInfoStyles')]/mat-icon[text()='arrow_forward']"
     ARRIVAL_FLIGHT_NUMBER = "//div[@class='flight-names']/div[@class='flight-arrival']//div[@class='arr-dep']"
     DEPARTURE_FLIGHT_NUMBER = "//div[@class='flight-names']/div[@class='flight-departure']//div[@class='arr-dep']"

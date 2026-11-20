@@ -52,7 +52,12 @@ class Flights_View_Ongoing_Page(BasePage):
     SEARCH_BUTTON = "//div[@class='ng-star-inserted']//i[@ptooltip='Search']"
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
     NO_FLIGHTS_AVAILABLE = "//div[contains(text(),'No Flights Available')]"
-    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
     AIRCRAFT_TYPE = "//div[@class='aircraft_type']"
     AIRCRAFT_STATUS = "//div[contains(@class,'fefoclass')]//div[@class = 'fefodiv']" # NA For NOP Section
     BAY_NUMBER = "//div[contains(@class,'bay-col')]"
@@ -252,7 +257,8 @@ class Flights_View_Ongoing_Page(BasePage):
             Flight_Card.click()
             logger.info(f"Clicked Flight Card")
             time.sleep(10)
-            onblock_time = Flight_Card.locator().text_content()
+            onblock_loc = Flight_Card.locator(self.ONBLOCK_TIME)
+            onblock_time = onblock_loc.text_content() if onblock_loc.count() > 0 else ""
             logger.info(f"Onblock Time for Flight Card = {onblock_time}")
 
         return onblock_time

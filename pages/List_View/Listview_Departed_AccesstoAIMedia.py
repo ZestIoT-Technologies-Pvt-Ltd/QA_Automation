@@ -46,6 +46,12 @@ class Listview_DepartedSection_AccesstoAIMedia(BasePage):
 
     DEPARTED_TAB = "text=Departed"
     FLIGHT_DETAILS = ".flight-details.ng-star-inserted"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
 
     TURNAROUND_HEADER = ".turnaround-header"
     SPLIT_HEADER = "mat-expansion-panel-header.split-expansion-header"
@@ -155,7 +161,7 @@ class Listview_DepartedSection_AccesstoAIMedia(BasePage):
             )
 
             self.page.wait_for_selector(
-                '[mattooltip="Flight Arrival Departure Numbers"]',
+                '.flightno-col, [mattooltip="Flight Arrival Departure Numbers"]',
                 timeout=90000
             )
 
@@ -272,13 +278,14 @@ class Listview_DepartedSection_AccesstoAIMedia(BasePage):
             logger.info(f"Total departed flights: {total}")
 
             for i in range(total):
-                logger.info(f"Checking flight {i + 1}/{total}")
-
                 flights = self.page.locator(self.FLIGHT_DETAILS)
                 flight = flights.nth(i)
 
                 expect(flight).to_be_visible(timeout=15000)
                 flight.scroll_into_view_if_needed()
+                flight_num = self.get_flight_number(flight) or f"Flight {i + 1}"
+
+                logger.info(f"Checking flight '{flight_num}' ({i + 1}/{total})")
                 flight.click(timeout=15000)
 
                 flight_type = self.wait_for_flight_header(
@@ -286,7 +293,7 @@ class Listview_DepartedSection_AccesstoAIMedia(BasePage):
                 )
 
                 logger.info(
-                    f"Flight {i + 1} type: {flight_type}"
+                    f"Flight '{flight_num}' type: {flight_type}"
                 )
 
                 self.wait_for_loading_to_finish()
@@ -294,14 +301,14 @@ class Listview_DepartedSection_AccesstoAIMedia(BasePage):
 
                 if flight_type == "split":
                     self.check_split_flight_activity_media(
-                        flight_number=i + 1
+                        flight_number=flight_num
                     )
                 else:
                     self.check_turnaround_detail_media(
-                        flight_number=i + 1
+                        flight_number=flight_num
                     )
 
-                logger.info(f"Flight {i + 1} validation completed")
+                logger.info(f"Flight '{flight_num}' validation completed")
 
             logger.info("All departed flights processed")
 
@@ -312,7 +319,7 @@ class Listview_DepartedSection_AccesstoAIMedia(BasePage):
 
     # ==================== TURNAROUND MEDIA ====================
 
-    @allure.step("Check Turnaround flight details and AI media")
+    @allure.step("Check Turnaround flight details and AI media for Flight '{flight_number}'")
     def check_turnaround_detail_media(self, flight_number=1):
         rows = self.page.locator(self.DETAIL_ROWS)
 
@@ -341,7 +348,7 @@ class Listview_DepartedSection_AccesstoAIMedia(BasePage):
 
     # ==================== SPLIT FLIGHT ACTIVITY PANELS ====================
 
-    @allure.step("Expand Split flight activity dropdowns and check AI media")
+    @allure.step("Expand Split flight activity dropdowns and check AI media for Flight '{flight_number}'")
     def check_split_flight_activity_media(self, flight_number=1):
         accordion = self.page.locator(self.MAT_ACCORDION)
 

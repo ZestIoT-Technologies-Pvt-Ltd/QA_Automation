@@ -7,26 +7,30 @@
 import pytest
 import allure
 
-from pages.List_View.Listview_DepartedSection_AccesstoAIMedia import Listview_DepartedSection_AccesstoAIMedia
+from pages.List_View.ListView_Departed_AccesstoAIMedia import Listview_DepartedSection_AccesstoAIMedia
+from utils.common_methods import login_to_application
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
+@pytest.mark.list_view
 def test_Listview_DepartedSection_AccesstoAIMedia(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify accessibility and playback of AI Media across departed flights in the Departed section.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login).
+    1. Prerequisite: Authenticate / Login to application using common login method.
     2. Navigate to Flights List View.
     3. Switch to Departed Flights section.
     4. Validate all departed flights, expand turnaround and split flight accordions, and access AI Media popup player.
     """
     logger.info("Starting List View Departed Section Test")
+
+    # Prerequisite: Sign into application using common login method
+    login_to_application(page)
 
     departed_page = Listview_DepartedSection_AccesstoAIMedia(page)
 

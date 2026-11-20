@@ -1,7 +1,7 @@
 # Author : Tilak Badsheshi
 # Created Date : 2026-10-22
 # Modified By : Tilak Badsheshi
-# Modified Date : 2026-11-10
+# Modified Date : 2026-11-19
 
 import pytest
 import allure
@@ -19,16 +19,17 @@ def test_login(page):
     Test Scenario: Verify successful authentication and application launch for AviLeap.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login fixture).
-    2. Initialize LoginPage object with active browser page context.
-    3. Retrieve the web page title.
-    4. Assert and verify that the page title contains 'AviLeap'.
+    1. Authenticate / Login to application using LoginPage.login_user().
+    2. Retrieve the web page title.
+    3. Assert and verify that the page title contains 'AviLeap'.
     """
     logger.info("Starting test_login")
 
     try:
-        with allure.step("Step 1: Initialize Login Page Object"):
-            login_page = LoginPage(page, None)
+        login_page = LoginPage(page)
+
+        with allure.step("Step 1: Authenticate / Login to Application"):
+            login_page.login_user()
 
         with allure.step("Step 2: Retrieve Page Title"):
             title = login_page.get_page_title()

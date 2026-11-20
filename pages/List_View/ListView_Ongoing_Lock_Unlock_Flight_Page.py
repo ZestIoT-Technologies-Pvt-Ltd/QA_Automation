@@ -15,7 +15,7 @@ Scenario & Workflow Capabilities:
 2. Section Assertion: Ensure Ongoing section is active and load flight cards.
 3. Lock Status Detection: Check whether the target flight card is Locked or Unlocked.
 4. Flight Locking Workflow (Step 1):
-   - Click Three-Dots menu ('more_vert') on an unlocked flight card.
+   - Click Ellipsis menu ('more_vert') on an unlocked flight card.
    - Select 'Lock Flight' option from menu.
    - Fill Reason ('Test') and Remarks ('Testing Flight').
    - Submit lock dialog and assert flight card displays lock icon button.
@@ -48,10 +48,16 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
     # ==================== FLIGHT CARD LOCATORS ====================
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
     NO_FLIGHTS_AVAILABLE = "//div[contains(text(),'No Flights Available')]"
-    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    FLIGHTNO_COL = ".flightno-col, //div[contains(@class,'flightno-col')]"
+    ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER = (
+        "//div[contains(@class,'flightno-col')]//p[@mattooltip='Flight Arrival Departure Numbers'] | "
+        "//div[contains(@class,'flightno-col')] | "
+        "//p[@mattooltip='Flight Arrival Departure Numbers']"
+    )
 
-    # ==================== THREE-DOTS MENU (ACTIONS COLUMN) ====================
-    THREE_DOTS_MENU_ICON = "mat-icon:has-text('more_vert'), mat-icon[mattooltip='Edit Flight']"
+    # ==================== ELLIPSIS MENU (ACTIONS COLUMN) ====================
+    ELLIPSIS_MENU_ICON = "mat-icon:has-text('more_vert'), mat-icon[mattooltip='Edit Flight']"
+    THREE_DOTS_MENU_ICON = ELLIPSIS_MENU_ICON  # Backwards compatibility
 
     # Menu items inside mat-menu-content
     MENU_PANEL = "//div[contains(@class,'mat-menu-content')]"
@@ -122,12 +128,29 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
 
     # ==================== CONSTRUCTOR ====================
     def __init__(self, page: Page, base_url: str | None = None):
+        """
+        Initializes the Ongoing Flights Lock/Unlock page object.
+
+        What this function does:
+        Sets up the page controller and prepares everything needed to interact with the
+        Flights List View screen and lock/unlock ongoing flights.
+        """
         super().__init__(page, base_url)
         self.page = page
 
     # ==================== SCREENSHOT ====================
     def attach_screenshot(self, name: str, full_page: bool = True):
-        """Attaches a screenshot to the Allure report."""
+        """
+        Captures a screenshot of the current screen and saves it into the test report.
+
+        What this function does:
+        Takes an image of what is visible on the web page and attaches it directly to the
+        test report so that managers and testers can visually see what happened.
+
+        Inputs:
+            name (str): A descriptive name for the image (e.g., 'Flight_Locked_FZ-0101').
+            full_page (bool): True to capture the entire page from top to bottom.
+        """
         try:
             screenshot = self.page.screenshot(full_page=full_page)
             allure.attach(
@@ -141,7 +164,16 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
 
     # ==================== LOADING ====================
     def wait_for_loading_to_finish(self, timeout: int = 15000):
-        """Waits for any active loading spinners to disappear."""
+        """
+        Waits for all loading spinners on the page to disappear.
+
+        What this function does:
+        Checks if any loading circles or spinners are active on the screen and pauses
+        until the system finishes loading before performing the next action.
+
+        Inputs:
+            timeout (int): Maximum time in milliseconds to wait (defaults to 15 seconds).
+        """
         try:
             for selector in self.SPINNER_SELECTORS:
                 spinners = self.page.locator(selector)
@@ -156,7 +188,20 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
     # ==================== NAVIGATION ====================
     @allure.step("Navigate to Flights List View")
     def navigate_to_list_view_page(self):
-        """Navigates from Dashboard to Flights List View via side navigation menu."""
+        """
+        Navigates from the home dashboard to the Flights List View screen.
+
+        What this function does:
+        Opens the main navigation menu and clicks on 'Flights' so that the user is brought
+        directly to the Flights List View table.
+
+        Step-by-step actions:
+        1. Hovers over the top-left menu icon to reveal menu options.
+        2. Clicks on the 'Flights' menu option.
+        3. Moves the mouse away so the menu drawer closes smoothly.
+        4. Waits for any loading spinners to disappear.
+        5. Verifies that flight cards are visible on the screen.
+        """
         logger.info("Navigating to Flights List View")
         try:
             menu = self.page.locator(self.MENU)
@@ -202,7 +247,16 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
     # ==================== SECTION HANDLING ====================
     @allure.step("Ensure Ongoing Section is selected")
     def ensure_ongoing_section(self):
-        """Ensures that the Ongoing section tab is active; does not navigate away to any other section."""
+        """
+        Switches to the 'Ongoing' flights section and verifies flight cards are loaded.
+
+        What this function does:
+        Clicks on the 'Ongoing' tab at the top of the Flights List View screen to display
+        all currently active flights. It returns the total count of ongoing flight cards.
+
+        Returns:
+            int: The total count of ongoing flight cards currently visible on the screen.
+        """
         logger.info("Ensuring Ongoing section tab is active")
         try:
             ongoing_tab = self.page.locator(self.ONGOING_TAB).first
@@ -227,8 +281,23 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
 
     # ==================== FLIGHT CARD HELPERS ====================
     def get_flight_number(self, flight_card) -> str:
-        """Extracts the Arrival / Departure flight number from a flight card."""
+        """
+        Reads and returns the flight number from a flight card.
+
+        What this function does:
+        Inspects the flight card element and extracts the flight number text
+        (for example, 'FZ-0215').
+
+        Inputs:
+            flight_card: The flight card web element to read from.
+
+        Returns:
+            str: The flight number text, or 'Unknown Flight' if not found.
+        """
         try:
+            num = super().get_flight_number(flight_card)
+            if num and num != "Unknown Flight":
+                return num
             flight_num_loc = flight_card.locator(self.ARRIVAL_AND_DEPARTURE_FLIGHT_NUMBER)
             if flight_num_loc.count() > 0 and flight_num_loc.first.is_visible():
                 return flight_num_loc.first.inner_text().strip()
@@ -239,8 +308,18 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
     @allure.step("Check whether flight is locked")
     def is_flight_locked(self, flight_card) -> bool:
         """
-        Determines whether the flight is currently locked.
-        If locked, the lock icon button is displayed on the flight card.
+        Checks whether a flight card is currently locked.
+
+        What this function does:
+        Looks at the flight card on screen to see if a red/prominent lock icon button is present.
+        If the lock icon button is displayed, the flight is locked.
+        If the lock icon button is absent, the flight is unlocked.
+
+        Inputs:
+            flight_card: The flight card element to check.
+
+        Returns:
+            bool: True if the flight is locked, False if it is unlocked.
         """
         flight_number = self.get_flight_number(flight_card)
         try:
@@ -259,8 +338,19 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
 
     def wait_for_lock_state(self, flight_card, expected_locked: bool = True, timeout_ms: int = 12000) -> bool:
         """
-        Polls up to timeout_ms until the flight card reaches the expected locked state.
-        Returns True if expected state reached within timeout, False otherwise.
+        Waits until the flight card reaches the expected locked or unlocked state.
+
+        What this function does:
+        Checks the flight card every second until its lock status matches what we expect
+        (for example, waiting for it to become locked, or waiting for it to become unlocked).
+
+        Inputs:
+            flight_card: The flight card element.
+            expected_locked (bool): True if waiting to become locked, False if waiting to become unlocked.
+            timeout_ms (int): Maximum time in milliseconds to wait.
+
+        Returns:
+            bool: True if the expected state was reached, False if it timed out.
         """
         start_time = time.time()
         while (time.time() - start_time) * 1000 < timeout_ms:
@@ -269,20 +359,34 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
             self.page.wait_for_timeout(1000)
         return self.is_flight_locked(flight_card) == expected_locked
 
-    # ==================== THREE-DOTS MENU ACTIONS ====================
-    @allure.step("Click Three-Dots Menu on flight card")
-    def open_three_dots_menu(self, flight_card):
-        """Locates and clicks the three-dots (more_vert / Edit Flight) menu icon on the flight card."""
+    # ==================== ELLIPSIS MENU ACTIONS ====================
+    @allure.step("Click Ellipsis Menu on flight card")
+    def open_ellipsis_menu(self, flight_card):
+        """
+        Clicks the three-dot ellipsis menu button on a flight card.
+
+        What this function does:
+        Locates the three vertical dots (ellipsis menu icon) on the right side of a flight
+        card and clicks it to open the actions menu dropdown.
+
+        Step-by-step actions:
+        1. Scrolls the flight card into view.
+        2. Clicks the three-dot ellipsis menu button.
+        3. Waits for the menu popup panel to appear.
+
+        Inputs:
+            flight_card: The flight card whose menu we want to open.
+        """
         flight_number = self.get_flight_number(flight_card)
-        logger.info(f"Opening Three-Dots menu for flight '{flight_number}'")
+        logger.info(f"Opening ellipsis menu for flight '{flight_number}'")
         try:
             flight_card.scroll_into_view_if_needed()
             self.page.wait_for_timeout(500)
 
-            three_dots = flight_card.locator(self.THREE_DOTS_MENU_ICON).first
-            expect(three_dots).to_be_visible(timeout=10000)
-            three_dots.click()
-            logger.info(f"Clicked Three-Dots menu icon on flight '{flight_number}'")
+            ellipsis_btn = flight_card.locator(self.ELLIPSIS_MENU_ICON).first
+            expect(ellipsis_btn).to_be_visible(timeout=10000)
+            ellipsis_btn.click()
+            logger.info(f"Clicked ellipsis menu icon on flight '{flight_number}'")
 
             # Wait for menu content overlay
             menu_panel = self.page.locator(self.MENU_PANEL)
@@ -290,14 +394,22 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
             logger.info("Menu panel is visible")
 
         except Exception as e:
-            self.attach_screenshot(f"three_dots_click_failed_{flight_number}")
-            logger.error(f"Failed to open Three-Dots menu for flight '{flight_number}': {e}")
+            self.attach_screenshot(f"ellipsis_menu_click_failed_{flight_number}")
+            logger.error(f"Failed to open ellipsis menu for flight '{flight_number}': {e}")
             raise
+
+    # Backwards compatibility alias
+    open_three_dots_menu = open_ellipsis_menu
 
     # ==================== LOCK FLIGHT ACTIONS ====================
     @allure.step("Select 'Lock Flight' from menu")
     def click_lock_flight_option(self):
-        """Clicks the 'Lock Flight' option from the three-dots dropdown menu."""
+        """
+        Clicks the 'Lock Flight' option from the opened ellipsis dropdown menu.
+
+        What this function does:
+        Selects 'Lock Flight' in the actions menu, opening the Lock Flight dialog popup.
+        """
         logger.info("Selecting 'Lock Flight' option from menu")
         try:
             lock_opt = self.page.locator(self.LOCK_FLIGHT_MENU_ITEM).first
@@ -317,7 +429,17 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
 
     @allure.step("Enter Reason: '{reason}' and Remarks: '{remarks}' in Lock Flight dialog")
     def fill_lock_details(self, reason: str = "Test", remarks: str = "Testing Flight"):
-        """Fills the Reason and Remarks fields in the Lock Flight popup dialog."""
+        """
+        Enters the Reason and Remarks in the Lock Flight popup dialog.
+
+        What this function does:
+        Fills the 'Reason' input box (e.g. 'Test') and the 'Remarks' input box
+        (e.g. 'Testing Flight') before submitting the lock.
+
+        Inputs:
+            reason (str): The reason for locking the flight.
+            remarks (str): Additional notes or remarks.
+        """
         logger.info(f"Filling Lock details -> Reason: '{reason}', Remarks: '{remarks}'")
         try:
             # 1. Fill Reason
@@ -341,7 +463,12 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
 
     @allure.step("Click 'Lock' button in Lock Flight dialog")
     def click_lock_button(self):
-        """Clicks the 'Lock' submit button in the Lock Flight popup."""
+        """
+        Clicks the 'Lock' button inside the popup dialog to confirm locking the flight.
+
+        What this function does:
+        Finds and clicks the primary 'Lock' submission button and waits for the dialog to close.
+        """
         logger.info("Clicking 'Lock' button in dialog")
         try:
             lock_btn = self.page.locator(self.LOCK_FLIGHT_SUBMIT_BUTTON).first
@@ -381,22 +508,31 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
         remarks: str = "Testing Flight"
     ) -> dict:
         """
-        Locks a currently unlocked flight:
-        1. Identifies flight number.
-        2. Clicks the Three-Dots menu on the flight card.
-        3. Selects 'Lock Flight'.
-        4. Enters Reason ('Test').
-        5. Enters Remarks ('Testing Flight').
-        6. Clicks the 'Lock' button.
-        7. Waits for lock icon button to appear on card.
-        8. Captures screenshot.
+        Locks a currently unlocked flight card from start to finish.
+
+        What this function does:
+        1. Reads the flight number from the card.
+        2. Clicks the ellipsis (three-dot) menu on the card.
+        3. Clicks 'Lock Flight' from the menu.
+        4. Enters the lock Reason (e.g., 'Test') and Remarks (e.g., 'Testing Flight').
+        5. Clicks the 'Lock' confirmation button.
+        6. Waits for the lock icon button to appear on the flight card.
+        7. Takes a screenshot as evidence.
+
+        Inputs:
+            flight_card: The flight card element to lock.
+            reason (str): Reason for locking.
+            remarks (str): Additional notes.
+
+        Returns:
+            dict: Summary with flight number, reason, remarks, and whether the flight is locked.
         """
         flight_number = self.get_flight_number(flight_card)
         logger.info(f"--- Starting Lock Flight Process for: {flight_number} ---")
 
         with allure.step(f"Locking Flight: {flight_number}"):
-            # 1. Open three-dots menu
-            self.open_three_dots_menu(flight_card)
+            # 1. Open ellipsis menu
+            self.open_ellipsis_menu(flight_card)
 
             # 2. Click Lock Flight option
             self.click_lock_flight_option()
@@ -428,13 +564,22 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
     @allure.step("Unlock flight with Remarks: '{remarks}'")
     def unlock_flight(self, flight_card, remarks: str = "Testing Unlock") -> dict:
         """
-        Unlocks a currently locked flight:
-        1. Identifies flight number.
-        2. Clicks the lock icon button displayed on the flight card.
-        3. Enters Remarks ('Testing Unlock') in the unlock popup.
-        4. Clicks the Unlock submit button.
-        5. Waits for the flight to be unlocked (lock icon button disappears).
-        6. Attaches screenshot.
+        Unlocks a currently locked flight card from start to finish.
+
+        What this function does:
+        1. Reads the flight number from the card.
+        2. Clicks the lock icon button displayed on the flight card to open the unlock popup.
+        3. Enters the unlock remarks (e.g., 'Testing Unlock').
+        4. Clicks the 'Unlock' confirmation button.
+        5. Waits for the lock icon button to disappear from the card.
+        6. Takes a screenshot confirming the flight is now unlocked.
+
+        Inputs:
+            flight_card: The locked flight card element to unlock.
+            remarks (str): Unlock remarks text.
+
+        Returns:
+            dict: Summary with flight number, remarks, and whether the flight is locked (should be False).
         """
         flight_number = self.get_flight_number(flight_card)
         logger.info(f"--- Starting Unlock Flight Process for: {flight_number} ---")
@@ -499,3 +644,8 @@ class List_View_Ongoing_Lock_Unlock_Flight_Page(BasePage):
                 "remarks": remarks,
                 "is_locked": is_locked,
             }
+
+
+# Alias to support both class naming conventions
+ListView_Ongoing_Lock_Unlock_Flight_Page = List_View_Ongoing_Lock_Unlock_Flight_Page
+

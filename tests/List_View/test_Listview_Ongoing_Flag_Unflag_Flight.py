@@ -6,31 +6,35 @@
 import pytest
 import allure
 from pages.List_View.ListView_Ongoing_Flag_Unflag_Flight_Page import Listview_OngoingSection_Flag_Unflag_Flight
+from utils.common_methods import login_to_application
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.login
+@pytest.mark.list_view
 def test_Listview_OngoingSection_FlagUnflagFlight(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Verify end-to-end flight flagging and unflagging (First Flag -> Then Unflag) across Ongoing and Incoming sections.
 
     Steps:
-    1. Authenticate / Login to application (managed via @pytest.mark.login).
+    1. Prerequisite: Authenticate / Login to application using common login method.
     2. Navigate to Flights List View.
     3. Iterate through Ongoing and Incoming sections:
        a. Switch to the section tab.
        b. Validate flight cards are visible.
-       c. Locate target flight card and ensure it is initially unflagged (reset by unflagging if already flagged).
+       c. Locate target flight card using common method and ensure it starts unflagged.
        d. Flag the flight (select flag from dropdown by text value, click Save).
        e. Verify and assert that the flight is now in FLAGGED state.
        f. Unflag the flight (click unmark icon, confirm Unflag in dialog).
        g. Verify and assert that the flight is now in UNFLAGGED state.
     """
     logger.info("Starting List View Sequential Flagging & Unflagging Test for Ongoing and Incoming sections")
+
+    # Prerequisite: Sign into application using common login method
+    login_to_application(page)
 
     flag_page = Listview_OngoingSection_Flag_Unflag_Flight(page)
 
@@ -63,8 +67,7 @@ def test_Listview_OngoingSection_FlagUnflagFlight(page):
 
             # 2c. Locate the target flight card
             with allure.step(f"Step 4: Locate Target Flight Card in '{section_name}'"):
-                flight_cards = flag_page.page.locator(flag_page.FLIGHT_ROW_CARDS)
-                target_flight = flight_cards.first
+                target_flight = flag_page.get_first_flight_card()
                 flight_number = flag_page.get_flight_number(target_flight)
                 logger.info(f"Selected flight for test: '{flight_number}' in {section_name}")
 
@@ -88,8 +91,7 @@ def test_Listview_OngoingSection_FlagUnflagFlight(page):
 
             # 2e. VERIFY FLIGHT IS FLAGGED
             with allure.step(f"Step 6: Verify Flight '{flight_number}' is FLAGGED"):
-                flight_cards = flag_page.page.locator(flag_page.FLIGHT_ROW_CARDS)
-                target_flight = flight_cards.first
+                target_flight = flag_page.get_first_flight_card()
                 is_flagged_ok = flag_page.wait_for_flag_state(target_flight, expected_flagged=True, timeout_ms=10000)
                 assert is_flagged_ok, (
                     f"Post-condition failed: Flight '{flight_number}' is NOT flagged after flagging action."
@@ -101,15 +103,13 @@ def test_Listview_OngoingSection_FlagUnflagFlight(page):
             # 2f. SECOND: UNFLAG THE FLIGHT
             with allure.step(f"Step 7: Unflag Flight '{flight_number}'"):
                 logger.info(f"Proceeding to UNFLAG Flight '{flight_number}'...")
-                flight_cards = flag_page.page.locator(flag_page.FLIGHT_ROW_CARDS)
-                target_flight = flight_cards.first
+                target_flight = flag_page.get_first_flight_card()
                 unflag_success = flag_page.unflag_flight(target_flight)
                 assert unflag_success, f"Failed to perform unflag action for flight '{flight_number}'."
 
             # 2g. VERIFY FLIGHT IS UNFLAGGED
             with allure.step(f"Step 8: Verify Flight '{flight_number}' is UNFLAGGED"):
-                flight_cards = flag_page.page.locator(flag_page.FLIGHT_ROW_CARDS)
-                target_flight = flight_cards.first
+                target_flight = flag_page.get_first_flight_card()
                 is_unflagged_ok = flag_page.wait_for_flag_state(target_flight, expected_flagged=False, timeout_ms=10000)
                 assert is_unflagged_ok, (
                     f"Post-condition failed: Flight '{flight_number}' is STILL flagged after unflagging."

@@ -13,7 +13,7 @@ import smtplib
 import traceback
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
 
@@ -329,40 +329,55 @@ class EmailSender:
     # TestRecord (Pytest Session) In-Memory Summarization
     # --------------------------------------------------------------
 
+    @classmethod
+    def _station_from_record(cls, r: Any, default_station: Optional[str] = None) -> str:
+        """Extract the exact station code for a TestRecord without cross-station leakage."""
+        airport = str(getattr(r, "airport", "")).strip().upper()
+        if airport and airport not in ("-", "DEFAULT", "UNKNOWN", "NONE", "ALL", ""):
+            return airport
+        name = str(getattr(r, "name", ""))
+        m = re.search(r"\[([A-Z0-9_-]+)\]", name)
+        if m:
+            return m.group(1).upper()
+        nodeid = str(getattr(r, "nodeid", ""))
+        m = re.search(r"\[([A-Z0-9_-]+)\]", nodeid)
+        if m:
+            return m.group(1).upper()
+        st_list = [
+            str(s).strip().upper() for s in getattr(r, "stations", [])
+            if str(s).strip().upper() not in ("-", "DEFAULT", "UNKNOWN", "NONE", "ALL", "")
+        ]
+        if len(st_list) == 1:
+            return st_list[0]
+        if not default_station or str(default_station).strip().upper() in ("DEFAULT", "UNKNOWN", "-", "NONE", ""):
+            excel_code, _ = cls.get_excel_station_config()
+            default_station = excel_code
+        return str(default_station).split(",")[0].strip().upper()
+
     def summarize_records(
         self,
         records: List[Any],
         requested_stations: Optional[List[str]] = None,
     ) -> Dict[str, Dict[str, Any]]:
         """
-        Group in-memory pytest TestRecord objects by station and summarize.
+        Group in-memory pytest TestRecord objects strictly by station and summarize.
 
         Ensures full consistency with the expected email body structure.
+        Only stations with executed test cases are included.
         """
         grouped: Dict[str, List[Dict[str, Any]]] = {}
 
         excel_code, _ = self.get_excel_station_config()
+        valid_requested = (
+            [s.strip().upper() for s in requested_stations if s and str(s).strip().upper() not in ("-", "DEFAULT", "UNKNOWN", "NONE")]
+            if requested_stations
+            else []
+        )
 
         for r in records:
-            airport = str(getattr(r, "airport", "-")).strip()
-            if airport in ("-", "DEFAULT", "UNKNOWN", "", "None"):
-                airport = excel_code
-            mapped = getattr(r, "stations", [airport])
-            mapped = [st if st not in ("-", "DEFAULT", "UNKNOWN", "", "None") else excel_code for st in mapped]
-
-            # Determine stations this test record belongs to
-            stations_for_record = []
-            if requested_stations:
-                for st in requested_stations:
-                    st_clean = st if st not in ("-", "DEFAULT", "UNKNOWN", "", "None") else excel_code
-                    if st_clean in mapped or "ALL" in mapped or airport == st_clean:
-                        stations_for_record.append(st_clean)
-            else:
-                stations_for_record = [airport] if airport and airport != "-" else mapped
-
-            if not stations_for_record:
-                stations_for_record = [excel_code]
-
+            st_code = self._station_from_record(r, default_station=excel_code)
+            if valid_requested and st_code not in valid_requested:
+                continue
             name = getattr(r, "name", "") or getattr(r, "nodeid", "Unknown Test")
             display_name = self._clean_test_name(name)
             status_raw = str(getattr(r, "status", "PASSED")).upper()
@@ -384,18 +399,14 @@ class EmailSender:
                 "warnings": warnings,
             }
 
-            for st in set(stations_for_record):
-                st_code = st.strip().upper()
-                grouped.setdefault(st_code, []).append(item)
+            grouped.setdefault(st_code, []).append(item)
 
-        if requested_stations:
-            for st in requested_stations:
-                st_code = st.strip().upper()
-                grouped.setdefault(st_code, [])
-
+        # Only return summaries for stations that have executed tests.
+        # Do not include unexecuted placeholder stations in the email summary.
         return {
             st: self._count_results(items)
             for st, items in sorted(grouped.items())
+            if items
         }
 
     # --------------------------------------------------------------
@@ -420,12 +431,21 @@ class EmailSender:
         """Plain-text email body exactly matching the requested format."""
         summaries = self._resolve_summaries(*args, **kwargs)
 
+        # Only display stations where test scripts were actually executed
+        active_summaries = {
+            st: s for st, s in summaries.items()
+            if s.get("total", 0) > 0
+        }
+
+        if not active_summaries:
+            return "Automation Test Execution Summary\n\nNo tests were executed."
+
         lines = [
-            "Automation Smoke Test Summary",
+            "Automation Test Execution Summary",
             "",
         ]
 
-        station_items = list(summaries.items())
+        station_items = list(active_summaries.items())
         for idx, (station, summary) in enumerate(station_items):
             station_title = self._station_title(station)
             lines.append(station_title)
@@ -478,8 +498,14 @@ class EmailSender:
         """HTML email body reflecting the requested format cleanly."""
         summaries = self._resolve_summaries(*args, **kwargs)
 
+        # Only display stations where test scripts were actually executed
+        active_summaries = {
+            st: s for st, s in summaries.items()
+            if s.get("total", 0) > 0
+        }
+
         sections_html = []
-        for idx, (station, summary) in enumerate(summaries.items()):
+        for idx, (station, summary) in enumerate(active_summaries.items()):
             station_title = html.escape(self._station_title(station))
 
             def render_test_list(tests: List[str]) -> str:
@@ -522,7 +548,7 @@ class EmailSender:
                     <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">{summary['pass_percent']}</td>
                   </tr>
                   <tr>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;color:#111111;">Fail Percentage</td>
+                    <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">Fail Percentage</td>
                     <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">{summary['fail_percent']}</td>
                   </tr>
                 </tbody>
@@ -543,6 +569,8 @@ class EmailSender:
             """
             sections_html.append(section)
 
+        body_content = "".join(sections_html) if sections_html else '<div style="font-size:14px;color:#555555;margin-top:10px;">No tests were executed.</div>'
+
         return f"""<!DOCTYPE html>
 <html>
 <head>
@@ -550,8 +578,8 @@ class EmailSender:
 </head>
 <body style="margin:0;padding:20px;font-family:Arial,'Segoe UI',sans-serif;color:#111111;background-color:#ffffff;line-height:1.4;">
   <div style="max-width:800px;margin:0 auto;">
-    <div style="font-size:18px;font-weight:bold;color:#111111;margin-bottom:20px;">Automation Smoke Test Summary</div>
-    {''.join(sections_html)}
+    <div style="font-size:18px;font-weight:bold;color:#111111;margin-bottom:20px;">Automation Test Execution Summary</div>
+    {body_content}
   </div>
 </body>
 </html>"""
@@ -580,6 +608,7 @@ class EmailSender:
         message: Any,
         report_path: Optional[Any] = None,
         report_paths: Optional[Any] = None,
+        station: Optional[str] = None,
     ) -> None:
         if not self.attach_report:
             logger.info("HTML report attachments disabled by .env (EMAIL_ATTACH_REPORT=false)")
@@ -613,17 +642,35 @@ class EmailSender:
                 )
                 continue
 
+            # Determine attachment display filename strictly in StationName_Report.html format
+            clean_station = ""
+            m_fn = re.search(r"([A-Z0-9_-]{2,10})_Report\.html$", path.name, re.IGNORECASE)
+            if m_fn and "," not in m_fn.group(1):
+                clean_station = m_fn.group(1).upper()
+            elif station_label and station_label not in ("REPORT", "CONSOLIDATED", "ALL_STATIONS") and "," not in station_label:
+                clean_station = station_label.upper()
+            elif station and str(station).strip().upper() not in ("DEFAULT", "UNKNOWN", "-", "NONE", ""):
+                first_st = str(station).split(",")[0].strip().upper()
+                clean_station = first_st
+            else:
+                excel_code, _ = self.get_excel_station_config(getattr(self, "default_project", "flydubai"))
+                clean_station = excel_code or "DXB"
+
+            clean_station = clean_station.split(",")[0].strip().upper()
+            attachment_filename = f"{clean_station}_Report.html"
+
             # Use application/octet-stream so email clients (Outlook/Gmail) attach it as a downloadable/openable file
             # instead of attempting to display raw HTML source code in a text previewer.
             attachment = MIMEBase("application", "octet-stream")
             with path.open("rb") as rf:
                 attachment.set_payload(rf.read())
             encoders.encode_base64(attachment)
-            attachment.add_header("Content-Disposition", "attachment", filename=path.name)
+            attachment.add_header("Content-Disposition", "attachment", filename=attachment_filename)
             message.attach(attachment)
             logger.info(
-                "Attached HTML report for %s: %s (%.2f MB)",
+                "Attached HTML report for %s as '%s': %s (%.2f MB)",
                 station_label,
+                attachment_filename,
                 path.name,
                 size / (1024 * 1024),
             )
@@ -686,6 +733,8 @@ class EmailSender:
         if not requested_stations:
             requested_stations = [excel_code]
         summaries = self.summarize_records(records, requested_stations=requested_stations)
+        # Strictly keep only stations where tests were actually executed
+        summaries = {st: s for st, s in summaries.items() if s.get("total", 0) > 0}
         if not summaries:
             logger.warning("No test summaries generated from records; email not sent.")
             return False
@@ -705,11 +754,11 @@ class EmailSender:
         else:
             verdict = "PASSED"
 
-        project = meta.get("project", "AUTOMATION")
-        env = meta.get("env", "QA")
+        project = meta.get("project") or "AUTOMATION"
+        env = meta.get("env") or "QA"
         stations_label = ", ".join(summaries.keys()) if len(summaries) <= 3 else "MULTI-STATION"
 
-        subject = f"Automation Smoke Test Summary - [{str(project).upper()}] [{str(env).upper()}] [{stations_label}] - {verdict}"
+        subject = f"Automation Test Execution Summary"
 
         message = MIMEMultipart("mixed")
         message["From"] = self.sender_email
@@ -723,12 +772,15 @@ class EmailSender:
         alternatives.attach(MIMEText(body_html, "html", "utf-8"))
         message.attach(alternatives)
 
-        # Attach all reports (both consolidated and station-specific)
+        # Attach station-specific reports only for executed stations
         all_report_paths: Dict[str, str] = {}
         if station_reports:
-            all_report_paths.update(station_reports)
-        if consolidated_report:
-            all_report_paths["CONSOLIDATED"] = consolidated_report
+            executed_stations_set = {k.upper() for k in summaries.keys()}
+            for st_k, p in station_reports.items():
+                if st_k.upper() in executed_stations_set or st_k.upper() == "REPORT":
+                    all_report_paths[st_k] = p
+        elif consolidated_report:
+            all_report_paths["REPORT"] = consolidated_report
 
         self._attach_reports(message, report_paths=all_report_paths)
 
@@ -757,6 +809,8 @@ class EmailSender:
             station = excel_code
 
         summaries = self.parse_pytest_results(xml_file, station=station)
+        # Strictly keep only stations where tests were actually executed
+        summaries = {st: s for st, s in summaries.items() if s.get("total", 0) > 0}
         if not summaries:
             logger.warning("No test cases found in %s; email not sent.", xml_file)
             return False
@@ -777,7 +831,9 @@ class EmailSender:
             verdict = "PASSED"
 
         stations_label = ", ".join(summaries.keys()) if len(summaries) <= 3 else "MULTI-STATION"
-        subject = f"Automation Smoke Test Summary - [{str(project).upper()}] [{str(env).upper()}] [{stations_label}] - {verdict}"
+        proj_label = str(project or "AUTOMATION").upper()
+        env_label = str(env or "QA").upper()
+        subject = f"Automation Test Execution Summary"
 
         message = MIMEMultipart("mixed")
         message["From"] = self.sender_email
@@ -791,7 +847,26 @@ class EmailSender:
         alternatives.attach(MIMEText(body_html, "html", "utf-8"))
         message.attach(alternatives)
 
-        self._attach_reports(message, report_path=report_path, report_paths=report_paths)
+        executed_stations_set = {k.upper() for k in summaries.keys()}
+        if not report_paths:
+            candidate_stations = list(summaries.keys())
+            if not candidate_stations and station:
+                candidate_stations = [s.strip().upper() for s in str(station).split(",") if s.strip()]
+            resolved_reports = {}
+            for st in candidate_stations:
+                st_cand = os.path.join("reports", f"{st}_Report.html")
+                if os.path.exists(st_cand):
+                    resolved_reports[st] = st_cand
+            if resolved_reports:
+                report_paths = resolved_reports
+                report_path = None
+        elif report_paths:
+            report_paths = {
+                st_k: p for st_k, p in report_paths.items()
+                if st_k.upper() in executed_stations_set or st_k.upper() == "REPORT"
+            }
+
+        self._attach_reports(message, report_path=report_path, report_paths=report_paths, station=station)
 
         return self._send_smtp_message(message)
 
@@ -846,7 +921,7 @@ class EmailSender:
         total_failed = sum(s["failed"] for s in summaries.values())
         verdict = "FAILED" if total_failed else "PASSED"
 
-        subject = f"Automation Smoke Test Summary - [{str(project).upper()}] [{str(env).upper()}] [{station.upper()}] - {verdict}"
+        subject = f"Automation Test Execution Summary"
 
         message = MIMEMultipart("mixed")
         message["From"] = self.sender_email
@@ -861,6 +936,6 @@ class EmailSender:
         message.attach(alternatives)
 
         if path:
-            self._attach_reports(message, report_path=path)
+            self._attach_reports(message, report_path=path, station=station)
 
         return self._send_smtp_message(message)
