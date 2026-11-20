@@ -7,7 +7,7 @@
 import pytest
 import allure
 
-from pages.List_View.Listview_Departed_FlightCard import (Listview_DepartedSection_FlightCard)
+from pages.List_View.ListView_Departed_FlightCard import (Listview_DepartedSection_FlightCard)
 from utils.common_methods import login_to_application
 from utils.logger import get_logger
 
