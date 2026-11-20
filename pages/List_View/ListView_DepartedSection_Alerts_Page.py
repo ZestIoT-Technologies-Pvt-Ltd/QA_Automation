@@ -39,10 +39,16 @@ logger = get_logger(__name__)
 class ListView_DepartedSection_Alerts_Page(BasePage):
 
     # ==================== NAVIGATION LOCATORS ====================
-    MENU = "//span[@class='nav-icon']/i[normalize-space()='menu' or text()='menu']"
+    MENU = (
+        "//span[@class='nav-icon']/i[normalize-space()='menu' or text()='menu'] | "
+        "//mat-icon[normalize-space()='menu' or text()='menu'] | "
+        "//span[contains(@class,'nav-icon')] | "
+        "//button[contains(@aria-label, 'menu')]"
+    )
     FLIGHTS = (
-        "//div[@role='button' and contains(@class,'nav-row')][.//span[normalize-space()='Flights']] "
-        "| //span[normalize-space()='Flights']"
+        "//div[@role='button' and contains(@class,'nav-row')][.//span[normalize-space()='Flights']] | "
+        "//span[normalize-space()='Flights'] | "
+        "//div[contains(@class,'nav-row')]//span[contains(text(),'Flights')]"
     )
     DEPARTED_TAB = "text=Departed"
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
@@ -68,7 +74,10 @@ class ListView_DepartedSection_Alerts_Page(BasePage):
 
     def attach_screenshot(self, name: str, full_page: bool = False):
         try:
-            screenshot = self.page.screenshot(full_page=full_page)
+            try:
+                screenshot = self.page.screenshot(type="jpeg", quality=65, full_page=full_page)
+            except Exception:
+                screenshot = self.page.screenshot(full_page=full_page)
             allure.attach(screenshot, name=name, attachment_type=allure.attachment_type.PNG)
             logger.info(f"Screenshot attached: {name}")
         except Exception as e:
@@ -89,21 +98,22 @@ class ListView_DepartedSection_Alerts_Page(BasePage):
     def navigate_to_list_view_page(self):
         logger.info("Navigating to Flights List View")
         try:
-            if "/app/turnaround-list" in self.page.url:
+            if "/app/turnaround-list" in self.page.url or self.page.locator(self.DEPARTED_TAB).is_visible():
                 self.page.wait_for_timeout(800)
+                logger.info("Already on Flights List View dashboard")
                 return
 
             menu = self.page.locator(self.MENU)
-            expect(menu).to_be_visible(timeout=20000)
-            menu.hover()
-            self.page.wait_for_timeout(400)
+            expect(menu.first).to_be_visible(timeout=30000)
+            menu.first.hover()
+            self.page.wait_for_timeout(1000)
 
             flights = self.page.locator(self.FLIGHTS)
             if not flights.first.is_visible():
-                menu.click()
-                self.page.wait_for_timeout(400)
+                menu.first.click()
+                self.page.wait_for_timeout(1000)
 
-            expect(flights.first).to_be_visible(timeout=10000)
+            expect(flights.first).to_be_visible(timeout=15000)
             flights.first.click()
             self.page.wait_for_load_state("domcontentloaded")
             self.page.wait_for_timeout(1500)
