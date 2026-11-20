@@ -53,9 +53,9 @@ def pytest_addoption(parser):
     if "--no-email" not in existing:
         parser.addoption("--no-email", action="store_true", default=False, help="Disable report email delivery for this run.")
 
-    # Which airport station to validate (defaults to DEL)
+    # Which airport station to validate (defaults dynamically based on project, e.g., DXB for flydubai, SZG for Salzburg, BFS for Belfast)
     if "--station" not in existing:
-        parser.addoption("--station", action="store", default="DEL", help="Airport/Station Code (e.g., DEL, DXB, DWC)")
+        parser.addoption("--station", action="store", default=None, help="Airport/Station Code (e.g., DXB, SZG, BFS, DEL)")
 
 
 @pytest.hookimpl(hookwrapper=True)

@@ -22,6 +22,39 @@ from utils import report_context as rc
 
 _PHASE_STATUS = {"passed": "PASSED", "failed": "FAILED", "skipped": "SKIPPED"}
 
+PROJECT_DEFAULT_STATIONS = {
+    "FLYDUBAI": "DXB",
+    "SALZBURG": "SZG",
+    "BELFAST": "BFS",
+}
+
+
+def resolve_station(config, item=None, params=None) -> str:
+    """Resolve active station code with fallback to parameters, CLI, and project mapping."""
+    if params and (params.get("station") or params.get("airport")):
+        return str(params.get("station") or params.get("airport")).strip().upper()
+    if item is not None:
+        props = [v for k, v in getattr(item, "user_properties", []) if k == "stations"]
+        if props and props[-1] and props[-1] != "-":
+            return props[-1].split(",")[0].strip().upper()
+
+    station_opt = None
+    if hasattr(config, "getoption"):
+        try:
+            station_opt = config.getoption("--station", default=None)
+        except Exception:
+            pass
+    if station_opt and str(station_opt).strip() not in ("-", "NONE", "UNKNOWN", ""):
+        return str(station_opt).strip().upper()
+
+    project = "SALZBURG"
+    if hasattr(config, "getoption"):
+        try:
+            project = (config.getoption("--project", default="") or "SALZBURG").strip().upper()
+        except Exception:
+            pass
+    return PROJECT_DEFAULT_STATIONS.get(project, "DEL")
+
 
 def norm_tc(value) -> str:
     if not value:
@@ -68,7 +101,7 @@ def pytest_configure(config):
 
 def cfg_station(item):
     values=[v for k,v in item.user_properties if k == "stations"]
-    return values[-1] if values else item.config.getoption('--station', default='unknown')
+    return values[-1] if values else resolve_station(item.config, item=item)
 
 class HtmlReportPlugin:
     def __init__(self, config):
@@ -109,18 +142,18 @@ class HtmlReportPlugin:
         params = getattr(getattr(item, "callspec", None), "params", {}) or {}
         marker = item.get_closest_marker("tc")
         doc = (getattr(item.function, "__doc__", "") or "").strip().splitlines()
+        station_val = resolve_station(item.config, item=item, params=params)
         record = rc.TestRecord(
             nodeid=item.nodeid,
             name=item.name,
             description=re.sub(r"^TC[\s_\-]*\d+\s*[-:]\s*", "", doc[0].strip()) if doc else "",
-            airport=str(params.get("station") or params.get("airport") or ",".join(dict.fromkeys(v for k,v in item.user_properties if k == "stations")) or "-"),
+            airport=station_val,
             tc=_tc_label(marker),
             markers=sorted({m.name for m in item.iter_markers() if m.name not in ("tc", "parametrize", "usefixtures")}),
             start=time.time(),
         )
         self.records[item.nodeid] = record
-        station_values = [v for k,v in item.user_properties if k == "stations"]
-        record.stations = [str(params["station"])] if params.get("station") else ([s for s in (station_values[-1].split(",") if station_values else []) if s] or [record.airport])
+        record.stations = [station_val]
         rc.set_current(record)
         yield
         record.duration = time.time() - record.start
@@ -136,8 +169,10 @@ class HtmlReportPlugin:
         if report.failed:
             page = getattr(item, "_framework_page", None)
             if page is not None and not page.is_closed():
-                from pages.base_page import BasePage
-                from utils import report_context
+                try:
+                    from pages.Common_Base_Page.Base_Page import BasePage
+                except ImportError:
+                    from pages.base_page import BasePage
                 station_values=[v for k,v in item.user_properties if k == "stations"]
                 station=station_values[-1] if station_values else cfg_station(item)
                 path=BasePage.capture_failure(page, project=item.config.getoption('--project'), station=station,
@@ -176,12 +211,15 @@ class HtmlReportPlugin:
         if not records:
             return
         cfg = self.config
+        station_req = getattr(cfg, "framework_stations_requested", [])
+        default_station = resolve_station(cfg)
+        airports_display = ", ".join(station_req) if station_req else default_station
         meta = {
             "title": cfg.getoption("--report-title"),
-            "project": cfg.getoption("--project", default="-"),
-            "env": cfg.getoption("--env", default="-"),
+            "project": cfg.getoption("--project", default="SALZBURG"),
+            "env": cfg.getoption("--env", default="qa"),
             "browser": getattr(cfg, "_framework_execution_settings", {}).get("browser", cfg.getoption("--browser") or "chromium"),
-            "airports": ", ".join(getattr(cfg, "framework_stations_requested", [])) or "-",
+            "airports": airports_display,
             "started": datetime.fromtimestamp(self.started).strftime("%d %b %Y %H:%M:%S"),
             "duration": time.time() - self.started,
             "ended": datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z"),
@@ -372,9 +410,11 @@ def build_html(meta: dict, summary: dict, records) -> str:
     os_name = platform.system()
     python_version = platform.python_version()
     host_name = platform.node()
-    project = str(meta.get("project", "FLYDUBAI")).upper()
+    project = str(meta.get("project", "SALZBURG")).upper()
     env = str(meta.get("env", "QA")).upper()
-    airport_default = str(meta.get("airports", "DEL")).upper()
+    airport_default = str(meta.get("airports", "")).upper()
+    if not airport_default or airport_default in ("-", "NONE", "UNKNOWN"):
+        airport_default = PROJECT_DEFAULT_STATIONS.get(project, "DEL")
 
     test_items = []
     category_rows = []
@@ -409,7 +449,7 @@ def build_html(meta: dict, summary: dict, records) -> str:
         r_end_clock = rec_end_dt.strftime("%H:%M:%S")
 
         rec_airport = getattr(r, "airport", airport_default)
-        if not rec_airport or rec_airport == "-":
+        if not rec_airport or rec_airport in ("-", "NONE", "UNKNOWN"):
             rec_airport = airport_default
 
         step_rows = []
@@ -426,7 +466,16 @@ def build_html(meta: dict, summary: dict, records) -> str:
         # Sequential test steps if recorded via allure.step / rc.step
         steps_list = getattr(r, "steps", None)
         if steps_list:
+            has_top_level = any(getattr(s, "depth", 0) == 0 for s in steps_list)
             for step_obj in steps_list:
+                s_depth = getattr(step_obj, "depth", 0)
+                s_status = getattr(step_obj, "status", "passed")
+
+                # If test has top-level steps (e.g., 'Step 1: ...'),
+                # suppress passing inner technical steps to prevent duplicate lines in reports.
+                if has_top_level and s_depth > 0 and s_status != "failed":
+                    continue
+
                 s_time = datetime.fromtimestamp(getattr(step_obj, "start", rec_start)).strftime("%H:%M:%S")
                 s_name = _e(getattr(step_obj, "name", ""))
                 s_status = getattr(step_obj, "status", "passed")
