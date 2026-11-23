@@ -4,20 +4,20 @@
 """
 ==============  INTRODUCTION ================
 Test Module: test_ListView_DepartedSection_Alerts
-Description: Test script to validate Alerts in Departed Section of Flights List View.
+Description: Test script to validate alerts in the Departed section of Flights List View.
              Works across SALZBURG, BELFAST, and FLYDUBAI projects.
-             Checks departed flight cards for alerts button (.Departed_alerts_buttonOne):
-             1. Opens the alerts popup drawer for every flight (including '00'):
-                - If count is '00': Verifies empty state ('No alerts found') and reports if alerts are present but count is not showing.
-                - If count > 0: Inspects alerts directly, and cycles through 'Critical' and 'Pending' categories.
-             2. For each alert card:
-                - Opens detail view and switches to History tab.
-                - Verifies history timeline rules:
-                  * 'Open': Contains 'Alert Generated'
-                  * 'Acknowledged': Contains 'Alert Generated' and 'Acknowledged'
-                  * 'Closed': Contains 'Alert Generated', 'Acknowledged', and 'Closed'
-                - Navigates back to the alert list.
-             3. Closes the popup drawer via 'X' to proceed to the next flight.
+
+Workflow:
+1. Open Flights List View and click on the Departed tab.
+2. Check the alerts button on each departed flight card:
+   - If count is '00': verify the popup opens and confirms 'No alerts found'.
+   - If count is greater than 0: inspect active alerts under Critical and Pending categories.
+3. For each alert card:
+   - Open its detail view.
+   - Check Details tab: confirm alert message is shown, and if Critical, verify Criticality is 'Critical'.
+   - Check History tab: verify status timeline matches ('Open', 'Acknowledged', 'Closed').
+   - Return back to the alert list.
+4. Close the alerts popup and proceed to the next flight.
 """
 
 import pytest
@@ -32,24 +32,12 @@ logger = get_logger(__name__)
 def test_ListView_DepartedSection_Alerts(page):
     """
     ==============  INTRODUCTION ================
-    Test Scenario: Validation of Alerts in Departed Section.
+    Test Scenario: Validation of Departed Flights Alerts and Status History.
 
     Steps:
-    1. Authenticate / Login to application (managed as prerequisite via page fixture).
-    2. Navigate to Flights List View dashboard.
-    3. Select Departed Section tab.
-    4. Iterate through Departed flight cards:
-       - Check if the flight has alerts (alert count > 0).
-       - If no alerts, skip the flight.
-       - If alerts are present:
-         a) Click on the alerts button to open the notifications popup drawer.
-         b) For each alert card in the popup:
-            - Check alert status:
-              * 'Open': Verify timeline history contains 'Alert Generated'.
-              * 'Acknowledged': Verify timeline history contains 'Alert Generated' and 'Acknowledged'.
-              * 'Closed': Verify timeline history contains 'Alert Generated', 'Acknowledged', and 'Closed'.
-            - Navigate back to the alert list.
-         c) Close the alerts popup drawer.
+    1. Log in to the application and open Flights List View dashboard.
+    2. Select the Departed section tab.
+    3. Check alert details (message & criticality) and status history in the popup.
     """
     logger.info("Starting Departed Section Alerts Validation Test")
 

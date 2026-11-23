@@ -6,7 +6,7 @@
 Test Module: test_ListView_DepartedSection_DelayCode
 Description: Test script to validate Delay Codes in Departed Section of Flights List View.
              Checks departed flight cards for green delay code icons. If green, opens the
-             dialog, extracts 'Codes Entered' and 'Total Delay Mins', and verifies the count
+             popup, extracts 'Codes Entered' and 'Total Delay Mins', and verifies the count
              and minutes match the delay codes table rows below. If not green, leaves the flight.
 """
 
@@ -30,11 +30,11 @@ def test_ListView_DepartedSection_DelayCode(page):
     3. Select Departed Section tab.
     4. Iterate through Departed flight cards:
        - If the Delay Code icon is green:
-         a) Click on the green delay code icon to open the Delay Codes dialog.
+         a) Click on the green delay code icon to open the Delay Codes popup.
          b) Extract 'Codes Entered' count and 'Total Delay Mins' from summary.
          c) Verify that the count of delay codes listed in the table below matches 'Codes Entered'.
          d) Verify that the sum of delay minutes in the table matches 'Total Delay Mins'.
-         e) Close the dialog.
+         e) Close the popup.
        - If the Delay Code icon is NOT green, leave / skip that flight.
     """
     logger.info("Starting Departed Section Delay Code Test")

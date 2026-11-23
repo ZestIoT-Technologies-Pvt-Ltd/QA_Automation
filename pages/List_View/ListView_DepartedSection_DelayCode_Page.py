@@ -1,24 +1,26 @@
 # Author : Gowthami Ankem
 # Created Date : 2026-11-18
+# Author : Gowthami Ankem
+# Modified Date : 2026-11-23
 
 """
 ==============  INTRODUCTION ================
 Page Object: ListView_DepartedSection_DelayCode_Page
-Description: Page Object Model for Departed Section Delay Codes validation in Flights List View.
+Description: Delay Codes validation in Flights List View.
              Handles inspection of delay code icons on departed flight cards, verification of green
-             status, opening the Delay Codes dialog, and validating that the summary metrics
+             status, opening the Delay Codes popup, and validating that the summary metrics
              ('Codes Entered' and 'Total Delay Mins') accurately match the delay codes table rows
              and entered minutes below.
 
 Workflow Capabilities:
 1. Navigate to Flights List View and switch to the Departed section tab.
 2. Inspect each Departed flight card for a Delay Code icon.
-3. Check if the Delay Code icon is green (via class 'addeddelaycode' / green styling).
+3. Check if the Delay Code icon is green 
 4. If the icon is NOT green, leave/skip the flight.
-5. If the icon IS green, click to open the Delay Codes modal.
+5. If the icon is green, click to open the Delay Codes Popup.
 6. Extract summary values: 'Codes Entered' and 'Total Delay Mins'.
 7. Validate that the table below contains matching number of delay code rows and total delay minutes.
-8. Safely close the dialog and continue with subsequent flights.
+8. Safely close the Popup and continue with subsequent flights.
 """
 
 import re
@@ -33,15 +35,18 @@ logger = get_logger(__name__)
 
 
 class ListView_DepartedSection_DelayCode_Page(BasePage):
-    """
-    Page Object for Flights List View - Departed Section Delay Code operations and validations.
-    """
-
+    
     # ==================== NAVIGATION LOCATORS ====================
-    MENU = "//span[@class='nav-icon']/i[normalize-space()='menu' or text()='menu']"
+    MENU = (
+        "//span[@class='nav-icon']/i[normalize-space()='menu' or text()='menu'] | "
+        "//mat-icon[normalize-space()='menu' or text()='menu'] | "
+        "//span[contains(@class,'nav-icon')] | "
+        "//button[contains(@aria-label, 'menu')]"
+    )
     FLIGHTS = (
-        "//div[@role='button' and contains(@class,'nav-row')][.//span[normalize-space()='Flights']] "
-        "| //span[normalize-space()='Flights']"
+        "//div[@role='button' and contains(@class,'nav-row')][.//span[normalize-space()='Flights']] | "
+        "//span[normalize-space()='Flights'] | "
+        "//div[contains(@class,'nav-row')]//span[contains(text(),'Flights')]"
     )
     DEPARTED_TAB = "text=Departed"
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
@@ -56,8 +61,8 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
         "mat-icon:has-text('add_circle_outline')"
     )
 
-    # ==================== DELAY CODES DIALOG LOCATORS ====================
-    DELAY_DIALOG = (
+    # ==================== DELAY CODES POPUP LOCATORS ====================
+    DELAY_POPUP = (
         ".DelaycodesClass, "
         ".DelaycodesClassdark, "
         "app-delaycodes, "
@@ -66,7 +71,6 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
     HEADER_FLIGHT_NAMES = ".header_flights_name"
     HEADER_DELAY_MINS = ".delay_mins"
 
-    # Summary Cards in Dialog
     CODES_ENTERED_VALUE = (
         "//div[contains(@class,'card_one')][.//div[contains(text(),'Codes Entered')]]"
         "//div[contains(@class,'teaxt_value')]"
@@ -80,7 +84,7 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
         "//div[contains(@class,'teaxt_value')]"
     )
 
-    # Table & Details below in Dialog (excluding remark rows)
+    # Table & Details below in Popup 
     DELAY_TABLE_CONTAINER = ".delay-table-container"
     DELAY_TABLE = ".delay-table"
     DELAY_TABLE_ROWS = ".delay-table tbody tr:not(.remark-row):not([class*='remark'])"
@@ -107,7 +111,10 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
     def attach_screenshot(self, name: str, full_page: bool = True):
         """Attaches a screenshot to the Allure report."""
         try:
-            screenshot = self.page.screenshot(full_page=full_page)
+            try:
+                screenshot = self.page.screenshot(type="jpeg", quality=65, full_page=full_page)
+            except Exception:
+                screenshot = self.page.screenshot(full_page=full_page)
             allure.attach(
                 screenshot,
                 name=name,
@@ -138,15 +145,19 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
         """Navigates to the Flights List View dashboard."""
         logger.info("Navigating to Flights List View")
         try:
+            if self.page.locator(self.DEPARTED_TAB).is_visible():
+                logger.info("Already on Flights List View dashboard")
+                return
+
             menu = self.page.locator(self.MENU)
-            expect(menu).to_be_visible(timeout=30000)
-            menu.hover()
+            expect(menu.first).to_be_visible(timeout=30000)
+            menu.first.hover()
             self.page.wait_for_timeout(1000)
 
             flights = self.page.locator(self.FLIGHTS)
             if not flights.first.is_visible():
                 logger.warning("Flights item not visible after hover, clicking menu")
-                menu.click()
+                menu.first.click()
                 self.page.wait_for_timeout(1000)
 
             expect(flights.first).to_be_visible(timeout=15000)
@@ -154,7 +165,7 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
             logger.info("Clicked Flights List View")
 
             self.page.wait_for_load_state("domcontentloaded")
-            self.page.wait_for_timeout(3000)
+            self.page.wait_for_timeout(2000)
             self.wait_for_loading_to_finish()
             logger.info("Flights List View loaded successfully")
         except Exception as e:
@@ -165,7 +176,6 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
     # ==================== SELECT DEPARTED SECTION ====================
     @allure.step("Select Departed Section")
     def select_departed_flights(self):
-        """Clicks the Departed tab and verifies departed flight cards appear."""
         try:
             departed_tab = self.page.locator(self.DEPARTED_TAB)
             expect(departed_tab.first).to_be_visible(timeout=15000)
@@ -202,23 +212,19 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
         icon_element = delay_icon.first
         class_attr = icon_element.get_attribute("class") or ""
 
-        # 1. Angular adds class 'addeddelaycode' when flight has delay codes entered
         if "addeddelaycode" in class_attr:
             logger.info("Delay code icon has class 'addeddelaycode' (Green)")
             return True, icon_element
 
-        # 2. Check if class explicitly contains 'green'
         if "green" in class_attr.lower():
             logger.info(f"Delay code icon has green in class attribute: {class_attr}")
             return True, icon_element
 
-        # 3. Check computed CSS color for green hue
         try:
             color = icon_element.evaluate("el => window.getComputedStyle(el).color")
             match = re.search(r"rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)", color)
             if match:
                 r, g, b = map(int, match.groups())
-                # Green dominance check (e.g. rgb(17, 209, 48) or similar green shades)
                 if g > 100 and g > r * 1.1 and g > b * 1.1:
                     logger.info(f"Delay code icon computed color is green: {color}")
                     return True, icon_element
@@ -228,7 +234,6 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
         return False, icon_element
 
     def get_flight_number(self, flight_card: Locator) -> str:
-        """Extracts the flight number string from a flight card."""
         try:
             flight_num_loc = flight_card.locator(self.FLIGHT_NUMBER)
             if flight_num_loc.count() > 0 and flight_num_loc.first.is_visible():
@@ -237,59 +242,49 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
             pass
         return "Unknown Flight"
 
-    # ==================== DIALOG ACTIONS ====================
-    @allure.step("Open Delay Codes Dialog")
-    def open_delay_code_dialog(self, icon_element: Locator) -> Locator:
-        """Clicks the green delay code icon and waits for the Delay Codes dialog to open."""
+    # ==================== POPUP ACTIONS ====================
+    @allure.step("Open Delay Codes Popup")
+    def open_delay_code_popup(self, icon_element: Locator) -> Locator:
         logger.info("Clicking Green Delay Code icon")
         icon_element.click()
         self.page.wait_for_timeout(2000)
 
-        dialog = self.page.locator(self.DELAY_DIALOG).first
-        expect(dialog).to_be_visible(timeout=15000)
-        logger.info("Delay Codes Dialog opened successfully")
-        return dialog
+        popup = self.page.locator(self.DELAY_POPUP).first
+        expect(popup).to_be_visible(timeout=15000)
+        logger.info("Delay Codes Popup opened successfully")
+        return popup
 
     @allure.step("Validate Delay Codes Count and Delay Minutes")
-    def validate_delay_codes_and_minutes(self, dialog: Locator, flight_label: str):
-        """
-        Extracts summary metrics ('Codes Entered', 'Total Delay Mins') and verifies that
-        the table rows and entered delay minutes below accurately match.
-        """
-        logger.info(f"Validating Delay Codes dialog for {flight_label}")
-        self.attach_screenshot(f"delay_codes_dialog_{flight_label}")
+    def validate_delay_codes_and_minutes(self, popup: Locator, flight_label: str):
+       
+        logger.info(f"Validating Delay Codes popup for {flight_label}")
+        self.attach_screenshot(f"delay_codes_popup_{flight_label}")
 
-        # 1. Extract Summary: Codes Entered
-        codes_entered_loc = dialog.locator(self.CODES_ENTERED_VALUE)
+        codes_entered_loc = popup.locator(self.CODES_ENTERED_VALUE)
         expect(codes_entered_loc.first).to_be_visible(timeout=10000)
         codes_entered_text = codes_entered_loc.first.inner_text().strip()
         codes_entered_match = re.search(r"\d+", codes_entered_text)
         codes_entered = int(codes_entered_match.group(0)) if codes_entered_match else 0
         logger.info(f"[{flight_label}] Summary Codes Entered: {codes_entered}")
 
-        # 2. Extract Summary: Total Delay Mins
-        total_mins_loc = dialog.locator(self.TOTAL_DELAY_MINS_VALUE)
+        total_mins_loc = popup.locator(self.TOTAL_DELAY_MINS_VALUE)
         expect(total_mins_loc.first).to_be_visible(timeout=10000)
         total_mins_text = total_mins_loc.first.inner_text().strip()
         total_mins_match = re.search(r"\d+", total_mins_text)
         total_delay_mins = int(total_mins_match.group(0)) if total_mins_match else 0
         logger.info(f"[{flight_label}] Summary Total Delay Mins: {total_delay_mins}")
 
-        # Extract Header Delay Mins if present
-        header_delay_loc = dialog.locator(self.HEADER_DELAY_MINS)
+        header_delay_loc = popup.locator(self.HEADER_DELAY_MINS)
         if header_delay_loc.count() > 0 and header_delay_loc.first.is_visible():
             header_text = header_delay_loc.first.inner_text().strip()
             logger.info(f"[{flight_label}] Header Delay Text: '{header_text}'")
 
-        # 3. Check Table Below (excluding remarks rows)
-        raw_table_rows = dialog.locator(self.DELAY_TABLE_ROWS)
+        raw_table_rows = popup.locator(self.DELAY_TABLE_ROWS)
 
-        # Explicitly filter rows to ensure only delay code data rows are counted (ignore remark rows)
         delay_code_rows = []
         for r in range(raw_table_rows.count()):
             row = raw_table_rows.nth(r)
             row_class = row.get_attribute("class") or ""
-            # Exclude remarks row
             if "remark" in row_class.lower():
                 continue
             if row.locator("td[colspan]").count() > 0 or row.locator(".remark-box, .remarks_text_area, textarea#remarkInput").count() > 0:
@@ -299,7 +294,7 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
         table_rows_count = len(delay_code_rows)
         logger.info(f"[{flight_label}] Delay code rows count below (excluding remarks rows): {table_rows_count}")
 
-        # Verification 1: Verify Codes Entered matches number of rows below (excluding remarks rows)
+        # Verification 1: Verify Codes Entered matches number of rows below 
         assert table_rows_count == codes_entered, (
             f"[{flight_label}] Mismatch in Delay Codes Count: "
             f"Summary shows {codes_entered} codes entered, but table below has {table_rows_count} delay code rows (excluding remark rows)!"
@@ -312,19 +307,16 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
         # Verification 2: Verify Total Delay Mins matches sum of minutes from table rows
         calculated_total_mins = 0
         for r, row in enumerate(delay_code_rows):
-            # Check if duration is in input field
             duration_input = row.locator(self.DELAY_DURATION_INPUT)
             if duration_input.count() > 0 and duration_input.first.is_visible():
                 row_val_str = duration_input.first.input_value().strip()
             else:
-                # Fallback to column text (4th column: Delay (min))
                 cells = row.locator("td")
                 row_val_str = cells.nth(3).inner_text().strip() if cells.count() > 3 else "0"
 
             val_match = re.search(r"\d+", row_val_str)
             row_duration = int(val_match.group(0)) if val_match else 0
 
-            # Get code name / description for detailed logging
             code_col = row.locator("td").first.inner_text().strip() if row.locator("td").count() > 0 else f"Row {r+1}"
             logger.info(f"[{flight_label}] Delay Code Row {r + 1} ({code_col}): {row_duration} mins")
             calculated_total_mins += row_duration
@@ -343,21 +335,17 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
             f"Summary ({total_delay_mins} mins) == Table Sum ({calculated_total_mins} mins)"
         )
 
-    @allure.step("Close Delay Codes Dialog")
-    def close_delay_code_dialog(self, dialog: Locator):
-        """Closes the Delay Codes dialog via Cancel button."""
-        logger.info("Closing Delay Codes Dialog")
-        cancel_btn = dialog.locator(self.CANCEL_BUTTON)
-        if cancel_btn.count() > 0 and cancel_btn.first.is_visible():
-            cancel_btn.first.click()
-            self.page.wait_for_timeout(1000)
-        else:
-            # Fallback to pressing Escape
-            self.page.keyboard.press("Escape")
-            self.page.wait_for_timeout(1000)
+    @allure.step("Close Delay Codes Popup")
+    def close_delay_code_popup(self, popup: Locator):
+        """Closes the Delay Codes popup via Cancel button."""
+        logger.info("Closing Delay Codes Popup")
+        cancel_btn = popup.locator(self.CANCEL_BUTTON).first
+        if cancel_btn.is_visible():
+            cancel_btn.click()
+            self.page.wait_for_timeout(500)
 
-        expect(dialog).not_to_be_visible(timeout=10000)
-        logger.info("Delay Codes Dialog closed successfully")
+        expect(popup).not_to_be_visible(timeout=10000)
+        logger.info("Delay Codes Popup closed successfully")
 
     # ==================== MAIN WORKFLOW ====================
     @allure.step("Validate Departed Flights Delay Codes")
@@ -365,7 +353,7 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
         """
         Iterates over departed flight cards:
         - If the Delay Code icon is green:
-            Clicks on it, verifies codes entered and delay minutes match table below, closes dialog.
+            Clicks on it, verifies codes entered and delay minutes match table below, closes popup.
         - If the Delay Code icon is NOT green:
             Leaves / skips that flight as instructed.
         """
@@ -392,20 +380,18 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
             is_green, icon_element = self.is_delay_code_icon_green(flight_card)
 
             if not is_green or icon_element is None:
-                # User requirement: "if it is not green we can leave" / "if it is not green you can leave that flight"
                 logger.info(f"Flight {i + 1} ({flight_label}): Delay Code icon is NOT green. Leaving this flight.")
                 skipped_flights_count += 1
                 continue
 
-            # Icon is green: open dialog and validate
             logger.info(f"Flight {i + 1} ({flight_label}): Delay Code icon IS green! Clicking to inspect delay codes...")
             green_flights_count += 1
 
-            dialog = self.open_delay_code_dialog(icon_element)
+            popup = self.open_delay_code_popup(icon_element)
             try:
-                self.validate_delay_codes_and_minutes(dialog, flight_label)
+                self.validate_delay_codes_and_minutes(popup, flight_label)
             finally:
-                self.close_delay_code_dialog(dialog)
+                self.close_delay_code_popup(popup)
 
             logger.info(f"Flight {i + 1} ({flight_label}): Validation completed successfully")
 
@@ -416,5 +402,4 @@ class ListView_DepartedSection_DelayCode_Page(BasePage):
         )
 
 
-# Alias for flexible importing
-Listview_DepartedSection_DelayCode_Page = ListView_DepartedSection_DelayCode_Page
+

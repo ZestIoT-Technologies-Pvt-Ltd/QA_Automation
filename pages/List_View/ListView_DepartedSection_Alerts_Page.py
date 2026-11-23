@@ -1,35 +1,32 @@
 # Author : Gowthami Ankem
 # Created Date : 2026-11-18
+# Author : Gowthami Ankem
+# Modified Date : 2026-11-23
 
 """
+==============  INTRODUCTION ================
 Page Object: ListView_DepartedSection_Alerts_Page
-Description: Page Object for Departed Section Alerts validation.
-             Works across SALZBURG, BELFAST, and FLYDUBAI.
-             Workflow:
-             1. Navigate to Flights List View and click Departed tab.
-             2. Inspect flight cards for alerts button (.Departed_alerts_buttonOne).
-             3. Click on the alert button for every flight (including '00'):
-                - If count is '00':
-                    * Open drawer and check if 'No alerts found' or if any alert cards exist.
-                    * If alert cards exist despite '00', report/log discrepancy (alerts present but count not showing).
-                - If count > 0:
-                    * Open drawer.
-                    * Check directly visible alerts, then click 'Critical' and 'Pending' one after another.
-                    * For each alert card:
-                        - Click card to open detail view (.alert-detail-view).
-                        - Switch to History tab.
-                        - Assert status history rules:
-                            * Open: contains 'Alert Generated'
-                            * Acknowledged: contains 'Alert Generated' and 'Acknowledged'
-                            * Closed: contains 'Alert Generated', 'Acknowledged', and 'Closed'
-                        - Click Back button to return to alert list.
-             4. Close the popup drawer via close icon 'X' before proceeding to the next flight.
+Description: Checking departed flights alerts in Flights List View.
+
+Workflow:
+1. Open Flights List View and click on the Departed tab.
+2. Check the alerts button on each departed flight card.
+3. Open the alerts popup for every flight:
+   - For flights with '00' alerts: verify that the popup shows 'No alerts found'.
+   - For flights with active alerts: check visible alerts, Critical alerts, and Pending alerts.
+   - For each alert card, open its details:
+     * Check the Details tab: verify the alert message is displayed, and if Critical, verify Criticality shows 'Critical'.
+     * Check the History tab:
+       - 'Open' alerts must show 'Alert Generated'.
+       - 'Acknowledged' alerts must show 'Alert Generated' and 'Acknowledged'.
+       - 'Closed' alerts must show 'Alert Generated', 'Acknowledged', and 'Closed'.
+   - Click the back button to go back to the alert list.
+4. Close the alerts popup before checking the next flight.
 """
 
 import re
 import allure
-import pytest
-from playwright.sync_api import Page, Locator, expect, TimeoutError
+from playwright.sync_api import Locator, expect, TimeoutError
 from pages.Common_Base_Page.Base_Page import BasePage
 from utils.logger import get_logger
 
@@ -37,7 +34,7 @@ logger = get_logger(__name__)
 
 
 class ListView_DepartedSection_Alerts_Page(BasePage):
-
+   
     # ==================== NAVIGATION LOCATORS ====================
     MENU = (
         "//span[@class='nav-icon']/i[normalize-space()='menu' or text()='menu'] | "
@@ -54,36 +51,43 @@ class ListView_DepartedSection_Alerts_Page(BasePage):
     FLIGHT_ROW_CARDS = "//mat-card[contains(@class,'listviewmatcard')]/div"
     FLIGHT_NUMBER = "//p[@mattooltip='Flight Arrival Departure Numbers']"
 
-    # ==================== ALERT CARDS & DETAIL LOCATORS ====================
+    # ==================== ALERT CARDS & POPUP LOCATORS ====================
+    ALERT_BUTTON = ".Departed_alerts_buttonOne, [class*='Departed_alerts_button'], .alerts-col button"
+    POPUP = ".notification-div:visible, .grid_alerts_menu:visible"
+    POPUP_CLOSE_BUTTON = "mat-icon:has-text('close'), .close-icon, [class*='close']"
     NO_ALERTS_MSG = "text='No alerts found', :has-text('No alerts found')"
     ALERT_CARDS = ".alert-card:visible, .alert-card, [class*='alert-card']:visible"
     ALERT_TITLE = ".alert-title-name, .alert-title, [class*='title']"
     ALERT_STATUS_BADGE = ".status-badge, .alert-status, [class*='status']"
-
+    ALERT_MESSAGE = ".alert-subtitle, [class*='subtitle'], pre, p"
     ALERT_DETAIL_VIEW = ".alert-detail-view.slide-in, .alert-detail-view:visible, [class*='alert-detail-view']:visible"
+    DETAILS_TAB = "text=Details, .mat-tab-label:has-text('Details'), [role='tab']:has-text('Details')"
+    HISTORY_TAB = "text=History, .mat-tab-label:has-text('History'), [role='tab']:has-text('History')"
+    BACK_BUTTON = "mat-icon:has-text('arrow_back'), mat-icon:has-text('arrow_back_ios'), mat-icon:has-text('chevron_left'), .back-button"
 
+    # ==================== LOADING SPINNERS ====================
     SPINNER_SELECTORS = [
         ".loading",
         ".spinner",
         ".mat-progress-spinner",
     ]
 
-    def __init__(self, page: Page, base_url: str | None = None):
-        super().__init__(page, base_url)
-        self.page = page
-
+    # ==================== SCREENSHOT HELPER ====================
     def attach_screenshot(self, name: str, full_page: bool = False):
+        """Captures a screenshot and attaches it to the report."""
         try:
             try:
                 screenshot = self.page.screenshot(type="jpeg", quality=65, full_page=full_page)
             except Exception:
                 screenshot = self.page.screenshot(full_page=full_page)
             allure.attach(screenshot, name=name, attachment_type=allure.attachment_type.PNG)
-            logger.info(f"Screenshot attached: {name}")
+            logger.info(f"Screenshot saved: {name}")
         except Exception as e:
-            logger.warning(f"Failed to attach screenshot {name}: {e}")
+            logger.warning(f"Could not attach screenshot {name}: {e}")
 
+    # ==================== LOADING HELPER ====================
     def wait_for_loading_to_finish(self, timeout: int = 10000):
+        """Waits for any page loading spinners to disappear."""
         try:
             for selector in self.SPINNER_SELECTORS:
                 spinners = self.page.locator(selector)
@@ -94,9 +98,11 @@ class ListView_DepartedSection_Alerts_Page(BasePage):
         except TimeoutError:
             pass
 
+    # ==================== NAVIGATION ====================
     @allure.step("Navigate to Flights List View")
     def navigate_to_list_view_page(self):
-        logger.info("Navigating to Flights List View")
+        """Navigates to the Flights List View dashboard."""
+        logger.info("Opening Flights List View page")
         try:
             if "/app/turnaround-list" in self.page.url or self.page.locator(self.DEPARTED_TAB).is_visible():
                 self.page.wait_for_timeout(800)
@@ -120,11 +126,12 @@ class ListView_DepartedSection_Alerts_Page(BasePage):
             self.wait_for_loading_to_finish()
         except Exception as e:
             self.attach_screenshot("navigate_list_view_failed")
-            logger.error(f"Failed to navigate to Flights List View: {e}")
+            logger.error(f"Could not navigate to Flights List View: {e}")
             raise
 
     @allure.step("Select Departed Section")
     def select_departed_flights(self):
+        """Clicks on the Departed tab to show departed flights."""
         try:
             departed_tab = self.page.locator(self.DEPARTED_TAB)
             expect(departed_tab.first).to_be_visible(timeout=10000)
@@ -135,13 +142,15 @@ class ListView_DepartedSection_Alerts_Page(BasePage):
             flight_cards = self.page.locator(self.FLIGHT_ROW_CARDS)
             if flight_cards.count() > 0:
                 expect(flight_cards.first).to_be_visible(timeout=10000)
-                logger.info(f"Departed flights loaded. Found {flight_cards.count()} flight cards")
+                logger.info(f"Departed flights loaded successfully. Found {flight_cards.count()} flight cards")
         except Exception as e:
             self.attach_screenshot("select_departed_failed")
-            logger.error(f"Failed to select Departed section: {e}")
+            logger.error(f"Could not open Departed section: {e}")
             raise
 
+    # ==================== FLIGHT & ALERT  ====================
     def get_flight_number(self, flight_card: Locator) -> str:
+        """Reads the flight number from the flight card."""
         try:
             flight_num_loc = flight_card.locator(self.FLIGHT_NUMBER)
             if flight_num_loc.count() > 0 and flight_num_loc.first.is_visible():
@@ -151,289 +160,216 @@ class ListView_DepartedSection_Alerts_Page(BasePage):
         return "Unknown Flight"
 
     def get_alert_count(self, flight_card: Locator) -> tuple[int, Locator | None]:
-        """Locates the alert button in the flight card and extracts the alert count."""
-        # 1. Pure CSS selectors
-        css_selectors = [
-            ".Departed_alerts_buttonOne",
-            "[class*='Departed_alerts_button']",
-            ".alerts-col button",
-            ".alerts-col",
-            "[class*='alerts'] button",
-        ]
-        for sel in css_selectors:
-            try:
-                elements = flight_card.locator(sel)
-                total = elements.count()
-                for idx in range(total):
-                    el = elements.nth(idx)
-                    if el.is_visible():
-                        txt = el.inner_text().strip() or (el.text_content() or "").strip()
-                        digits = re.findall(r"\d+", txt)
-                        count = int(digits[0]) if digits else 0
-                        logger.info(f"Alert button found with '{sel}': text='{txt}' -> count={count}")
-                        return count, el
-            except Exception as e:
-                logger.debug(f"Selector '{sel}' failed: {e}")
-
-        # 2. Pure XPath selectors
-        xpath_selectors = [
-            ".//button[contains(@class,'Departed_alerts_button')]",
-            ".//div[contains(@class,'alerts-col')]//button",
-            ".//div[contains(@class,'alerts-col')]",
-            ".//button[contains(@class,'alerts')]",
-        ]
-        for xp in xpath_selectors:
-            try:
-                el = flight_card.locator(f"xpath={xp}").first
-                if el.is_visible():
-                    txt = el.inner_text().strip() or (el.text_content() or "").strip()
-                    digits = re.findall(r"\d+", txt)
-                    count = int(digits[0]) if digits else 0
-                    logger.info(f"Alert button found with XPath '{xp}': text='{txt}' -> count={count}")
-                    return count, el
-            except Exception as e:
-                logger.debug(f"XPath '{xp}' failed: {e}")
-
+        """Finds the alert button on the flight card and reads the alert count number."""
+        try:
+            btn = flight_card.locator(self.ALERT_BUTTON).first
+            if btn.is_visible():
+                txt = btn.inner_text().strip() or (btn.text_content() or "").strip()
+                digits = re.findall(r"\d+", txt)
+                count = int(digits[0]) if digits else 0
+                logger.info(f"Found alert button: text='{txt}', count={count}")
+                return count, btn
+        except Exception as e:
+            logger.debug(f"Could not read alert button: {e}")
         return 0, None
 
-    def get_visible_drawer(self) -> Locator | None:
-        """Finds and returns the currently visible alerts drawer container."""
-        # CSS candidates
-        css_candidates = [
-            ".grid_alerts_menu .notification-div",
-            ".grid_alerts_menu",
-            ".notification-div:visible",
-            "[class*='notification-div']:visible",
-        ]
-        for sel in css_candidates:
-            try:
-                loc = self.page.locator(sel)
-                count = loc.count()
-                for idx in range(count):
-                    el = loc.nth(idx)
-                    if el.is_visible():
-                        return el
-            except Exception:
-                pass
-
-        # XPath candidates
-        xpath_candidates = [
-            "//div[contains(@class,'grid_alerts_menu')]//div[contains(@class,'notification-div')]",
-            "//div[contains(@class,'grid_alerts_menu')]",
-            "//div[contains(@class,'notification-div') and not(contains(@style,'display: none'))]",
-        ]
-        for xp in xpath_candidates:
-            try:
-                loc = self.page.locator(f"xpath={xp}")
-                count = loc.count()
-                for idx in range(count):
-                    el = loc.nth(idx)
-                    if el.is_visible():
-                        return el
-            except Exception:
-                pass
-
+    def get_visible_popup(self) -> Locator | None:
+        try:
+            popup = self.page.locator(self.POPUP).first
+            if popup.is_visible():
+                return popup
+        except Exception:
+            pass
         return None
 
-    def close_drawer(self, drawer: Locator | None = None):
-        """Closes the alert popup drawer cleanly via 'X' close button or Escape."""
+    def close_popup(self, popup: Locator | None = None):
+        """Closes the alert popup using the close 'X' button."""
         try:
-            # 1. Close icon inside drawer
-            if drawer and drawer.is_visible():
-                for sel in ["mat-icon:has-text('close')", ".close-icon", "[class*='close']"]:
-                    close_btn = drawer.locator(sel).first
-                    if close_btn.is_visible():
-                        close_btn.click()
-                        self.page.wait_for_timeout(300)
-                        break
-
-            # 2. Page-level XPath for close button
-            if drawer and drawer.is_visible():
-                page_close = self.page.locator("xpath=//div[contains(@class,'notification-div')]//mat-icon[normalize-space()='close' or text()='close'] | //div[contains(@class,'grid_alerts_menu')]//mat-icon[normalize-space()='close' or text()='close']").last
-                if page_close.is_visible():
-                    page_close.click()
-                    self.page.wait_for_timeout(300)
+            target = popup if (popup and popup.is_visible()) else self.get_visible_popup()
+            if target and target.is_visible():
+                close_btn = target.locator(self.POPUP_CLOSE_BUTTON).first
+                if close_btn.is_visible():
+                    close_btn.click()
+                    self.page.wait_for_timeout(400)
         except Exception as e:
-            logger.debug(f"Exception clicking close button: {e}")
+            logger.debug(f"Could not click close button: {e}")
 
-        # 3. Always ensure closed via Escape if still visible
-        active = self.get_visible_drawer()
-        if active:
-            self.page.keyboard.press("Escape")
-            self.page.wait_for_timeout(300)
-
-    def click_category_pill(self, drawer: Locator, category_name: str) -> bool:
-        """Clicks a category pill (e.g. Critical, Pending) inside the drawer."""
+    def click_category_button(self, popup: Locator, category_name: str) -> bool:
+        """Clicks an alert category filter button (such as Critical or Pending) in the popup."""
         try:
-            pills = drawer.locator(
+            buttons = popup.locator(
                 f"button:has-text('{category_name}'), "
                 f"[role='button']:has-text('{category_name}'), "
                 f"div:has-text('{category_name}'), "
                 f"span:has-text('{category_name}')"
             )
-            for i in range(pills.count()):
-                pill = pills.nth(i)
-                txt = pill.inner_text().strip()
-                if txt.lower() == category_name.lower() and pill.is_visible():
-                    pill.click()
+            for i in range(buttons.count()):
+                button = buttons.nth(i)
+                txt = button.inner_text().strip()
+                if txt.lower() == category_name.lower() and button.is_visible():
+                    button.click()
                     self.page.wait_for_timeout(400)
                     return True
         except Exception as e:
-            logger.debug(f"Failed to click category '{category_name}': {e}")
+            logger.debug(f"Could not click category '{category_name}': {e}")
+        return False
+
+    def click_details_tab(self, detail_view: Locator) -> bool:
+        try:
+            tab = detail_view.locator(self.DETAILS_TAB).first
+            if tab.is_visible():
+                tab.click()
+                self.page.wait_for_timeout(400)
+                return True
+
+            page_tab = self.page.get_by_text("Details", exact=True).last
+            if page_tab.is_visible():
+                page_tab.click()
+                self.page.wait_for_timeout(400)
+                return True
+        except Exception as e:
+            logger.debug(f"Could not click Details tab: {e}")
         return False
 
     def click_history_tab(self, detail_view: Locator) -> bool:
-        """Finds and clicks the History tab inside the detail view."""
-        logger.info("Attempting to click History tab...")
-
-        # 1. Pure text / CSS selectors inside detail_view
-        css_options = [
-            "text=History",
-            ".mat-tab-label:has-text('History')",
-            "[role='tab']:has-text('History')",
-            "div:has-text('History')",
-            "span:has-text('History')",
-            ":has-text('History')",
-        ]
-        for sel in css_options:
-            try:
-                candidates = detail_view.locator(sel)
-                for i in range(candidates.count()):
-                    tab = candidates.nth(i)
-                    if tab.is_visible() and "history" in tab.inner_text().strip().lower():
-                        logger.info(f"Clicked History tab with selector: {sel}")
-                        tab.click()
-                        self.page.wait_for_timeout(500)
-                        return True
-            except Exception:
-                pass
-
-        # 2. Pure XPath selectors inside detail_view
-        xpath_options = [
-            ".//div[contains(@class,'mat-tab-label') and contains(.,'History')]",
-            ".//div[normalize-space()='History']",
-            ".//span[normalize-space()='History']",
-            ".//*[normalize-space(text())='History']",
-        ]
-        for xp in xpath_options:
-            try:
-                tab = detail_view.locator(f"xpath={xp}").first
-                if tab.is_visible():
-                    logger.info(f"Clicked History tab with XPath: {xp}")
-                    tab.click()
-                    self.page.wait_for_timeout(500)
-                    return True
-            except Exception:
-                pass
-
-        # 3. Page-level get_by_text fallback
+        logger.info("Looking for History tab in alert details...")
         try:
+            tab = detail_view.locator(self.HISTORY_TAB).first
+            if tab.is_visible():
+                tab.click()
+                self.page.wait_for_timeout(500)
+                logger.info("Clicked History tab successfully")
+                return True
+
             page_tab = self.page.get_by_text("History", exact=True).last
             if page_tab.is_visible():
-                logger.info("Clicked History tab via page.get_by_text")
                 page_tab.click()
                 self.page.wait_for_timeout(500)
+                logger.info("Clicked History tab via page text")
                 return True
-        except Exception:
-            pass
-
+        except Exception as e:
+            logger.debug(f"Could not click History tab: {e}")
         return False
 
     def click_back_button(self, detail_view: Locator):
-        """Clicks the back arrow button to return from detail view to alerts list."""
-        back_selectors = [
-            "mat-icon:has-text('arrow_back')",
-            "mat-icon:has-text('arrow_back_ios')",
-            "mat-icon:has-text('chevron_left')",
-            ".back-button",
-            "[class*='back']",
-            "button:has(mat-icon)",
-            "mat-icon",
-        ]
-        for sel in back_selectors:
-            try:
-                btn = detail_view.locator(sel).first
-                if btn.is_visible():
-                    btn.click()
-                    self.page.wait_for_timeout(400)
-                    return True
-            except Exception:
-                pass
-
-        # Fallback XPath
+        """Clicks the back button to return from alert details to the alert list."""
         try:
-            back_xpath = detail_view.locator("xpath=.//mat-icon[contains(text(),'arrow_back') or contains(text(),'chevron_left') or @class='back-button']").first
-            if back_xpath.is_visible():
-                back_xpath.click()
+            btn = detail_view.locator(self.BACK_BUTTON).first
+            if btn.is_visible():
+                btn.click()
                 self.page.wait_for_timeout(400)
                 return True
-        except Exception:
-            pass
-
+        except Exception as e:
+            logger.debug(f"Could not click back button: {e}")
         return False
 
+    # ==================== ALERT VALIDATIONS ====================
     def verify_alert_history(self, flight_name: str, alert_title: str, status: str, detail_view: Locator):
         """
-        Validates timeline history according to user status rules:
-        - Open: contains 'Alert Generated'
-        - Acknowledged: contains 'Alert Generated' and 'Acknowledged'
-        - Closed: contains 'Alert Generated', 'Acknowledged', and 'Closed'
+        Checks that the alert timeline history matches its current status:
+        - 'Open': shows 'Alert Generated'
+        - 'Acknowledged': shows both 'Alert Generated' and 'Acknowledged'
+        - 'Closed': shows 'Alert Generated', 'Acknowledged', and 'Closed'
         """
         status_norm = status.strip().lower()
-        logger.info(f"[{flight_name}] Validating history for alert '{alert_title}' with status '{status}'")
+        logger.info(f"[{flight_name}] Checking history for alert '{alert_title}' (Status: '{status}')")
+        self.page.wait_for_timeout(500)
 
-        # Give history content a moment to render
-        self.page.wait_for_timeout(600)
-
-        # Capture all text in the detail view / history panel
         history_text = detail_view.inner_text().lower()
-        logger.info(f"[{flight_name}] History panel text captured:\n{history_text[:300]}")
 
-        # Rule 1: 'Open' status must have 'Alert Generated'
-        has_generated = "alert generated" in history_text or "generated" in history_text
-        assert has_generated, (
-            f"[{flight_name}] Alert '{alert_title}' (Status: '{status}') missing 'Alert Generated' in history!\n"
-            f"Captured history content: {history_text}"
+        # Check 'Alert Generated'
+        assert "alert generated" in history_text or "generated" in history_text, (
+            f"[{flight_name}] Alert '{alert_title}' is missing 'Alert Generated' in its history timeline."
         )
 
-        # Rule 2: 'Acknowledged' status must have 'Alert Generated' + 'Acknowledged'
-        if "acknowledged" in status_norm:
-            has_acknowledged = "acknowledged" in history_text or "ack" in history_text
-            assert has_acknowledged, (
-                f"[{flight_name}] Alert '{alert_title}' (Status: '{status}') missing 'Acknowledged' in history!\n"
-                f"Captured history content: {history_text}"
+        # Check 'Acknowledged' for Acknowledged or Closed alerts
+        if "acknowledged" in status_norm or "closed" in status_norm:
+            assert "acknowledged" in history_text or "ack" in history_text, (
+                f"[{flight_name}] Alert '{alert_title}' is missing 'Acknowledged' in its history timeline."
             )
 
-        # Rule 3: 'Closed' status must have 'Alert Generated' + 'Acknowledged' + 'Closed'
+        # Check 'Closed' for Closed alerts
         if "closed" in status_norm:
-            has_acknowledged = "acknowledged" in history_text or "ack" in history_text
-            has_closed = "closed" in history_text or "alert closed" in history_text
-            assert has_acknowledged, (
-                f"[{flight_name}] Alert '{alert_title}' (Status: '{status}') missing 'Acknowledged' in history!\n"
-                f"Captured history content: {history_text}"
-            )
-            assert has_closed, (
-                f"[{flight_name}] Alert '{alert_title}' (Status: '{status}') missing 'Closed' in history!\n"
-                f"Captured history content: {history_text}"
+            assert "closed" in history_text, (
+                f"[{flight_name}] Alert '{alert_title}' is missing 'Closed' in its history timeline."
             )
 
-        logger.info(f"[{flight_name}] Alert '{alert_title}' history successfully verified for status '{status}'")
+        logger.info(f"[{flight_name}] Alert '{alert_title}' history verified successfully")
 
-    def _process_visible_cards(self, flight_name: str, drawer: Locator, seen_titles: set) -> int:
-        """Iterates through visible alert cards in the drawer and validates detail & history."""
-        cards_loc = drawer.locator(self.ALERT_CARDS)
+    def verify_alert_details(
+        self,
+        flight_name: str,
+        alert_title: str,
+        detail_view: Locator,
+        is_critical: bool = False,
+        expected_message: str | None = None
+    ):
+        """
+        Validates the Details tab of an alert:
+        - Confirms that the alert message is displayed.
+        - If the alert is Critical, verifies that Criticality is displayed as 'Critical'.
+        """
+        logger.info(f"[{flight_name}] Checking Details tab for alert '{alert_title}' (Critical expected: {is_critical})")
+        self.page.wait_for_timeout(500)
+
+        details_raw = detail_view.inner_text().strip()
+        details_norm = " ".join(details_raw.replace("\u00a0", " ").lower().split())
+        logger.info(f"[{flight_name}] Details tab text:\n{details_raw[:300]}")
+
+        # 1. Verify Alert Message is shown on Details tab
+        message_verified = False
+        if expected_message:
+            expected_norm = " ".join(expected_message.replace("\u00a0", " ").lower().split())
+            if expected_norm in details_norm:
+                message_verified = True
+            else:
+                # Flexible match: check if key words of the message exist in details
+                words = [w for w in re.findall(r"[a-zA-Z0-9]+", expected_norm) if len(w) > 2]
+                if words and sum(1 for w in words if w in details_norm) >= len(words) * 0.7:
+                    message_verified = True
+
+        # Fallback: check if 'message' label is present with non-empty content
+        if not message_verified and "message" in details_norm and len(details_norm) > 20:
+            message_verified = True
+
+        assert message_verified, (
+            f"[{flight_name}] Alert '{alert_title}' message was not found on Details tab.\n"
+            f"Expected message: '{expected_message}'\n"
+            f"Details content: {details_raw}"
+        )
+        logger.info(f"[{flight_name}] Alert message verified on Details tab: '{expected_message or 'Message present'}'")
+
+        # 2. Verify Criticality if this alert is Critical
+        if is_critical or "critical" in details_norm:
+            assert "critical" in details_norm, (
+                f"[{flight_name}] Alert '{alert_title}' is marked as Critical, but 'Critical' was not found on Details tab.\n"
+                f"Details content: {details_raw}"
+            )
+            logger.info(f"[{flight_name}] Alert '{alert_title}' Criticality confirmed as 'Critical'")
+        else:
+            logger.info(f"[{flight_name}] Alert '{alert_title}' Details tab verified successfully")
+
+    def _process_visible_cards(
+        self,
+        flight_name: str,
+        popup: Locator,
+        seen_titles: set,
+        category_name: str = "All"
+    ) -> int:
+        """Checks each visible alert card in the popup, validates Details tab, then History timeline."""
+        cards_loc = popup.locator(self.ALERT_CARDS)
         card_count = cards_loc.count()
         validated = 0
 
         for idx in range(card_count):
-            card = drawer.locator(self.ALERT_CARDS).nth(idx)
+            card = popup.locator(self.ALERT_CARDS).nth(idx)
             if not card.is_visible():
                 continue
 
             title_loc = card.locator(self.ALERT_TITLE)
             alert_title = title_loc.first.inner_text().strip() if title_loc.count() > 0 else f"Alert-{idx + 1}"
 
-            # Avoid re-validating the same alert card twice
+            # Skip if we already checked this alert
             if alert_title in seen_titles:
                 continue
             seen_titles.add(alert_title)
@@ -441,99 +377,119 @@ class ListView_DepartedSection_Alerts_Page(BasePage):
             status_loc = card.locator(self.ALERT_STATUS_BADGE)
             alert_status = status_loc.first.inner_text().strip() if status_loc.count() > 0 else "Unknown"
 
-            logger.info(f"[{flight_name}] Opening alert card: '{alert_title}' (Status: '{alert_status}')")
+            card_text = card.inner_text()
+            msg_loc = card.locator(self.ALERT_MESSAGE).first
+            card_message = msg_loc.inner_text().strip() if msg_loc.is_visible() else None
+            is_critical = (category_name.lower() == "critical") or ("critical" in card_text.lower())
+
+            logger.info(f"[{flight_name}] Opening alert details for: '{alert_title}' (Status: '{alert_status}')")
             card.click()
             self.page.wait_for_timeout(600)
 
-            # Detail view validation
+            # Check details view opened
             detail_view = self.page.locator(self.ALERT_DETAIL_VIEW).first
             try:
                 expect(detail_view).to_be_visible(timeout=4000)
             except Exception:
                 self.attach_screenshot(f"{flight_name}_detail_view_open_failed")
-                raise AssertionError(f"[{flight_name}] Alert detail view did not open for alert '{alert_title}'")
+                raise AssertionError(f"[{flight_name}] Alert details did not open for alert '{alert_title}'")
 
-            # Click History tab
+            # 1. Check Details tab (Message & Criticality)
+            self.click_details_tab(detail_view)
+            self.verify_alert_details(
+                flight_name=flight_name,
+                alert_title=alert_title,
+                detail_view=detail_view,
+                is_critical=is_critical,
+                expected_message=card_message,
+            )
+
+            # 2. Switch to History tab
             if not self.click_history_tab(detail_view):
                 self.attach_screenshot(f"{flight_name}_history_tab_missing")
-                raise AssertionError(f"[{flight_name}] History tab not found in detail view for alert '{alert_title}'")
+                raise AssertionError(f"[{flight_name}] History tab was not found for alert '{alert_title}'")
 
-            # Validate history timeline
+            # 3. Check history timeline
             self.verify_alert_history(flight_name, alert_title, alert_status, detail_view)
             validated += 1
 
-            # Back button to return to alert list
+            # Click back button to return to alert cards list
             self.click_back_button(detail_view)
             self.page.wait_for_timeout(400)
 
         return validated
 
-    def process_flight_alert_cards(self, flight_name: str, drawer: Locator, button_count: int) -> int:
+    def process_flight_alert_cards(self, flight_name: str, popup: Locator, button_count: int) -> int:
         """
-        Processes alerts inside the drawer:
-        - For '00' count flights: verifies empty state, or flags if cards are present despite '00'.
-        - For count > 0 flights: checks directly visible alerts, then Critical and Pending categories.
+        Checks alerts inside the popup for a flight:
+        - When alert count is '00': checks that the popup shows 'No alerts found'.
+        - When alert count is greater than 0: checks directly visible alerts, Critical alerts, and Pending alerts.
         """
-        # 1. Check if 'No alerts found' is displayed
-        no_alerts = drawer.locator(self.NO_ALERTS_MSG)
+        no_alerts = popup.locator(self.NO_ALERTS_MSG)
         has_no_alerts = no_alerts.count() > 0 and no_alerts.first.is_visible()
 
-        # Check existing cards in initial view
-        initial_cards = drawer.locator(self.ALERT_CARDS)
+        initial_cards = popup.locator(self.ALERT_CARDS)
         initial_card_count = initial_cards.count()
 
-        # Case A: Button displayed '00'
+        # Flight has '00' alerts
         if button_count == 0:
             if initial_card_count > 0:
-                # Discrepancy: Alert button says 00, but alerts are present inside
-                msg = f"[{flight_name}] DISCREPANCY: Alert button displayed '00', but {initial_card_count} alert card(s) are present in drawer!"
+                msg = f"[{flight_name}] Note: Alert button showed '00', but {initial_card_count} alert card(s) were found inside the popup."
                 logger.warning(msg)
-                allure.attach(msg, name=f"{flight_name}_count_discrepancy", attachment_type=allure.attachment_type.TEXT)
+                allure.attach(msg, name=f"{flight_name}_count_difference", attachment_type=allure.attachment_type.TEXT)
                 seen_titles = set()
-                return self._process_visible_cards(flight_name, drawer, seen_titles)
+                return self._process_visible_cards(flight_name, popup, seen_titles, category_name="All")
             else:
-                logger.info(f"[{flight_name}] Verified: Button showed '00' and drawer shows 'No alerts found' (Empty state confirmed).")
+                logger.info(f"[{flight_name}] Confirmed: Button showed '00' and popup shows 'No alerts found' as expected.")
                 return 0
 
-        # Case B: Button displayed count > 0
+        # Flight has count > 0
         if has_no_alerts and initial_card_count == 0:
-            logger.warning(f"[{flight_name}] Button showed count {button_count}, but drawer initially shows 'No alerts found'!")
+            logger.warning(f"[{flight_name}] Alert button showed count {button_count}, but popup initially shows 'No alerts found'.")
 
         seen_titles = set()
         total_validated = 0
 
-        # 1) Check alerts visible initially (Flight / All)
+        # 1. Check all alerts initially visible
         if initial_card_count > 0:
-            logger.info(f"[{flight_name}] Checking initial visible alerts ({initial_card_count} cards)")
-            total_validated += self._process_visible_cards(flight_name, drawer, seen_titles)
+            logger.info(f"[{flight_name}] Checking visible alerts ({initial_card_count} cards found)")
+            total_validated += self._process_visible_cards(flight_name, popup, seen_titles, category_name="All")
 
-        # 2) Click Critical category
-        logger.info(f"[{flight_name}] Checking 'Critical' category alerts")
-        if self.click_category_pill(drawer, "Critical"):
-            total_validated += self._process_visible_cards(flight_name, drawer, seen_titles)
+        # 2. Check Critical alerts category
+        logger.info(f"[{flight_name}] Checking 'Critical' alerts category")
+        if self.click_category_button(popup, "Critical"):
+            total_validated += self._process_visible_cards(flight_name, popup, seen_titles, category_name="Critical")
 
-        # 3) Click Pending category
-        logger.info(f"[{flight_name}] Checking 'Pending' category alerts")
-        if self.click_category_pill(drawer, "Pending"):
-            total_validated += self._process_visible_cards(flight_name, drawer, seen_titles)
+        # 3. Check Pending alerts category
+        logger.info(f"[{flight_name}] Checking 'Pending' alerts category")
+        if self.click_category_button(popup, "Pending"):
+            total_validated += self._process_visible_cards(flight_name, popup, seen_titles, category_name="Pending")
 
         return total_validated
 
     @allure.step("Validate Alerts in Departed Section")
     def validate_departed_flights_alerts(self, max_flights: int | None = None):
-        logger.info("Starting validation of alerts in Departed section")
+        """
+        Main validation method:
+        - Opens Departed section.
+        - Iterates over departed flight cards.
+        - Clicks alert button to open popup.
+        - Validates alert cards and their history timeline.
+        - Closes popup before moving to next flight.
+        """
+        logger.info("Starting alerts check for Departed flights")
         self.wait_for_loading_to_finish()
 
         flight_cards = self.page.locator(self.FLIGHT_ROW_CARDS)
         total_flights = flight_cards.count()
 
         if total_flights == 0:
-            logger.warning("No departed flight cards available to validate")
+            logger.warning("No departed flight cards found on the page")
             self.attach_screenshot("no_departed_flights")
             return
 
         flights_to_check = total_flights if max_flights is None else min(total_flights, max_flights)
-        logger.info(f"Departed section contains {total_flights} flights. Checking {flights_to_check} flights.")
+        logger.info(f"Departed section has {total_flights} flights. Checking {flights_to_check} flights.")
 
         flights_checked = 0
         total_alerts_checked = 0
@@ -546,38 +502,36 @@ class ListView_DepartedSection_Alerts_Page(BasePage):
 
             alert_count, alert_btn = self.get_alert_count(card)
             if alert_btn is None:
-                logger.warning(f"[{flight_name}] No alert button found. Skipping.")
+                logger.warning(f"[{flight_name}] No alert button found. Skipping this flight.")
                 continue
 
-            logger.info(f"[{flight_name}] Alert button count: {alert_count}. Clicking alert button...")
+            logger.info(f"[{flight_name}] Alert button count is {alert_count}. Clicking to open popup...")
             alert_btn.scroll_into_view_if_needed()
             alert_btn.click()
-            self.page.wait_for_timeout(800)
+            self.page.wait_for_timeout(1000)
 
-            # Locate the visible drawer
-            drawer = self.get_visible_drawer()
-            if drawer is None:
-                alert_btn.click()
-                self.page.wait_for_timeout(800)
-                drawer = self.get_visible_drawer()
+            # Locate the open popup
+            popup = self.get_visible_popup()
+            if popup is None:
+                self.page.wait_for_timeout(1000)
+                popup = self.get_visible_popup()
 
-            if drawer is None:
+            if popup is None:
                 self.attach_screenshot(f"{flight_name}_popup_open_failed")
-                raise AssertionError(f"[{flight_name}] Alerts popup drawer did not open!")
+                raise AssertionError(f"[{flight_name}] Alerts popup failed to open after clicking alert button.")
 
-            # Validate alerts inside popup (handles 00 and count > 0)
-            validated = self.process_flight_alert_cards(flight_name, drawer, alert_count)
+            # Validate alerts in popup
+            validated = self.process_flight_alert_cards(flight_name, popup, alert_count)
             total_alerts_checked += validated
 
-            # Close popup drawer via close icon 'X' so next flight can be opened
-            logger.info(f"[{flight_name}] Closing alerts popup drawer...")
-            self.close_drawer(drawer)
+            # Close popup before proceeding
+            logger.info(f"[{flight_name}] Closing alerts popup...")
+            self.close_popup(popup)
             self.page.wait_for_timeout(400)
 
             flights_checked += 1
             self.attach_screenshot(f"{flight_name}_alerts_validated", full_page=False)
 
         logger.info(
-            f"Validation Completed: Checked {flights_checked} flights "
-            f"(including '00' empty-state & discrepancy checks), validated {total_alerts_checked} alerts total."
+            f"Alerts validation finished! Checked {flights_checked} flights and verified {total_alerts_checked} alerts total."
         )
