@@ -738,28 +738,17 @@ def build_html(meta: dict, summary: dict, records) -> str:
                     norm_curr = normalize_step_name(s_name)
                     norm_prev = normalize_step_name(prev.name)
 
-                    # Check if exact duplicate or child duplication of parent step
-                    is_dup = (
-                        norm_curr == norm_prev
-                        or (len(norm_curr) > 8 and len(norm_prev) > 8 and (norm_curr in norm_prev or norm_prev in norm_curr))
-                    )
-
-                    if is_dup:
+                    # Exact duplicate check (e.g. repeated method call or child having exact same name)
+                    if norm_curr == norm_prev:
                         # Transfer any screenshots to previous step
                         for shot in getattr(s, "screenshots", []):
                             if not any(x.name == shot.name for x in prev.screenshots):
                                 prev.screenshots.append(shot)
+                        # Transfer any attachments to previous step
+                        for att in getattr(s, "attachments", []):
+                            if not any(x.name == att.name for x in getattr(prev, "attachments", [])):
+                                getattr(prev, "attachments", []).append(att)
                         # Transfer failure status/error
-                        if s.status == "failed" and prev.status != "failed":
-                            prev.status = "failed"
-                            prev.error = s.error
-                        continue
-
-                    # If this is an internal sub-step (depth > 0) and not an explicitly numbered step (e.g. Step X.Y)
-                    if s.depth > 0 and not re.match(r"^step\s*\d+\.\d+", s_name, flags=re.IGNORECASE):
-                        for shot in getattr(s, "screenshots", []):
-                            if not any(x.name == shot.name for x in prev.screenshots):
-                                prev.screenshots.append(shot)
                         if s.status == "failed" and prev.status != "failed":
                             prev.status = "failed"
                             prev.error = s.error
@@ -775,11 +764,28 @@ def build_html(meta: dict, summary: dict, records) -> str:
                 step_badge_cls = "fail" if is_step_failed else "pass"
                 step_badge_txt = "FAIL" if is_step_failed else "PASS"
 
+                depth = getattr(s, "depth", 0)
+                indent_px = min(depth * 20, 60)
+                indent_prefix = '<span class="step-tree-indicator">↳ </span>' if depth > 0 else ""
+                row_cls = f"step-row step-level-{min(depth, 3)}"
+
                 step_err_html = ""
                 if is_step_failed:
                     step_err = _clean_error_message(getattr(s, "error", "") or getattr(r, "error", ""))
                     if step_err:
                         step_err_html = f"<div class='step-error-desc'>{_e(step_err)}</div>"
+
+#                 # Attachments for this step
+#                 step_atts = getattr(s, "attachments", [])
+#                 step_atts_html = ""
+#                 if step_atts:
+#                     att_cards = []
+#                     for att in step_atts:
+#                         att_cards.append(f"""<details class="step-attachment-details">
+#   <summary><span class="att-icon">📎</span> <span class="att-name">{_e(att.name)}</span></summary>
+#   <pre class="att-content">{_e(att.content)}</pre>
+# </details>""")
+#                     step_atts_html = f"<div class='step-attachments-container'>{''.join(att_cards)}</div>"
 
                 # Screenshots for this step
                 step_shots = getattr(s, "screenshots", [])
@@ -797,11 +803,11 @@ def build_html(meta: dict, summary: dict, records) -> str:
 </div>""")
                     step_shots_html = f"<div class='screenshots-row'>{''.join(cards)}</div>"
 
-                step_rows.append(f"""<tr>
+                step_rows.append(f"""<tr class="{row_cls}">
   <td class="step-col-status"><span class="badge {step_badge_cls}">{step_badge_txt}</span></td>
   <td class="step-col-time">{s_time}</td>
-  <td class="step-col-details">
-    <div class="step-title">{s_name}</div>
+  <td class="step-col-details" style="padding-left: {14 + indent_px}px;">
+    <div class="step-title">{indent_prefix}{s_name}</div>
     {step_err_html}
     {step_shots_html}
   </td>

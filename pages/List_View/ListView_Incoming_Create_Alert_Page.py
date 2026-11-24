@@ -494,7 +494,7 @@ class ListView_Incoming_Create_Alert_Page(BasePage):
             return 0
 
     # ==================== ELLIPSIS MENU ACTIONS ====================
-    @allure.step("Click Ellipsis Menu on flight card")
+    @allure.step("Select 'Add Alert/Task' from menu")
     def open_ellipsis_menu(self, flight_card):
         """
         Clicks the three-dot ellipsis menu button on a flight card.
@@ -538,7 +538,7 @@ class ListView_Incoming_Create_Alert_Page(BasePage):
     open_three_dots_menu = open_ellipsis_menu
 
     # ==================== ADD ALERT / TASK DIALOG ACTIONS ====================
-    @allure.step("Select 'Add Alert/Task' from menu")
+    @allure.step("Click Ellipsis Menu on flight card")
     def open_add_alert_dialog(self, flight_card):
         """
         Opens the ellipsis menu and selects the 'Add Alert/Task' option.
@@ -737,34 +737,34 @@ class ListView_Incoming_Create_Alert_Page(BasePage):
         flight_number = self.get_flight_number(flight_card)
         logger.info(f"--- Starting Alert Creation for Incoming Flight: '{flight_number}' ---")
 
-        with allure.step(f"Create Alert for Flight: {flight_number}"):
+        #with allure.step(f"Create Alert for Flight: {flight_number}"):
             # Open the alert form from the flight card's menu
-            self.open_add_alert_dialog(flight_card)
+        self.open_add_alert_dialog(flight_card)
 
-            # Fill in the form fields
-            resolved_task_name, resolved_alert_type = self.fill_alert_form(
-                category=category,
-                task_name=task_name,
-                alert_type=alert_type
-            )
+        # Fill in the form fields
+        resolved_task_name, resolved_alert_type = self.fill_alert_form(
+            category=category,
+            task_name=task_name,
+            alert_type=alert_type
+        )
 
-            # Click the Save button
-            self.click_save_alert()
+        # Click the Save button
+        self.click_save_alert()
 
-            # Check if the green success notification message appeared
-            is_success, msg_text = self.is_success_message_displayed(timeout_sec=7)
+        # Check if the green success notification message appeared
+        is_success, msg_text = self.is_success_message_displayed(timeout_sec=7)
 
-            logger.info(
-                f"--- Alert creation submitted for '{flight_number}' (Task Name: '{resolved_task_name}', Alert Type: '{resolved_alert_type}', Success Message: '{msg_text}') ---"
-            )
-            return {
-                "flight_number": flight_number,
-                "category": category,
-                "task_name": resolved_task_name,
-                "alert_type": resolved_alert_type,
-                "is_success": is_success,
-                "success_message": msg_text,
-            }
+        logger.info(
+            f"--- Alert creation submitted for '{flight_number}' (Task Name: '{resolved_task_name}', Alert Type: '{resolved_alert_type}', Success Message: '{msg_text}') ---"
+        )
+        return {
+            "flight_number": flight_number,
+            "category": category,
+            "task_name": resolved_task_name,
+            "alert_type": resolved_alert_type,
+            "is_success": is_success,
+            "success_message": msg_text,
+        }
 
     @allure.step("Verify Fallback Success Message after Alert creation")
     def is_success_message_displayed(self, expected_keyword: str = "successfully", timeout_sec: int = 7) -> tuple[bool, str]:
@@ -929,7 +929,7 @@ class ListView_Incoming_Create_Alert_Page(BasePage):
         return False, curr_count, target_card
 
     # ==================== RIGHT-SIDE ALERT POPUP VERIFICATION ====================
-    @allure.step("Click Alert Count Number to open right-side Alert Details popup")
+    #@allure.step("Click Alert Count Number to open right-side Alert Details popup")
     def open_alert_details_popup(self, flight_card):
         """
         Opens the right-side Alert Details panel by clicking the alert number on the flight card.
@@ -967,7 +967,7 @@ class ListView_Incoming_Create_Alert_Page(BasePage):
             logger.error(f"Failed to open right-side Alert Details popup: {e}")
             raise
 
-    @allure.step("Check whether alert '{expected_task_name}' is displayed in right popup")
+    #@allure.step("Check whether alert '{expected_task_name}' is displayed in right popup")
     def is_alert_displayed_in_popup(self, expected_task_name: str, timeout_sec: int = 30) -> bool:
         """
         Verifies that our new alert is listed inside the right-side Alert Details panel.

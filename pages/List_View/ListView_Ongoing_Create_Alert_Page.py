@@ -516,7 +516,7 @@ class List_View_Create_Alert_Page(BasePage):
             return 0
 
     # ==================== ELLIPSIS MENU ACTIONS ====================
-    @allure.step("Click Ellipsis Menu on flight card")
+    #@allure.step("Click Ellipsis Menu on flight card")
     def open_ellipsis_menu(self, flight_card):
         """
         Clicks the three-dot ellipsis menu button on a flight card.
@@ -557,7 +557,7 @@ class List_View_Create_Alert_Page(BasePage):
     open_three_dots_menu = open_ellipsis_menu
 
     # ==================== ADD ALERT / TASK DIALOG ACTIONS ====================
-    @allure.step("Select 'Add Alert/Task' from menu")
+    #@allure.step("Select 'Add Alert/Task' from menu")
     def open_add_alert_dialog(self, flight_card):
         """
         Opens the ellipsis menu and selects the 'Add Alert/Task' option.
@@ -759,7 +759,7 @@ class List_View_Create_Alert_Page(BasePage):
         flight_number = self.get_flight_number(flight_card)
         logger.info(f"--- Starting Alert Creation for Flight: '{flight_number}' ---")
 
-        with allure.step(f"Create Alert for Flight: {flight_number}"):
+        with allure.step(f"Create Alert for Flight"):
             self.open_add_alert_dialog(flight_card)
             resolved_task_name, resolved_alert_type = self.fill_alert_form(
                 category=category,
@@ -820,7 +820,7 @@ class List_View_Create_Alert_Page(BasePage):
         return False, ""
 
     # ==================== REFRESH FLIGHTS & VERIFY ALERT ====================
-    @allure.step("Click Refresh Flight icon on List View")
+    #@allure.step("Click Refresh Flight icon on List View")
     def refresh_flights_list(self):
         """
         Clicks the Refresh Flight icon to reload all flight cards on the screen.
@@ -855,7 +855,7 @@ class List_View_Create_Alert_Page(BasePage):
             logger.error(f"Failed to refresh flights list: {e}")
             raise
 
-    @allure.step("Refresh Ongoing page and verify Alert count for '{flight_number}'")
+    #@allure.step("Refresh Ongoing page and verify Alert count for '{flight_number}'")
     def refresh_and_wait_for_alert_count_update(
         self,
         flight_number: str,
@@ -1099,7 +1099,7 @@ class List_View_Create_Alert_Page(BasePage):
         return curr_count
 
     # ==================== RIGHT-SIDE ALERT POPUP VERIFICATION ====================
-    @allure.step("Click Alert Count Number to open right-side Alert Details popup")
+    @allure.step("Check right-side Alert Details popup")
     def open_alert_details_popup(self, flight_card):
         """
         Opens the right-side Alert Details panel by clicking the alert number on the flight card.
@@ -1136,7 +1136,7 @@ class List_View_Create_Alert_Page(BasePage):
             logger.error(f"Failed to open right-side Alert Details popup: {e}")
             raise
 
-    @allure.step("Check whether alert '{expected_task_name}' is displayed in right popup")
+    #@allure.step("Check whether alert '{expected_task_name}' is displayed in right popup")
     def is_alert_displayed_in_popup(self, expected_task_name: str, timeout_sec: int = 30) -> bool:
         """
         Verifies that our new alert is listed inside the right-side Alert Details panel.
@@ -1190,7 +1190,7 @@ class List_View_Create_Alert_Page(BasePage):
         self.attach_screenshot(f"Alert_Not_Found_{expected_task_name}")
         return False
 
-    @allure.step("Close right-side Alert Details popup")
+    #@allure.step("Close right-side Alert Details popup")
     def close_alert_details_popup(self):
         """
         Closes the right-side Alert Details panel.

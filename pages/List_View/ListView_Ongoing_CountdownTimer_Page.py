@@ -225,7 +225,6 @@ class ListView_Ongoing_CountdownTimer_Page(BasePage):
         )
         return result
 
-    @allure.step("Extract Departure Times (STD and ETD) for Flight Card")
     def parse_flight_departure_times(self, flight_card) -> dict:
         """
         Extracts STD and ETD from the departure time column dropdown content.
@@ -270,7 +269,6 @@ class ListView_Ongoing_CountdownTimer_Page(BasePage):
             "raw_text": text.strip().replace("\n", " | "),
         }
 
-    @allure.step("Extract Countdown Timer Display, Value, and Color")
     def get_countdown_timer_data(self, flight_card) -> dict:
         """
         Extracts countdown timer attributes:
@@ -308,7 +306,6 @@ class ListView_Ongoing_CountdownTimer_Page(BasePage):
             "is_green": is_green,
         }
 
-    @allure.step("Validate Countdown Timer Calculation & Color for Flight Card")
     def validate_countdown_timer_for_card(self, flight_card, local_dt: datetime) -> dict:
         """
         Validates countdown timer calculation and color against target departure time (ETD/STD) and local station time:
@@ -327,11 +324,29 @@ class ListView_Ongoing_CountdownTimer_Page(BasePage):
         times = self.parse_flight_departure_times(flight_card)
         timer = self.get_countdown_timer_data(flight_card)
 
+        std_str = times["std_dt"].strftime("%H:%M") if times["std_dt"] else "-"
+        etd_str = times["etd_dt"].strftime("%H:%M") if times["etd_dt"] else "-"
+
         target_dt = times["target_dt"]
+        target_str = target_dt.strftime("%H:%M") if target_dt else "-"
         if not target_dt:
             logger.warning(f"Flight '{flight_no}' has no valid STD/ETD: {times['raw_text']}")
             return {
                 "flight_number": flight_no,
+                "std": std_str,
+                "etd": etd_str,
+                "target_str": target_str,
+                "target_source": times["target_source"],
+                "target_dt": None,
+                "local_dt": local_dt,
+                "diff_minutes": 0,
+                "displayed_text": "",
+                "title_attr": "",
+                "expected_color": "UNKNOWN",
+                "actual_color": "UNKNOWN",
+                "color_css": "",
+                "value_matches": False,
+                "color_matches": False,
                 "passed": False,
                 "reason": "Missing STD/ETD timestamp",
                 "details": times,
@@ -353,6 +368,9 @@ class ListView_Ongoing_CountdownTimer_Page(BasePage):
             )
             return {
                 "flight_number": flight_no,
+                "std": std_str,
+                "etd": etd_str,
+                "target_str": target_str,
                 "target_source": times["target_source"],
                 "target_dt": target_dt,
                 "local_dt": local_dt,
@@ -389,6 +407,9 @@ class ListView_Ongoing_CountdownTimer_Page(BasePage):
 
         result = {
             "flight_number": flight_no,
+            "std": std_str,
+            "etd": etd_str,
+            "target_str": target_str,
             "target_source": times["target_source"],
             "target_dt": target_dt,
             "local_dt": local_dt,

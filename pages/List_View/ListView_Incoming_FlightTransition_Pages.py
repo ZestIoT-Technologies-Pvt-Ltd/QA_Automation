@@ -149,7 +149,7 @@ class ListView_Incoming_FlightTransition_Pages(BasePage):
         logger.info(f"Section '{section_name}' active with {total_cards} flight cards loaded")
         return total_cards
 
-    @allure.step("Extract Flight Number for Card")
+    #@allure.step("Extract Flight Number for Card")
     def get_flight_number(self, flight_card: Locator) -> str:
         """Extracts arrival and departure flight number from the flight card."""
         num = super().get_flight_number(flight_card)
@@ -174,7 +174,7 @@ class ListView_Incoming_FlightTransition_Pages(BasePage):
         # Must contain at least two digits and a colon (time pattern HH:MM)
         return bool(re.search(r"\d{1,2}:\d{2}", clean))
 
-    @allure.step("Parse Arrival Timings (STA, ETA, ONBL) for Flight Card")
+    @allure.step("Check Arrival Timings (STA, ETA, ONBL) for Flight Card")
     def parse_arrival_timings(self, flight_card: Locator) -> dict:
         """
         Hovers over the arrival time column to inspect the dropdown content.
@@ -232,7 +232,7 @@ class ListView_Incoming_FlightTransition_Pages(BasePage):
             "raw_text": raw_text.replace("\n", " | "),
         }
 
-    @allure.step("Parse Departure Timings (STD, ETD, OFBL) for Flight Card")
+    @allure.step("Check Departure Timings (STD, ETD, OFBL) for Flight Card")
     def parse_departure_timings(self, flight_card: Locator) -> dict:
         """
         Hovers over the departure time column to inspect the dropdown content.
@@ -290,7 +290,7 @@ class ListView_Incoming_FlightTransition_Pages(BasePage):
             "raw_text": raw_text.replace("\n", " | "),
         }
 
-    @allure.step("Validate Flight Block-Times for Section: '{expected_section}'")
+    @allure.step("Validate Flight Times for Section")
     def validate_flight_block_times(self, flight_card: Locator, expected_section: str) -> dict:
         """
         Validates whether the flight card satisfies the block-time rules for the target section:
