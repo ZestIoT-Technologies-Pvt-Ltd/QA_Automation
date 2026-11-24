@@ -119,7 +119,7 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
 
         logger.info("Successfully navigated to Flights List View dashboard")
 
-    @allure.step("Select Departed Section and Ensure Flights Loaded")
+    #@allure.step("Select Departed Section and Ensure Flights Loaded")
     def ensure_departed_section_loaded(self) -> int:
         """
         Switches to the 'Departed' flights section and verifies flight cards are loaded.
@@ -181,7 +181,7 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
         logger.info(f"Departed section active with {total_cards} flight cards loaded")
         return total_cards
 
-    @allure.step("Extract Flight Number for Card")
+    #@allure.step("Extract Flight Number for Card")
     def get_flight_number(self, flight_card: Locator) -> str:
         """
         Reads and returns the flight number from a flight card.
@@ -333,7 +333,7 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
         except Exception as e:
             logger.warning(f"Could not click neutral area on screen: {e}")
 
-    @allure.step("Parse and Validate Flight Milestones Sequence & Timestamps in Popup")
+    @allure.step("Check and Validate Flight Milestones Sequence & Timestamps in Popup")
     def parse_and_validate_milestones_popup(self) -> dict:
         """
         Inspects the open Flight Milestones popup window and verifies its content.
@@ -482,11 +482,11 @@ class ListView_Departed_FlightMilestones_Page(BasePage):
         milestones_data = self.parse_and_validate_milestones_popup()
 
         # Step 3: Close popup
-        self.close_flight_milestones_popup()
+        #self.close_flight_milestones_popup()
 
         # Step 4: Click anywhere on screen to dismiss any lingering menu tooltip
-        logger.info("Clicking anywhere on screen to dismiss menu tooltip")
-        self.dismiss_lingering_tooltip()
+        #logger.info("Clicking anywhere on screen to dismiss menu tooltip")
+        #self.dismiss_lingering_tooltip()
 
         # Assertions logic
         passed = True

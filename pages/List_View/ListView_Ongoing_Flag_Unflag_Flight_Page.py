@@ -45,8 +45,7 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
 
     # ==================== SECTION TABS (ONGOING & INCOMING ONLY) ====================
     SECTIONS = [
-        {"name": "Ongoing", "tab": "//div[contains(text(),'Ongoing')]"},
-        {"name": "Incoming", "tab": "//div[contains(text(),'Incoming')]"}
+        {"name": "Ongoing", "tab": "//div[contains(text(),'Ongoing')]"}
     ]
 
     # ==================== FLIGHT CARD LOCATORS ====================
@@ -210,7 +209,7 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
             raise
 
     # ==================== SECTION HANDLING ====================
-    @allure.step("Switch to {section_name} Section")
+    @allure.step("Switching to {section_name} Section")
     def switch_to_section(self, section_name: str, tab_locator: str):
         """Switches to the specified section tab (Ongoing or Incoming)."""
         logger.info(f"Switching to {section_name} section tab")
@@ -230,22 +229,22 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
 
     def flights_are_visible(self, section_name: str = "") -> bool:
         """Checks if flight cards are visible in the current section."""
-        with allure.step(f"Check if flights are visible in {section_name}"):
-            self.page.wait_for_timeout(2000)
-            no_flights = self.page.locator(self.NO_FLIGHTS_AVAILABLE)
-            if no_flights.count() > 0 and no_flights.first.is_visible():
-                logger.warning(f"No flights available in {section_name} section.")
-                return False
-
-            flights = self.page.locator(self.FLIGHT_ROW_CARDS)
-            try:
-                expect(flights.first).to_be_visible(timeout=15000)
-                count = flights.count()
-                logger.info(f"Flights are visible in {section_name}. Count = {count}")
-                return True
-            except Exception as e:
-                logger.warning(f"No flights loaded in {section_name}: {e}")
-                return False
+        # with allure.step(f"Check if flights are visible in {section_name}"):
+        self.page.wait_for_timeout(2000)
+        no_flights = self.page.locator(self.NO_FLIGHTS_AVAILABLE)
+        if no_flights.count() > 0 and no_flights.first.is_visible():
+            logger.warning(f"No flights available in {section_name} section.")
+            return False
+        
+        flights = self.page.locator(self.FLIGHT_ROW_CARDS)
+        try:
+            expect(flights.first).to_be_visible(timeout=15000)
+            count = flights.count()
+            logger.info(f"Flights are visible in {section_name}. Count = {count}")
+            return True
+        except Exception as e:
+            logger.warning(f"No flights loaded in {section_name}: {e}")
+            return False
 
     def count_of_flights(self) -> int:
         """Returns the total number of flight cards loaded in current view."""
@@ -268,7 +267,7 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
         return "Unknown Flight"
 
     # ==================== FLAGGING (BOOKMARK) ACTIONS ====================
-    @allure.step("Click Bookmark (Flag) icon on flight card")
+    @allure.step("Click Flag icon on flight card")
     def click_bookmark_icon(self, flight_card) -> bool:
         """Locates and clicks the bookmark (flag) icon on a given flight card."""
         try:
@@ -279,12 +278,12 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
             expect(bookmark).to_be_visible(timeout=10000)
             bookmark.scroll_into_view_if_needed()
             bookmark.click()
-            logger.info("Clicked Bookmark (Flag) icon on flight card")
+            logger.info("Clicked Flag icon on flight card")
             self.page.wait_for_timeout(1000)
             return True
         except Exception as e:
             self.attach_screenshot("bookmark_click_failed")
-            logger.error(f"Failed to click Bookmark icon: {e}")
+            logger.error(f"Failed to click Flag icon: {e}")
             raise
 
     @allure.step("Open Flag Reason dropdown")
@@ -434,7 +433,7 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
         flight_number = self.get_flight_number(flight_card)
         logger.info(f"--- Starting Flagging Process for Flight: {flight_number} ---")
 
-        with allure.step(f"Flagging Flight: {flight_number}"):
+        with allure.step(f"Flagging Flight"):
             # 1. Click Bookmark (Flag) icon
             self.click_bookmark_icon(flight_card)
 
@@ -468,7 +467,7 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
             }
 
     # ==================== FLAGGED STATE VALIDATION ====================
-    @allure.step("Check whether flight is flagged")
+    #@allure.step("Check whether flight is flagged")
     def is_flight_flagged(self, flight_card) -> bool:
         """
         Determines whether the given flight card is currently flagged.
@@ -530,7 +529,7 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
         return self.is_flight_flagged(flight_card) == expected_flagged
 
     # ==================== UNFLAGGING ACTIONS ====================
-    @allure.step("Unflag flight")
+    #@allure.step("Unflagging the Flagged flight")
     def unflag_flight(self, flight_card) -> bool:
         """
         Unflags a flagged flight:
@@ -544,7 +543,7 @@ class Listview_OngoingSection_Flag_Unflag_Flight(BasePage):
         flight_number = self.get_flight_number(flight_card)
         logger.info(f"--- Starting Unflagging Process for Flight: {flight_number} ---")
 
-        with allure.step(f"Unflagging Flight: {flight_number}"):
+        with allure.step(f"Unflagging the Flagged Flight"):
             # 1. Verify before unflagging
             if not self.is_flight_flagged(flight_card):
                 logger.warning(

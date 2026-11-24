@@ -189,7 +189,7 @@ class ListView_Incoming_Flag_Unflag_Flight_Page(BasePage):
             raise
 
     # ==================== SECTION HANDLING ====================
-    @allure.step("Ensure Incoming Section is selected")
+    #@allure.step("Ensure Incoming Section is selected")
     def ensure_incoming_section(self) -> int:
         """Switches to the Incoming section tab and waits for flight cards to load."""
         logger.info("Switching to Incoming section tab")
@@ -275,7 +275,7 @@ class ListView_Incoming_Flag_Unflag_Flight_Page(BasePage):
         return "Unknown Flight"
 
     # ==================== FLAGGING (BOOKMARK) ACTIONS ====================
-    @allure.step("Click Bookmark (Flag) icon on flight card")
+    @allure.step("Click Flag icon on flight card")
     def click_bookmark_icon(self, flight_card) -> bool:
         """Locates and clicks the bookmark (flag) icon on a given flight card."""
         try:
@@ -438,7 +438,7 @@ class ListView_Incoming_Flag_Unflag_Flight_Page(BasePage):
                 "available_flags": available_flags,
             }
 
-    @allure.step("Check whether flight is flagged")
+    #@allure.step("Check whether flight is flagged")
     def is_flight_flagged(self, flight_card) -> bool:
         """
         Determines whether the given flight card is currently flagged.
@@ -493,7 +493,7 @@ class ListView_Incoming_Flag_Unflag_Flight_Page(BasePage):
 
         return self.is_flight_flagged(flight_card) == expected_flagged
 
-    @allure.step("Unflag flight")
+    #@allure.step("Unflag flight")
     def unflag_flight(self, flight_card) -> bool:
         """
         Unflags a flagged flight:
@@ -505,7 +505,7 @@ class ListView_Incoming_Flag_Unflag_Flight_Page(BasePage):
         flight_number = self.get_flight_number(flight_card)
         logger.info(f"--- Starting Unflagging Process for Incoming Flight: {flight_number} ---")
 
-        with allure.step(f"Unflagging Flight: {flight_number}"):
+        with allure.step(f"Unflagging the Flagged Flight"):
             if not self.is_flight_flagged(flight_card):
                 logger.warning(
                     f"Flight '{flight_number}' is already UNFLAGGED."

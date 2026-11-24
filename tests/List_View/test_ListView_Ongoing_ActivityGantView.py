@@ -1,7 +1,7 @@
 # Author : Tilak Badsheshi
 # Created Date : 2026-11-16
 # Modified By : Tilak Badsheshi
-# Modified Date : 2026-11-16
+# Modified Date : 2026-11-24
 
 import pytest
 import allure
@@ -16,66 +16,121 @@ logger = get_logger(__name__)
 @pytest.mark.list_view
 def test_listview_ongoing_activity_gant_view(page):
     """
-    ==============  INTRODUCTION ================
-    Test Scenario: Verify whether the Gantt View represents planned and actual activities, dependencies, progress and delays accurately.
+    ==============  TEST OVERVIEW ================
+    Test Scenario: Verify that the Gantt View displays planned and actual activities, progress, and delays accurately.
 
     Steps:
-    1. Prerequisite: Authenticate / Login to application using common login method.
-    2. Navigate to Flights List View dashboard.
-    3. Ensure Ongoing Section is active and flight cards are loaded.
-    4. Locate and enable the Gantt View toggle in the List View toolbar.
-    5. Select a flight card to expand the embedded Gantt chart view.
-    6. Discover all available Activity Groups (e.g. Aircraft Recipients, Technical Equipment, Arrival Events, Departure Events, Departure Readiness).
-    7. Sequentially navigate through all Activity Groups:
-       a. Verify that activities are correctly displayed for each activity group.
-       b. Verify planned time (Start, End, Duration) is displayed on planned activity bars.
-       c. Check whether actual time (Start, End, Delay) is displayed on actual activity bars.
-       d. Verify progress, on-time (Green) and delay (Red) representations.
-    8. Assert validation results across all activity groups.
+    1. Prerequisite: Sign into application using common login method.
+    2. Step 1: Navigate to Flights List View dashboard.
+    3. Step 2: Ensure Ongoing section is active and flights are loaded.
+    4. Step 3: Enable the Gantt View toggle button.
+    5. Step 4: Expand flight card to reveal the embedded Gantt chart.
+    6. Step 5: Validate all activity groups and check planned vs actual timing bars.
     """
     logger.info("Starting List View Ongoing Section Gantt View Activities Validation Test")
 
     # Prerequisite: Sign into application using common login method
-    login_to_application(page)
+    with allure.step("Prerequisite: Sign into application using common login method"):
+        login_to_application(page)
 
     gantt_page = ListView_Ongoing_ActivityGantView_Page(page, None)
 
-    # Step 1: Navigate to Flights List View Dashboard
+    # -------------------------------------------------------------------------
+    # Step 1: Open the Flights List View screen
+    # -------------------------------------------------------------------------
     with allure.step("Step 1: Navigate to Flights List View Dashboard"):
-        gantt_page.navigate_to_list_view_page()
+        with allure.step("1.1: Open main navigation menu and click 'Flights' option"):
+            gantt_page.navigate_to_list_view_page()
+        allure.attach(
+            "Successfully opened Flights List View dashboard.",
+            name="Navigation_Status",
+            attachment_type=allure.attachment_type.TEXT,
+        )
 
-    # Step 2: Ensure Ongoing Section is active and flights are loaded
+    # -------------------------------------------------------------------------
+    # Step 2: Make sure Ongoing section is loaded
+    # -------------------------------------------------------------------------
     with allure.step("Step 2: Ensure Ongoing Section is Active and Flights are Loaded"):
         total_flights = gantt_page.ensure_ongoing_section_loaded()
-        assert total_flights > 0, "No flight cards loaded in Ongoing section."
+        with allure.step(f"2.1: Check Ongoing tab is active with flight cards displayed"):
+            assert total_flights > 0, "No flight cards loaded in Ongoing section."
+        allure.attach(
+            f"Active Section: Ongoing\nTotal Flight Cards Loaded: {total_flights}",
+            name="Ongoing_Section_Status",
+            attachment_type=allure.attachment_type.TEXT,
+        )
         logger.info(f"Ongoing section active with {total_flights} flight cards")
 
-    # Step 3: Enable Gantt View toggle in List View
+    # -------------------------------------------------------------------------
+    # Step 3: Turn on the Gantt View switch
+    # -------------------------------------------------------------------------
     with allure.step("Step 3: Enable Gantt View Toggle in List View"):
-        toggle_enabled = gantt_page.enable_gantt_view_toggle()
-        assert toggle_enabled, "Failed to enable Gantt View toggle."
+        with allure.step("3.1: Locate Gantt View switch and turn toggle ON"):
+            toggle_enabled = gantt_page.enable_gantt_view_toggle()
+        with allure.step("3.2: Verify that Gantt View toggle state is active"):
+            assert toggle_enabled, "Failed to enable Gantt View toggle."
+        allure.attach(
+            "Gantt View toggle switch is turned ON.",
+            name="Gantt_Toggle_Status",
+            attachment_type=allure.attachment_type.TEXT,
+        )
 
-    # Step 4: Select / Expand Flight Card to reveal Gantt Chart
+    # -------------------------------------------------------------------------
+    # Step 4: Expand a flight card to see the Gantt chart
+    # -------------------------------------------------------------------------
     with allure.step("Step 4: Select Flight Card to Reveal Gantt Chart"):
-        flight_number = gantt_page.expand_flight_card_gantt(card_index=0)
+        with allure.step("4.1: Click flight card and open Gantt view"):
+            flight_number = gantt_page.expand_flight_card_gantt(card_index=0)
+        with allure.step(f"4.2: Verify flight card is expanded for Flight"):
+            assert flight_number, "Failed to retrieve flight number from expanded card."
+        allure.attach(
+            f"Expanded Flight: {flight_number}\nStatus: Gantt chart container expanded.",
+            name=f"{flight_number}_Expanded_Card",
+            attachment_type=allure.attachment_type.TEXT,
+        )
         logger.info(f"Gantt View chart expanded for flight: '{flight_number}'")
 
-    # Step 5: Validate All Activity Groups and Planned/Actual Activities
-    with allure.step(f"Step 5: Validate Planned & Actual Gantt Activities for Flight '{flight_number}'"):
-        validation_summary = gantt_page.validate_gantt_activities_all_groups()
+    # -------------------------------------------------------------------------
+    # Step 5: Check all activity groups and their planned vs actual times
+    # -------------------------------------------------------------------------
+    with allure.step(f"Step 5: Validate Planned & Actual Gantt Activities for Flight"):
+        with allure.step("5.1: Collect and inspect all available activity groups and activity items"):
+            validation_summary = gantt_page.validate_gantt_activities_all_groups()
 
-        # Assertions
-        assert validation_summary["total_groups"] > 0, "No activity groups were found in Gantt View."
-        assert validation_summary["total_activities"] > 0, "No activities were found across any activity group."
-        assert validation_summary["total_with_planned"] > 0, "No activities had planned timing bars rendered."
+        total_groups = validation_summary["total_groups"]
+        total_activities = validation_summary["total_activities"]
+        total_planned = validation_summary["total_with_planned"]
+        total_actual = validation_summary["total_with_actual"]
+        group_names = validation_summary["group_names"]
+
+        with allure.step(f"5.2: Verify activity groups were found"):
+            assert total_groups > 0, "No activity groups were found in Gantt View."
+
+        with allure.step(f"5.3: Verify activities exist across groups"):
+            assert total_activities > 0, "No activities were found across any activity group."
+
+        with allure.step(f"5.4: Verify planned timing bars are displayed for activities"):
+            assert total_planned > 0, "No activities had planned timing bars rendered."
+
+        allure.attach(
+            f"Target Flight: {flight_number}\n"
+            f"Total Activity Groups Found: {total_groups}\n"
+            f"Group Names: {', '.join(group_names)}\n"
+            f"Total Activities Inspected: {total_activities}\n"
+            f"Activities with Planned Times: {total_planned}\n"
+            f"Activities with Actual Times: {total_actual}\n"
+            f"Status: Planned and actual activity bars validated successfully.",
+            name="Gantt_Validation_Summary",
+            attachment_type=allure.attachment_type.TEXT,
+        )
 
         logger.info("==================== GANTT VIEW VALIDATION SUMMARY ====================")
         logger.info(f"Target Flight: {flight_number}")
-        logger.info(f"Total Activity Groups Verified: {validation_summary['total_groups']}")
-        logger.info(f"Group Names: {validation_summary['group_names']}")
-        logger.info(f"Total Activities Inspected: {validation_summary['total_activities']}")
-        logger.info(f"Activities with Planned Times: {validation_summary['total_with_planned']}")
-        logger.info(f"Activities with Actual Times: {validation_summary['total_with_actual']}")
+        logger.info(f"Total Activity Groups Verified: {total_groups}")
+        logger.info(f"Group Names: {group_names}")
+        logger.info(f"Total Activities Inspected: {total_activities}")
+        logger.info(f"Activities with Planned Times: {total_planned}")
+        logger.info(f"Activities with Actual Times: {total_actual}")
 
         # Per group details
         for grp_name, acts in validation_summary["details"].items():

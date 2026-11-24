@@ -28,6 +28,13 @@ class Screenshot:
 
 
 @dataclass
+class Attachment:
+    name: str
+    content: str
+    mime: str = "text/plain"
+
+
+@dataclass
 class StepRecord:
     name: str
     depth: int
@@ -38,6 +45,7 @@ class StepRecord:
     level: str = "INFO"
     logger: str = ""
     screenshots: list[Screenshot] = field(default_factory=list)
+    attachments: list[Attachment] = field(default_factory=list)
 
 
 @dataclass
@@ -67,6 +75,7 @@ class TestRecord:
     steps: list[StepRecord] = field(default_factory=list)
     logs: list[LogRecord] = field(default_factory=list)
     screenshots: list[Screenshot] = field(default_factory=list)
+    attachments: list[Attachment] = field(default_factory=list)
 
     @property
     def group(self) -> str:
@@ -156,6 +165,16 @@ def attach_screenshot(data: bytes, name: str, caption: str = "", mime: str = "im
             _active_steps[-1].screenshots.append(shot)
 
 
+def attach_text(content: str, name: str = "Attachment", mime: str = "text/plain") -> None:
+    """Attach text/data to the current test record and active step."""
+    if _current is None:
+        return
+    att = Attachment(name=name, content=str(content), mime=mime)
+    _current.attachments.append(att)
+    if _active_steps:
+        _active_steps[-1].attachments.append(att)
+
+
 class LogCapture(logging.Handler):
     """Copies every log record emitted during a test into its report record."""
 
@@ -186,22 +205,24 @@ class LogCapture(logging.Handler):
 # ---------------------------------------------------------------------------
 try:
     import allure
+    import inspect
     _orig_allure_step = getattr(allure, "step", None)
 
     class _AllureStepBridge:
-        def __init__(self, title):
-            self.title = str(title)
+        def __init__(self, title=""):
+            self.title = title
             self._allure_ctx = None
             self._rc_ctx = None
 
         def __enter__(self):
+            title_str = str(self.title)
             if _orig_allure_step is not None:
                 try:
-                    self._allure_ctx = _orig_allure_step(self.title)
+                    self._allure_ctx = _orig_allure_step(title_str)
                     self._allure_ctx.__enter__()
                 except Exception:
                     pass
-            self._rc_ctx = step(self.title)
+            self._rc_ctx = step(title_str)
             return self._rc_ctx.__enter__()
 
         def __exit__(self, exc_type, exc_val, exc_tb):
@@ -218,16 +239,49 @@ try:
             return False
 
         def __call__(self, fn):
+            # If used as bare @allure.step decorator on a function without title arguments
+            if callable(self.title) and fn is None:
+                actual_fn = self.title
+                title_template = actual_fn.__name__.replace("_", " ").title()
+                sig = inspect.signature(actual_fn)
+
+                @functools.wraps(actual_fn)
+                def bare_wrapper(*args, **kwargs):
+                    with _AllureStepBridge(title_template):
+                        return actual_fn(*args, **kwargs)
+                return bare_wrapper
+
+            sig = inspect.signature(fn)
+
             @functools.wraps(fn)
             def wrapper(*args, **kwargs):
-                with self:
+                formatted_title = str(self.title)
+                try:
+                    bound = sig.bind_partial(*args, **kwargs)
+                    bound.apply_defaults()
+                    if "{" in formatted_title and "}" in formatted_title:
+                        # Convert arguments to clean readable values for formatting
+                        safe_args = {}
+                        for k, v in bound.arguments.items():
+                            safe_args[k] = str(v).strip()
+                        formatted_title = formatted_title.format(**safe_args)
+                except Exception:
+                    pass
+                with _AllureStepBridge(formatted_title):
                     return fn(*args, **kwargs)
             return wrapper
 
-    allure.step = _AllureStepBridge
+    def _allure_step_wrapper(title=None):
+        if callable(title):
+            # Used as @allure.step bare
+            bridge = _AllureStepBridge(title)
+            return bridge(None)
+        return _AllureStepBridge(title or "")
+
+    allure.step = _allure_step_wrapper
 
     # ---------------------------------------------------------------------------
-    # Allure attach bridge: automatically route allure.attach screenshots to report_context
+    # Allure attach bridge: automatically route allure.attach screenshots & text to report_context
     # ---------------------------------------------------------------------------
     _orig_allure_attach = getattr(allure, "attach", None)
 
@@ -248,6 +302,9 @@ try:
             if is_image and isinstance(body, bytes):
                 mime = "image/jpeg" if ("jpg" in att_type_str or "jpeg" in att_type_str or body.startswith(b"\xff\xd8\xff")) else "image/png"
                 attach_screenshot(body, name=name or "Screenshot", caption=name or "Screenshot", mime=mime)
+            else:
+                text_content = body if isinstance(body, str) else (body.decode("utf-8", errors="replace") if isinstance(body, bytes) else str(body))
+                attach_text(text_content, name=name or "Attachment", mime="text/plain")
         except Exception:
             pass
 
@@ -262,10 +319,14 @@ try:
                     pass
             try:
                 p = Path(source)
-                if p.is_file() and p.suffix.lower() in (".png", ".jpg", ".jpeg"):
-                    data = p.read_bytes()
-                    mime = "image/jpeg" if p.suffix.lower() in (".jpg", ".jpeg") else "image/png"
-                    attach_screenshot(data, name=name or p.name, caption=name or p.name, mime=mime)
+                if p.is_file():
+                    if p.suffix.lower() in (".png", ".jpg", ".jpeg"):
+                        data = p.read_bytes()
+                        mime = "image/jpeg" if p.suffix.lower() in (".jpg", ".jpeg") else "image/png"
+                        attach_screenshot(data, name=name or p.name, caption=name or p.name, mime=mime)
+                    else:
+                        text_content = p.read_text(encoding="utf-8", errors="replace")
+                        attach_text(text_content, name=name or p.name, mime="text/plain")
             except Exception:
                 pass
 
