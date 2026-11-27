@@ -3,7 +3,7 @@
 
 """
 ==============  INTRODUCTION ================
-Test Module: test_ListView_DepartedSection_DelayCode
+Test Module: test_ListView_Departed_DelayCode
 Description: Test script to validate Delay Codes in Departed Section of Flights List View.
              Checks departed flight cards for green delay code icons. If green, opens the
              popup, extracts 'Codes Entered' and 'Total Delay Mins', and verifies the count
@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-def test_ListView_DepartedSection_DelayCode(page):
+def test_ListView_Departed_DelayCode(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Validation of Delay Codes in Departed Section.
