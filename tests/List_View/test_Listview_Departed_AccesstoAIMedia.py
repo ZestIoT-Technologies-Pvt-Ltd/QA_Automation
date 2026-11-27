@@ -1,72 +1,57 @@
-# Author : Tilak Badsheshi
-# Created Date : 2026-10-26
-# Modified By : Tilak Badsheshi
-# Modified Date : 2026-11-24
+# Author : Gowthami Ankem
+# Created Date : 2026-11-20
+
+"""
+==============  INTRODUCTION ================
+Test Module: test_ListView_Departed_AccesstoAIMedia
+Description: Test script to validate AI Captured Media in Departed Section of Flights List View.
+             Inspects departed flights, verifies turnaround progress indicators, expands
+             activity panels (Arrival, Departure, Additional), and verifies that AI-captured media
+             (images/videos) can be opened and displayed in the media player popup.
+"""
 
 import pytest
 import allure
-from pages.List_View.ListView_Departed_AccesstoAIMedia import Listview_DepartedSection_AccesstoAIMedia
-from utils.common_methods import login_to_application
+from pages.List_View.ListView_Departed_AccesstoAIMedia_Page import (
+    ListView_Departed_AccesstoAIMedia_Page
+)
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-@pytest.mark.list_view
-def test_Listview_DepartedSection_AccesstoAIMedia(page):
+def test_ListView_Departed_AccesstoAIMedia(page):
     """
-    ==============  TEST OVERVIEW ================
-    Test Scenario: Verify access to AI Media and video playback for departed flights in the Departed section.
+    ==============  INTRODUCTION ================
+    Test Scenario: Validation of AI Captured Media for Departed Flights.
 
     Steps:
-    1. Prerequisite: Sign into application using common login method.
-    2. Step 1: Navigate to Flights List View dashboard.
-    3. Step 2: Switch to Departed flights section tab.
-    4. Step 3: Expand turnaround and split flight activity dropdowns and open AI Media popup player.
+    1. Authenticate / Login to application (managed as prerequisite via page fixture).
+    2. Navigate to Flights List View dashboard.
+    3. Select Departed Section tab.
+    4. Iterate through Departed flights:
+       a) Click flight card to open detailed operation view.
+       b) Identify flight structure (Turnaround vs Split flight).
+       c) Check activity progress indicators.
+       d) If Split flight: Expand Arrival, Departure, and Additional activity accordion panels.
+       e) For each AI media item (.image-class):
+          - Click the media item to open the video/media player popup (#player).
+          - Capture verification screenshot of the player.
+          - Close the player popup.
+       f) If Turnaround flight: Verify activity rows and open/validate AI media player.
     """
-    logger.info("Starting List View Departed Section Test")
+    logger.info("Starting Departed Section Access to AI Media Validation Test")
 
-    # Prerequisite: Sign into application using common login method
-    with allure.step("Prerequisite: Sign into application using common login method"):
-        login_to_application(page)
+    ai_media_page = ListView_Departed_AccesstoAIMedia_Page(page)
 
-    departed_page = Listview_DepartedSection_AccesstoAIMedia(page)
-
-    # -------------------------------------------------------------------------
-    # Step 1: Open the Flights List View screen
-    # -------------------------------------------------------------------------
     with allure.step("Step 1: Navigate to Flights List View Dashboard"):
-        with allure.step("1.1: Open main navigation menu and click 'Flights' option"):
-            departed_page.navigate_to_list_view_page()
-        allure.attach(
-            "Successfully opened Flights List View dashboard.",
-            name="Navigation_Status",
-            attachment_type=allure.attachment_type.TEXT,
-        )
+        ai_media_page.navigate_to_list_view_page()
 
-    # -------------------------------------------------------------------------
-    # Step 2: Switch to Departed section tab
-    # -------------------------------------------------------------------------
-    with allure.step("Step 2: Select Departed Flights Section"):
-        with allure.step("2.1: Click 'Departed' section tab and check visible flights"):
-            departed_page.select_departed_flights()
-        allure.attach(
-            "Switched to Departed Flights section successfully.",
-            name="Departed_Section_Status",
-            attachment_type=allure.attachment_type.TEXT,
-        )
+    with allure.step("Step 2: Select Departed Section"):
+        ai_media_page.select_departed_flights()
 
-    # -------------------------------------------------------------------------
-    # Step 3: Validate AI Media across departed flights
-    # -------------------------------------------------------------------------
-    with allure.step("Step 3: Validate All Departed Flights and AI Media"):
-        with allure.step("3.1: Expand turnaround and split flight activity dropdowns and open AI media player"):
-            departed_page.check_all_departed_flights()
-        allure.attach(
-            "Validated turnaround flight activities and AI media player popups across departed flights.",
-            name="Departed_AIMedia_Summary",
-            attachment_type=allure.attachment_type.TEXT,
-        )
+    with allure.step("Step 3: Validate AI Captured Media for Departed Flights"):
+        ai_media_page.validate_departed_ai_media()
 
-    logger.info("List View Departed Section Test completed successfully")
+    logger.info("Departed Section Access to AI Media Validation Test completed successfully")
