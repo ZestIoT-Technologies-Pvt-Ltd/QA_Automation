@@ -3,7 +3,7 @@
 
 """
 ==============  INTRODUCTION ================
-Test Module: test_ListView_DepartedSection_AccesstoAIMedia
+Test Module: test_ListView_Departed_AccesstoAIMedia
 Description: Test script to validate AI Captured Media in Departed Section of Flights List View.
              Inspects departed flights, verifies turnaround progress indicators, expands
              activity panels (Arrival, Departure, Additional), and verifies that AI-captured media
@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-def test_ListView_DepartedSection_AccesstoAIMedia(page):
+def test_ListView_Departed_AccesstoAIMedia(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Validation of AI Captured Media for Departed Flights.

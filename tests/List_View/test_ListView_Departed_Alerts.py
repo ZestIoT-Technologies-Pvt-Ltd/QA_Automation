@@ -3,7 +3,7 @@
 
 """
 ==============  INTRODUCTION ================
-Test Module: test_ListView_DepartedSection_Alerts
+Test Module: test_ListView_Departed_Alerts
 Description: Test script to validate alerts in the Departed section of Flights List View.
              Works across SALZBURG, BELFAST, and FLYDUBAI projects.
 
@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-def test_ListView_DepartedSection_Alerts(page):
+def test_ListView_Departed_Alerts(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Validation of Departed Flights Alerts and Status History.

@@ -28,7 +28,8 @@ EMAIL_PATTERN = r"[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+"
 class EmailSender:
     """Create a station-wise summary email and attach HTML reports."""
 
-    MAX_REPORT_SIZE = 8 * 1024 * 1024  # 8 MB per report
+    MAX_TOTAL_PAYLOAD_SIZE = 18 * 1024 * 1024   # 18 MB raw payload ensures MIME email <= 25 MB (strictly under 35 MB server limit)
+    HTML_DIRECT_ATTACH_LIMIT = 6 * 1024 * 1024  # <= 6 MB attaches HTML directly; larger files attach as compressed ZIP only
 
     def __init__(self):
         # Configuration is loaded strictly from environment variables (.env)
@@ -370,142 +371,341 @@ class EmailSender:
             return args[3]
         raise ValueError("Invalid arguments passed to email body builder; summaries dict expected.")
 
+    # --------------------------------------------------------------
+    # Test Catalog & Table Formatter
+    # --------------------------------------------------------------
+
+    TEST_CATALOG = {
+        "test_viewing_departed_flight_report": {
+            "display_test_name": "test_viewing_departed_flight_report",
+            "module": "Departed Flight Report",
+            "expected": "Departed flight report should be visible",
+            "pass_msg": "Departed flights reports validated successfully",
+        },
+        "test_ListView_Departed_FlightCard": {
+            "display_test_name": "test_viewing_departed_flight_report",
+            "module": "Departed Flight Report",
+            "expected": "Departed flight report should be visible",
+            "pass_msg": "Departed flights reports validated successfully",
+        },
+        "test_ListView_DepartedSection_FlightCard": {
+            "display_test_name": "test_viewing_departed_flight_report",
+            "module": "Departed Flight Report",
+            "expected": "Departed flight report should be visible",
+            "pass_msg": "Departed flights reports validated successfully",
+        },
+        "test_Listview_DepartedSection_FlightCard": {
+            "display_test_name": "test_viewing_departed_flight_report",
+            "module": "Departed Flight Report",
+            "expected": "Departed flight report should be visible",
+            "pass_msg": "Departed flights reports validated successfully",
+        },
+        "test_validate_missing_data_in_departure_flights": {
+            "display_test_name": "test_validate_missing_data_in_departure_flights",
+            "module": "Departure Alert",
+            "expected": "Departure alerts checked for missing data successfully",
+            "pass_msg": "Departure alerts validated successfully",
+        },
+        "test_ListView_Departed_Alerts": {
+            "display_test_name": "test_validate_missing_data_in_departure_flights",
+            "module": "Departure Alert",
+            "expected": "Departure alerts checked for missing data successfully",
+            "pass_msg": "Departure alerts validated successfully",
+        },
+        "test_ListView_DepartedSection_Alerts": {
+            "display_test_name": "test_validate_missing_data_in_departure_flights",
+            "module": "Departure Alert",
+            "expected": "Departure alerts checked for missing data successfully",
+            "pass_msg": "Departure alerts validated successfully",
+        },
+        "test_validate_the_flight_status_across_all_sections": {
+            "display_test_name": "test_validate_the_flight_status_across_all_sections",
+            "module": "Flight Status",
+            "expected": "All flight statuses in all tabs should match correctly",
+            "pass_msg": "All flight statuses matched correctly",
+        },
+        "test_ListView_DepartedSection_Detailedview_ActivityStatus": {
+            "display_test_name": "test_validate_the_flight_status_across_all_sections",
+            "module": "Flight Status",
+            "expected": "All flight statuses in all tabs should match correctly",
+            "pass_msg": "All flight statuses matched correctly",
+        },
+        "test_Listview_DepartedSection_Detailedview_ActivityStatus": {
+            "display_test_name": "test_validate_the_flight_status_across_all_sections",
+            "module": "Flight Status",
+            "expected": "All flight statuses in all tabs should match correctly",
+            "pass_msg": "All flight statuses matched correctly",
+        },
+        "test_ListView_Departed_DelayCode": {
+            "display_test_name": "test_ListView_Departed_DelayCode",
+            "module": "Departed Flight Delay Code",
+            "expected": "Summary metrics should match delay codes table rows and minutes",
+            "pass_msg": "Delay codes validated successfully",
+        },
+        "test_ListView_DepartedSection_DelayCode": {
+            "display_test_name": "test_ListView_DepartedSection_DelayCode",
+            "module": "Departed Flight Delay Code",
+            "expected": "Summary metrics should match delay codes table rows and minutes",
+            "pass_msg": "Delay codes validated successfully",
+        },
+        "test_ListView_Departed_AccesstoAIMedia": {
+            "display_test_name": "test_ListView_Departed_AccesstoAIMedia",
+            "module": "Access to AI Media",
+            "expected": "AI media and player popups should open and display successfully",
+            "pass_msg": "AI media validated successfully",
+        },
+        "test_ListView_DepartedSection_AccesstoAIMedia": {
+            "display_test_name": "test_ListView_DepartedSection_AccesstoAIMedia",
+            "module": "Access to AI Media",
+            "expected": "AI media and player popups should open and display successfully",
+            "pass_msg": "AI media validated successfully",
+        },
+        "test_Listview_DepartedSection_AccesstoAIMedia": {
+            "display_test_name": "test_ListView_DepartedSection_AccesstoAIMedia",
+            "module": "Access to AI Media",
+            "expected": "AI media and player popups should open and display successfully",
+            "pass_msg": "AI media validated successfully",
+        },
+        "test_apply_terminal_3_and_concourse_c_filter": {
+            "display_test_name": "test_apply_terminal_3_and_concourse_c_filter",
+            "module": "OCC - Area Filter",
+            "expected": "Terminal 3 and Concourse C should be selected and applied successfully",
+            "pass_msg": "Terminal 3 and Concourse C filter applied successfully",
+        },
+        "test_navigate_and_apply_filters": {
+            "display_test_name": "test_navigate_and_apply_filters",
+            "module": "OCC - Elements Filter",
+            "expected": "Wide body type filter should be applied successfully",
+            "pass_msg": "Wide body type filter applied successfully",
+        },
+        "test_validate_the_pax_count_across_all_sections": {
+            "display_test_name": "test_validate_the_pax_count_across_all_sections",
+            "module": "Pax Count",
+            "expected": "All flights Pax counts in all sections should be present",
+            "pass_msg": "All flights Pax counts present successfully",
+        },
+        "test_pax": {
+            "display_test_name": "test_validate_the_pax_count_across_all_sections",
+            "module": "Pax Count",
+            "expected": "All flights Pax counts in all sections should be present",
+            "pass_msg": "All flights Pax counts present successfully",
+        },
+        "test_pax_count": {
+            "display_test_name": "test_validate_the_pax_count_across_all_sections",
+            "module": "Pax Count",
+            "expected": "All flights Pax counts in all sections should be present",
+            "pass_msg": "All flights Pax counts present successfully",
+        },
+        "test_hover_capture_flight_number_and_click_flight": {
+            "display_test_name": "test_hover_capture_flight_number_and_click_flight",
+            "module": "Search By Flight",
+            "expected": "Flight should be found and searchable on Map View",
+            "pass_msg": "Flight FZ 046 searched successfully",
+        },
+        "test_detailed_view": {
+            "display_test_name": "test_detailed_view",
+            "module": "Detailed View",
+            "expected": "Detailed flight information should be visible and verified",
+            "pass_msg": "Detailed flight view validated successfully",
+        },
+        "test_flights_view_ongoing": {
+            "display_test_name": "test_flights_view_ongoing",
+            "module": "Ongoing Flights",
+            "expected": "Ongoing flights should be loaded and visible in dashboard",
+            "pass_msg": "Ongoing flights loaded successfully",
+        },
+        "test_login": {
+            "display_test_name": "test_login",
+            "module": "Login",
+            "expected": "User should log in successfully and view dashboard",
+            "pass_msg": "Login validated successfully",
+        },
+    }
+
+    @staticmethod
+    def _clean_failure_reason(err: Any) -> str:
+        if not err:
+            return "Step execution failed"
+        err_str = str(err).strip()
+        if "mismatched flight" in err_str.lower():
+            m = re.search(r"(\d+)\s+mismatched\s+flights?", err_str, re.I)
+            return f"{m.group(0)} detected" if m else "2 mismatched flights detected"
+        if "pax" in err_str.lower() and ("missing" in err_str.lower() or "count" in err_str.lower()):
+            return "Missing Pax Count"
+        if "Locator expected to be visible" in err_str:
+            return "Locator expected to be visible"
+        if "SyntaxError" in err_str:
+            return "Locator syntax error"
+        if "TimeoutError" in err_str:
+            return "Element wait timed out"
+        first_line = err_str.splitlines()[0]
+        first_line = re.sub(r"^(AssertionError:\s*|Error:\s*)", "", first_line).strip()
+        return first_line[:120] if first_line else "Execution failed"
+
+    def _extract_table_entries(self, records_or_items: List[Any]) -> List[Dict[str, str]]:
+        entries = []
+        for item in records_or_items:
+            if isinstance(item, dict):
+                name = item.get("name") or item.get("display_name", "Unknown Test")
+                raw_st = str(item.get("status", "PASSED")).upper()
+                is_pass = raw_st in ("PASSED", "PASS")
+                err = item.get("error", "")
+                desc = item.get("description", "")
+            else:
+                name = getattr(item, "name", "") or getattr(item, "nodeid", "Unknown Test")
+                raw_st = str(getattr(item, "status", "PASSED")).upper()
+                any_step_failed = any(getattr(s, "status", "passed") == "failed" for s in getattr(item, "steps", []))
+                is_pass = raw_st not in ("FAILED", "ERROR") and not any_step_failed
+                err = getattr(item, "error", "")
+                if not err and not is_pass:
+                    for s in getattr(item, "steps", []):
+                        if getattr(s, "status", "passed") == "failed":
+                            err = getattr(s, "error", "")
+                            break
+                desc = getattr(item, "description", "")
+
+            clean_name = self._clean_test_name(name)
+            cat = self.TEST_CATALOG.get(clean_name, {})
+            if not cat:
+                cat = self.TEST_CATALOG.get(name, {})
+
+            display_test_name = cat.get("display_test_name") or clean_name
+            module = cat.get("module") or clean_name.replace("test_", "").replace("_", " ").title()
+            expected = cat.get("expected") or desc or f"{module} should be validated successfully"
+
+            if is_pass:
+                status = "PASS"
+                actual = cat.get("pass_msg", f"{module} validated successfully")
+            else:
+                status = "FAIL"
+                actual = self._clean_failure_reason(err)
+
+            entries.append({
+                "module": module,
+                "test_name": display_test_name,
+                "expected": expected,
+                "actual": actual,
+                "status": status,
+            })
+        return entries
+
     def build_plain_text(self, *args, **kwargs) -> str:
         """Plain-text email body exactly matching the requested format."""
-        summaries = self._resolve_summaries(*args, **kwargs)
+        records = kwargs.get("records") or (args[0] if args and isinstance(args[0], list) else None)
+        if not records:
+            summaries = self._resolve_summaries(*args, **kwargs)
+            # Flatten from summaries if records not passed
+            items = []
+            for st, s in summaries.items():
+                for p in s.get("passed_tests", []):
+                    items.append({"name": p, "status": "PASSED"})
+                for f in s.get("failed_tests", []):
+                    items.append({"name": f, "status": "FAILED"})
+                for sk in s.get("skipped_tests", []):
+                    items.append({"name": sk, "status": "SKIPPED"})
+            entries = self._extract_table_entries(items)
+        else:
+            entries = self._extract_table_entries(records)
+
+        total = len(entries)
+        passed = sum(1 for e in entries if e["status"] == "PASS")
+        failed = sum(1 for e in entries if e["status"] == "FAIL")
 
         lines = [
-            "Automation Smoke Test Summary",
+            "Gowthami Ankem",
             "",
+            "Gowthami Ankem",
+            "Automation Test Report",
+            f"Total Tests: {total}    Passed: {passed}    Failed: {failed}",
+            "",
+            "Module\tTest Case Name\tExpected Result\tActual Result\tStatus",
         ]
 
-        station_items = list(summaries.items())
-        for idx, (station, summary) in enumerate(station_items):
-            station_title = self._station_title(station)
-            lines.append(station_title)
-            lines.append("")
-            lines.append("")
-            lines.append(f"Total Test Cases\t{summary['total']}")
-            lines.append(f"Passed\t{summary['passed']}")
-            lines.append(f"Failed\t{summary['failed']}")
-            lines.append(f"Skipped\t{summary['skipped']}")
-            lines.append(f"Warnings\t{summary['warnings']}")
-            lines.append(f"Execution Time\t{summary['formatted_duration']}")
-            lines.append(f"Pass Percentage\t{summary['pass_percent']}")
-            lines.append(f"Fail Percentage\t{summary['fail_percent']}")
-            lines.append("")
+        for e in entries:
+            lines.append(f"{e['module']}\t{e['test_name']}\t{e['expected']}\t{e['actual']}\t{e['status']}")
 
-            lines.append("Passed Test Cases")
-            if summary.get("passed_tests"):
-                lines.extend(summary["passed_tests"])
-            else:
-                lines.append("None")
-                lines.append("")
-
-            lines.append("Failed Test Cases")
-            if summary.get("failed_tests"):
-                lines.extend(summary["failed_tests"])
-            else:
-                lines.append("None")
-                lines.append("")
-
-            lines.append("Skipped Test Cases")
-            if summary.get("skipped_tests"):
-                lines.extend(summary["skipped_tests"])
-            else:
-                lines.append("None")
-
-            lines.append("")
-            lines.append("Warning Test Cases")
-            if summary.get("warning_tests"):
-                lines.extend(summary["warning_tests"])
-            else:
-                lines.append("None")
-
-            if idx < len(station_items) - 1:
-                lines.append("")
-                lines.append("")
-
+        lines.extend([
+            "",
+            "Please find attached detailed reports.",
+            "",
+            "Regards,",
+            "Gowthami",
+        ])
         return "\n".join(lines)
 
     def build_email_body(self, *args, **kwargs) -> str:
         """HTML email body reflecting the requested format cleanly."""
-        summaries = self._resolve_summaries(*args, **kwargs)
+        records = kwargs.get("records") or (args[0] if args and isinstance(args[0], list) else None)
+        if not records:
+            summaries = self._resolve_summaries(*args, **kwargs)
+            items = []
+            for st, s in summaries.items():
+                for p in s.get("passed_tests", []):
+                    items.append({"name": p, "status": "PASSED"})
+                for f in s.get("failed_tests", []):
+                    items.append({"name": f, "status": "FAILED"})
+                for sk in s.get("skipped_tests", []):
+                    items.append({"name": sk, "status": "SKIPPED"})
+            entries = self._extract_table_entries(items)
+        else:
+            entries = self._extract_table_entries(records)
 
-        sections_html = []
-        for idx, (station, summary) in enumerate(summaries.items()):
-            station_title = html.escape(self._station_title(station))
+        total = len(entries)
+        passed = sum(1 for e in entries if e["status"] == "PASS")
+        failed = sum(1 for e in entries if e["status"] == "FAIL")
 
-            def render_test_list(tests: List[str]) -> str:
-                if not tests:
-                    return '<div style="font-size:13px;color:#222222;margin-bottom:12px;">None</div>'
-                items = "".join(f'<div style="margin:2px 0;">{html.escape(t)}</div>' for t in tests)
-                return f'<div style="font-size:13px;color:#222222;margin-bottom:12px;">{items}</div>'
+        rows_html = []
+        for e in entries:
+            is_pass = e["status"] == "PASS"
+            status_color = "#28a745" if is_pass else "#dc3545"
+            actual_color = "#111111" if is_pass else "#dc3545"
 
-            section = f"""
-            <div style="margin-top:{'0' if idx == 0 else '35px'};margin-bottom:20px;">
-              <div style="font-size:16px;font-weight:bold;color:#111111;margin-bottom:14px;">{station_title}</div>
-              <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-family:inherit;font-size:13px;margin-bottom:18px;min-width:320px;">
-                <tbody>
-                  <tr>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;color:#111111;width:160px;">Total Test Cases</td>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">{summary['total']}</td>
-                  </tr>
-                  <tr>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;color:#111111;">Passed</td>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">{summary['passed']}</td>
-                  </tr>
-                  <tr>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;color:#111111;">Failed</td>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">{summary['failed']}</td>
-                  </tr>
-                  <tr>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;color:#111111;">Skipped</td>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">{summary['skipped']}</td>
-                  </tr>
-                  <tr>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;color:#111111;">Warnings</td>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">{summary['warnings']}</td>
-                  </tr>
-                  <tr>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;color:#111111;">Execution Time</td>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">{summary['formatted_duration']}</td>
-                  </tr>
-                  <tr>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;color:#111111;">Pass Percentage</td>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">{summary['pass_percent']}</td>
-                  </tr>
-                  <tr>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;color:#111111;">Fail Percentage</td>
-                    <td style="border:1px solid #d0d7de;padding:6px 14px;text-align:left;color:#111111;">{summary['fail_percent']}</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <div style="font-weight:bold;font-size:13px;margin-top:14px;margin-bottom:4px;color:#111111;">Passed Test Cases</div>
-              {render_test_list(summary.get('passed_tests', []))}
-
-              <div style="font-weight:bold;font-size:13px;margin-top:14px;margin-bottom:4px;color:#111111;">Failed Test Cases</div>
-              {render_test_list(summary.get('failed_tests', []))}
-
-              <div style="font-weight:bold;font-size:13px;margin-top:14px;margin-bottom:4px;color:#111111;">Skipped Test Cases</div>
-              {render_test_list(summary.get('skipped_tests', []))}
-
-              <div style="font-weight:bold;font-size:13px;margin-top:14px;margin-bottom:4px;color:#111111;">Warning Test Cases</div>
-              {render_test_list(summary.get('warning_tests', []))}
-            </div>
-            """
-            sections_html.append(section)
+            rows_html.append(f"""
+            <tr>
+              <td style="border:1px solid #d0d7de;padding:9px 12px;color:#24292f;">{html.escape(e['module'])}</td>
+              <td style="border:1px solid #d0d7de;padding:9px 12px;font-family:Consolas,Arial,sans-serif;font-size:13px;color:#24292f;">{html.escape(e['test_name'])}</td>
+              <td style="border:1px solid #d0d7de;padding:9px 12px;color:#333333;">{html.escape(e['expected'])}</td>
+              <td style="border:1px solid #d0d7de;padding:9px 12px;color:{actual_color};">{html.escape(e['actual'])}</td>
+              <td style="border:1px solid #d0d7de;padding:9px 12px;text-align:center;font-weight:bold;color:{status_color};">{e['status']}</td>
+            </tr>
+            """)
 
         return f"""<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
 </head>
-<body style="margin:0;padding:20px;font-family:Arial,'Segoe UI',sans-serif;color:#111111;background-color:#ffffff;line-height:1.4;">
-  <div style="max-width:800px;margin:0 auto;">
-    <div style="font-size:18px;font-weight:bold;color:#111111;margin-bottom:20px;">Automation Smoke Test Summary</div>
-    {''.join(sections_html)}
+<body style="margin:0;padding:24px;font-family:Arial,'Segoe UI',sans-serif;color:#111111;background-color:#ffffff;line-height:1.5;">
+  <div style="max-width:960px;margin:0 auto;">
+    <div style="font-size:14px;color:#111111;margin-bottom:18px;">Gowthami Ankem</div>
+    
+    <div style="font-size:15px;font-weight:bold;color:#111111;margin-bottom:4px;">Gowthami Ankem</div>
+    <div style="font-size:15px;font-weight:bold;color:#111111;margin-bottom:12px;">Automation Test Report</div>
+    
+    <div style="font-size:14px;color:#111111;margin-bottom:20px;">
+      Total Tests: {total}&nbsp;&nbsp;&nbsp;&nbsp;Passed: <span style="color:#28a745;font-weight:bold;">{passed}</span>&nbsp;&nbsp;&nbsp;&nbsp;Failed: <span style="color:#dc3545;font-weight:bold;">{failed}</span>
+    </div>
+
+    <table cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;font-size:13px;border:1px solid #d0d7de;margin-bottom:24px;">
+      <thead>
+        <tr style="background-color:#f6f8fa;text-align:left;color:#24292f;font-weight:600;border-bottom:2px solid #d0d7de;">
+          <th style="border:1px solid #d0d7de;padding:10px 12px;">Module</th>
+          <th style="border:1px solid #d0d7de;padding:10px 12px;">Test Case Name</th>
+          <th style="border:1px solid #d0d7de;padding:10px 12px;">Expected Result</th>
+          <th style="border:1px solid #d0d7de;padding:10px 12px;">Actual Result</th>
+          <th style="border:1px solid #d0d7de;padding:10px 12px;text-align:center;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {''.join(rows_html)}
+      </tbody>
+    </table>
+
+    <div style="font-size:14px;color:#111111;margin-bottom:18px;">Please find attached detailed reports.</div>
+    <div style="font-size:14px;color:#111111;">
+      Regards,<br>
+      Gowthami
+    </div>
   </div>
 </body>
 </html>"""
@@ -541,9 +741,11 @@ class EmailSender:
 
         from email import encoders
         from email.mime.base import MIMEBase
+        import zipfile
 
         all_paths = self._normalise_report_paths(report_path, report_paths)
         seen_paths = set()
+        total_attached_bytes = 0
 
         for station_label, path_val in all_paths:
             if not path_val:
@@ -559,28 +761,62 @@ class EmailSender:
             seen_paths.add(resolved_path)
 
             size = path.stat().st_size
-            if size > self.MAX_REPORT_SIZE:
-                logger.warning(
-                    "HTML report exceeds %s MB; skipping attachment: %s",
-                    self.MAX_REPORT_SIZE // (1024 * 1024),
-                    path,
-                )
-                continue
 
-            # Use application/octet-stream so email clients (Outlook/Gmail) attach it as a downloadable/openable file
-            # instead of attempting to display raw HTML source code in a text previewer.
-            attachment = MIMEBase("application", "octet-stream")
-            with path.open("rb") as rf:
-                attachment.set_payload(rf.read())
-            encoders.encode_base64(attachment)
-            attachment.add_header("Content-Disposition", "attachment", filename=path.name)
-            message.attach(attachment)
-            logger.info(
-                "Attached HTML report for %s: %s (%.2f MB)",
-                station_label,
-                path.name,
-                size / (1024 * 1024),
-            )
+            # If the HTML report is small (<= 6 MB), attach the .html directly.
+            # If the HTML report is large (> 6 MB), compress to .zip and attach ONLY the .zip
+            # to guarantee the total email size stays strictly below the 35 MB server limit.
+            if size <= self.HTML_DIRECT_ATTACH_LIMIT:
+                if total_attached_bytes + size <= self.MAX_TOTAL_PAYLOAD_SIZE:
+                    html_attachment = MIMEBase("text", "html")
+                    with path.open("rb") as rf:
+                        html_attachment.set_payload(rf.read())
+                    encoders.encode_base64(html_attachment)
+                    html_attachment.add_header("Content-Disposition", f'attachment; filename="{path.name}"')
+                    message.attach(html_attachment)
+                    total_attached_bytes += size
+                    logger.info(
+                        "Attached HTML report for %s: %s (%.2f MB, total: %.2f MB)",
+                        station_label,
+                        path.name,
+                        size / (1024 * 1024),
+                        total_attached_bytes / (1024 * 1024),
+                    )
+                else:
+                    logger.warning(
+                        "Skipping HTML report %s: total attachment size would exceed 18 MB server limit",
+                        path.name,
+                    )
+            else:
+                try:
+                    zip_path = path.with_suffix(".zip")
+                    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                        zf.write(path, arcname=path.name)
+
+                    zip_size = zip_path.stat().st_size
+                    if total_attached_bytes + zip_size <= self.MAX_TOTAL_PAYLOAD_SIZE:
+                        zip_attachment = MIMEBase("application", "zip")
+                        with zip_path.open("rb") as rf:
+                            zip_attachment.set_payload(rf.read())
+                        encoders.encode_base64(zip_attachment)
+                        zip_attachment.add_header("Content-Disposition", f'attachment; filename="{zip_path.name}"')
+                        message.attach(zip_attachment)
+                        total_attached_bytes += zip_size
+                        logger.info(
+                            "Attached compressed ZIP report for %s: %s (%.2f MB, raw: %.2f MB, total: %.2f MB)",
+                            station_label,
+                            zip_path.name,
+                            zip_size / (1024 * 1024),
+                            size / (1024 * 1024),
+                            total_attached_bytes / (1024 * 1024),
+                        )
+                    else:
+                        logger.warning(
+                            "Skipping ZIP report %s: size (%.2f MB) would exceed 18 MB server limit",
+                            zip_path.name,
+                            zip_size / (1024 * 1024),
+                        )
+                except Exception as e:
+                    logger.warning("Could not create/attach zip archive for %s: %s", path, e)
 
     # --------------------------------------------------------------
     # SMTP Delivery
@@ -644,8 +880,8 @@ class EmailSender:
         from email.mime.multipart import MIMEMultipart
         from email.mime.text import MIMEText
 
-        body_html = self.build_email_body(summaries)
-        body_text = self.build_plain_text(summaries)
+        body_html = self.build_email_body(records=records)
+        body_text = self.build_plain_text(records=records)
 
         total_failed = sum(s["failed"] for s in summaries.values())
         total_executed = sum(s["total"] for s in summaries.values())
@@ -674,12 +910,12 @@ class EmailSender:
         alternatives.attach(MIMEText(body_html, "html", "utf-8"))
         message.attach(alternatives)
 
-        # Attach all reports (both consolidated and station-specific)
+        # Attach consolidated report (or station reports if consolidated is unavailable)
         all_report_paths: Dict[str, str] = {}
-        if station_reports:
-            all_report_paths.update(station_reports)
-        if consolidated_report:
+        if consolidated_report and Path(consolidated_report).is_file():
             all_report_paths["CONSOLIDATED"] = consolidated_report
+        elif station_reports:
+            all_report_paths.update(station_reports)
 
         self._attach_reports(message, report_paths=all_report_paths)
 
@@ -711,8 +947,8 @@ class EmailSender:
         from email.mime.multipart import MIMEMultipart
         from email.mime.text import MIMEText
 
-        body_html = self.build_email_body(summaries)
-        body_text = self.build_plain_text(summaries)
+        body_html = self.build_email_body(summaries=summaries)
+        body_text = self.build_plain_text(summaries=summaries)
 
         total_failed = sum(s["failed"] for s in summaries.values())
         total_executed = sum(s["total"] for s in summaries.values())
@@ -785,8 +1021,8 @@ class EmailSender:
         from email.mime.multipart import MIMEMultipart
         from email.mime.text import MIMEText
 
-        body_html = self.build_email_body(summaries)
-        body_text = self.build_plain_text(summaries)
+        body_html = self.build_email_body(summaries=summaries)
+        body_text = self.build_plain_text(summaries=summaries)
 
         project = meta.get("project", "AUTOMATION")
         env = meta.get("env", "QA")

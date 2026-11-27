@@ -3,7 +3,7 @@
 
 """
 ==============  INTRODUCTION ================
-Test Module: test_ListView_DepartedSection_DatePicker
+Test Module: test_ListView_Departed_DatePicker
 Description: Test script to validate Date Picker and Historical Flights in the Departed
              Section of Flights List View.
              - Reads current date.
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-def test_ListView_DepartedSection_DatePicker(page):
+def test_ListView_Departed_DatePicker(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Validation of Date Picker & Historical Departed Flights.

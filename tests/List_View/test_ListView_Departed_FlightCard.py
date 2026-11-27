@@ -3,7 +3,7 @@
 
 """
 ==============  INTRODUCTION ================
-Test Module: test_ListView_DepartedSection_FlightCard
+Test Module: test_ListView_Departed_FlightCard
 Description: Test script to validate Flight Card popup reports in Departed Section of Flights List View.
              Opens the Flight Card report popup (.rh-form) for departed flights and cross-verifies
              that critical flight data—including Flight Number, STA, STD, ETA, ETD, Bay, and Gate—
@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-def test_ListView_DepartedSection_FlightCard(page):
+def test_ListView_Departed_FlightCard(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Validation and Cross-Verification of Flight Card Data in Departed Section.

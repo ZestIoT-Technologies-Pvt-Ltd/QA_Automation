@@ -3,7 +3,7 @@
 
 """
 ==============  INTRODUCTION ================
-Test Module: test_ListView_DepartedSection_PaxCount
+Test Module: test_ListView_Departed_PaxCount
 Description: Test script to validate Passenger (PAX) Count and Segregation Breakdown
              in the Departed Section of Flights List View.
              - Reads Arrival and Departure PAX counts from each departed flight card.
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 
 @pytest.mark.smoke
-def test_ListView_DepartedSection_PaxCount(page):
+def test_ListView_Departed_PaxCount(page):
     """
     ==============  INTRODUCTION ================
     Test Scenario: Validation of Departed Flights PAX Count & Breakdown Popup.
