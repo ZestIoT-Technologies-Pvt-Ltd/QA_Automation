@@ -5,7 +5,7 @@
 
 """
 ==============  INTRODUCTION ================
-Page Object: ListView_DepartedSection_Alerts_Page
+Page Object: ListView_Departed_Alerts_Page
 Description: Checking departed flights alerts in Flights List View.
 
 Workflow:
@@ -33,7 +33,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-class ListView_DepartedSection_Alerts_Page(BasePage):
+class ListView_Departed_Alerts_Page(BasePage):
    
     # ==================== NAVIGATION LOCATORS ====================
     MENU = (

@@ -14,8 +14,8 @@ Description: Test script to validate Passenger (PAX) Count and Segregation Break
 
 import pytest
 import allure
-from pages.List_View.ListView_DepartedSection_PaxCount_Page import (
-    ListView_DepartedSection_PaxCount_Page
+from pages.List_View.ListView_Departed_PaxCount_Page import (
+    ListView_Departed_PaxCount_Page
 )
 from utils.logger import get_logger
 
@@ -40,7 +40,7 @@ def test_ListView_DepartedSection_PaxCount(page):
     """
     logger.info("Starting Departed Section PAX Count Validation Test")
 
-    pax_page = ListView_DepartedSection_PaxCount_Page(page)
+    pax_page = ListView_Departed_PaxCount_Page(page)
 
     with allure.step("Step 1: Navigate to Flights List View Dashboard"):
         pax_page.navigate_to_list_view_page()

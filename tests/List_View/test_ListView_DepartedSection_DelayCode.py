@@ -12,7 +12,7 @@ Description: Test script to validate Delay Codes in Departed Section of Flights 
 
 import pytest
 import allure
-from pages.List_View.ListView_DepartedSection_DelayCode_Page import ListView_DepartedSection_DelayCode_Page
+from pages.List_View.ListView_Departed_DelayCode_Page import ListView_Departed_DelayCode_Page
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -39,7 +39,7 @@ def test_ListView_DepartedSection_DelayCode(page):
     """
     logger.info("Starting Departed Section Delay Code Test")
 
-    delay_code_page = ListView_DepartedSection_DelayCode_Page(page)
+    delay_code_page = ListView_Departed_DelayCode_Page(page)
 
     with allure.step("Step 1: Navigate to Flights List View Dashboard"):
         delay_code_page.navigate_to_list_view_page()

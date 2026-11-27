@@ -14,8 +14,8 @@ Description: Test script to validate Date Picker and Historical Flights in the D
 
 import pytest
 import allure
-from pages.List_View.ListView_DepartedSection_DatePicker_Page import (
-    ListView_DepartedSection_DatePicker_Page
+from pages.List_View.ListView_Departed_DatePicker_Page import (
+    ListView_Departed_DatePicker_Page
 )
 from utils.logger import get_logger
 
@@ -38,7 +38,7 @@ def test_ListView_DepartedSection_DatePicker(page):
     """
     logger.info("Starting Departed Section Date Picker Test")
 
-    datepicker_page = ListView_DepartedSection_DatePicker_Page(page)
+    datepicker_page = ListView_Departed_DatePicker_Page(page)
 
     with allure.step("Step 1: Navigate to Flights List View Dashboard"):
         datepicker_page.navigate_to_list_view_page()

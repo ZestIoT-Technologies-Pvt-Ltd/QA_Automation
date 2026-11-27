@@ -5,7 +5,7 @@
 
 """
 ==============  INTRODUCTION ================
-Page Object: ListView_DepartedSection_DelayCode_Page
+Page Object: ListView_Departed_DelayCode_Page
 Description: Delay Codes validation in Flights List View.
              Handles inspection of delay code icons on departed flight cards, verification of green
              status, opening the Delay Codes popup, and validating that the summary metrics
@@ -34,7 +34,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-class ListView_DepartedSection_DelayCode_Page(BasePage):
+class ListView_Departed_DelayCode_Page(BasePage):
     
     # ==================== NAVIGATION LOCATORS ====================
     MENU = (

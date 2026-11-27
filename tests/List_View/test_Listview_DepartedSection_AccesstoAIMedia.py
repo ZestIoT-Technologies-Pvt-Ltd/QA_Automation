@@ -12,8 +12,8 @@ Description: Test script to validate AI Captured Media in Departed Section of Fl
 
 import pytest
 import allure
-from pages.List_View.ListView_DepartedSection_AccesstoAIMedia_Page import (
-    ListView_DepartedSection_AccesstoAIMedia_Page
+from pages.List_View.ListView_Departed_AccesstoAIMedia_Page import (
+    ListView_Departed_AccesstoAIMedia_Page
 )
 from utils.logger import get_logger
 
@@ -43,7 +43,7 @@ def test_ListView_DepartedSection_AccesstoAIMedia(page):
     """
     logger.info("Starting Departed Section Access to AI Media Validation Test")
 
-    ai_media_page = ListView_DepartedSection_AccesstoAIMedia_Page(page)
+    ai_media_page = ListView_Departed_AccesstoAIMedia_Page(page)
 
     with allure.step("Step 1: Navigate to Flights List View Dashboard"):
         ai_media_page.navigate_to_list_view_page()

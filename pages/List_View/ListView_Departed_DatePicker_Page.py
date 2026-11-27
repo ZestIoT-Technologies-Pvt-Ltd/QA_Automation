@@ -3,7 +3,7 @@
 
 """
 ==============  INTRODUCTION ================
-Page Object: ListView_DepartedSection_DatePicker_Page
+Page Object: ListView_Departed_DatePicker_Page
 Description: Validates Date Picker and Historical Departed Flights in Flights List View.
              Opens the date picker popup, selects previous/historical dates from the calendar popup,
              clicks the search icon to fetch flights for the selected date, validates that historical
@@ -21,7 +21,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-class ListView_DepartedSection_DatePicker_Page(BasePage):
+class ListView_Departed_DatePicker_Page(BasePage):
 
     # ==================== NAVIGATION LOCATORS ====================
     MENU = "//span[@class='nav-icon']/i[text()='menu']"

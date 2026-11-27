@@ -3,7 +3,7 @@
 
 """
 ==============  INTRODUCTION ================
-Page Object: ListView_DepartedSection_PaxCount_Page
+Page Object: ListView_Departed_PaxCount_Page
 Description: Validates Passenger (PAX) Count and Breakdown popup in Departed Section of Flights List View.
          
 """
@@ -18,7 +18,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-class ListView_DepartedSection_PaxCount_Page(BasePage):
+class ListView_Departed_PaxCount_Page(BasePage):
 
     # ==================== NAVIGATION LOCATORS ====================
     MENU = "//span[@class='nav-icon']/i[text()='menu']"

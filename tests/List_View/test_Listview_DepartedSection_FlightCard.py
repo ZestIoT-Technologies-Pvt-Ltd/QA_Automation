@@ -12,7 +12,7 @@ Description: Test script to validate Flight Card popup reports in Departed Secti
 
 import pytest
 import allure
-from pages.List_View.ListView_DepartedSection_FlightCard_Page import ListView_DepartedSection_FlightCard_Page
+from pages.List_View.ListView_Departed_FlightCard_Page import ListView_Departed_FlightCard_Page
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -40,7 +40,7 @@ def test_ListView_DepartedSection_FlightCard(page):
     """
     logger.info("Starting Departed Section Flight Card Validation Test")
 
-    flight_card_page = ListView_DepartedSection_FlightCard_Page(page)
+    flight_card_page = ListView_Departed_FlightCard_Page(page)
 
     with allure.step("Step 1: Navigate to Flights List View Dashboard"):
         flight_card_page.navigate_to_list_view_page()

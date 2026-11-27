@@ -4,7 +4,7 @@
 # Modified Date : 2026-11-23
 """
 ==============  INTRODUCTION ================
-Page Object: ListView_DepartedSection_AccesstoAIMedia_Page
+Page Object: ListView_Departed_AccesstoAIMedia_Page
 Description: Departed Section Access to AI Media validation in Flights List View.
              Validates AI-captured media (cameras, videos, and image timestamps) for departed flights.
              Inspects Turnaround and Split flight operations, verifies turnaround progress indicators,
@@ -41,7 +41,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-class ListView_DepartedSection_AccesstoAIMedia_Page(BasePage):
+class ListView_Departed_AccesstoAIMedia_Page(BasePage):
 
     # ==================== NAVIGATION LOCATORS ====================
     MENU = (

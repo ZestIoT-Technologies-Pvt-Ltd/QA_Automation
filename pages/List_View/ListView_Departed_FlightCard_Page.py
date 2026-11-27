@@ -4,7 +4,7 @@
 # Modified Date : 2026-11-23
 """
 ==============  INTRODUCTION ================
-Page Object: ListView_DepartedSection_FlightCard_Page
+Page Object: ListView_Departed_FlightCard_Page
 Description: Departed Section Flight Card validation in Flights List View.
              Opens the Flight Card report popup (.rh-form) for departed flights and cross-verifies
              that critical flight data—including Flight Number, STA, STD, ETA, ETD, Bay, and Gate—
@@ -39,7 +39,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-class ListView_DepartedSection_FlightCard_Page(BasePage):
+class ListView_Departed_FlightCard_Page(BasePage):
    
     # ==================== NAVIGATION LOCATORS ====================
     MENU = (

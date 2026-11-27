@@ -22,7 +22,7 @@ Workflow:
 
 import pytest
 import allure
-from pages.List_View.ListView_DepartedSection_Alerts_Page import ListView_DepartedSection_Alerts_Page
+from pages.List_View.ListView_Departed_Alerts_Page import ListView_Departed_Alerts_Page
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -41,7 +41,7 @@ def test_ListView_DepartedSection_Alerts(page):
     """
     logger.info("Starting Departed Section Alerts Validation Test")
 
-    alerts_page = ListView_DepartedSection_Alerts_Page(page)
+    alerts_page = ListView_Departed_Alerts_Page(page)
 
     with allure.step("Step 1: Navigate to Flights List View Dashboard"):
         alerts_page.navigate_to_list_view_page()
