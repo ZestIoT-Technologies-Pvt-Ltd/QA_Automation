@@ -7,11 +7,13 @@ Email body structure displays consolidated smoke test summary by airport.
 from __future__ import annotations
 
 import html
+import io
 import os
 import re
 import smtplib
 import traceback
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -29,6 +31,7 @@ class EmailSender:
     """Create a station-wise summary email and attach HTML reports."""
 
     MAX_REPORT_SIZE = 25 * 1024 * 1024  # 25 MB per report
+    MAX_TOTAL_ATTACHMENTS_SIZE = 18 * 1024 * 1024  # ~24 MB after base64 encoding for Office365 compatibility
 
     def __init__(self):
         # Configuration is loaded strictly from environment variables (.env)
@@ -105,24 +108,27 @@ class EmailSender:
             if excel_path.is_file():
                 from utils.excel_reader import ExcelReader
                 reader = ExcelReader(str(excel_path))
-                if "Execution_Config" in reader.get_sheet_names():
-                    rows = reader.read_sheet("Execution_Config")
-                    # 1. Match project and Enabled
-                    for r in rows:
-                        enabled = str(r.get("Enabled", "")).strip().lower() in ("yes", "true", "1", "y")
-                        proj_val = str(r.get("Project", "")).strip().lower()
-                        if enabled and (not project or proj_val == str(project).strip().lower()):
-                            st = str(r.get("Station", "")).strip().upper()
-                            name = str(r.get("Station_Name", "")).strip()
-                            if st:
+                try:
+                    if "Execution_Config" in reader.get_sheet_names():
+                        rows = reader.read_sheet("Execution_Config")
+                        # 1. Match project and Enabled
+                        for r in rows:
+                            enabled = str(r.get("Enabled", "")).strip().lower() in ("yes", "true", "1", "y")
+                            proj_val = str(r.get("Project", "")).strip().lower()
+                            if enabled and (not project or proj_val == str(project).strip().lower()):
+                                st = str(r.get("Station", "")).strip().upper()
+                                name = str(r.get("Station_Name", "")).strip()
+                                if st:
+                                    return st, name or st
+                        # 2. Match any Enabled row
+                        for r in rows:
+                            enabled = str(r.get("Enabled", "")).strip().lower() in ("yes", "true", "1", "y")
+                            if enabled and str(r.get("Station", "")).strip():
+                                st = str(r.get("Station", "")).strip().upper()
+                                name = str(r.get("Station_Name", "")).strip()
                                 return st, name or st
-                    # 2. Match any Enabled row
-                    for r in rows:
-                        enabled = str(r.get("Enabled", "")).strip().lower() in ("yes", "true", "1", "y")
-                        if enabled and str(r.get("Station", "")).strip():
-                            st = str(r.get("Station", "")).strip().upper()
-                            name = str(r.get("Station_Name", "")).strip()
-                            return st, name or st
+                finally:
+                    reader.close()
         except Exception as e:
             logger.warning(f"Could not load station from execution_config.xlsx: {e}")
         return "DXB", "Dubai"
@@ -603,22 +609,39 @@ class EmailSender:
             return [("REPORT", report_path)]
         return []
 
+    def _resolve_attachment_filename(self, path: Path, station_label: str, station: Optional[str]) -> str:
+        """Return display filename in '<STATION>_Report.html' format."""
+        clean_station = ""
+        m_fn = re.search(r"([A-Z0-9_-]{2,10})_Report\.html$", path.name, re.IGNORECASE)
+        if m_fn and "," not in m_fn.group(1):
+            clean_station = m_fn.group(1).upper()
+        elif station_label and station_label not in ("REPORT", "CONSOLIDATED", "ALL_STATIONS") and "," not in station_label:
+            clean_station = station_label.upper()
+        elif station and str(station).strip().upper() not in ("DEFAULT", "UNKNOWN", "-", "NONE", ""):
+            clean_station = str(station).split(",")[0].strip().upper()
+        else:
+            excel_code, _ = self.get_excel_station_config(getattr(self, "default_project", "flydubai"))
+            clean_station = excel_code or "DXB"
+        return f"{clean_station.split(',')[0].strip().upper()}_Report.html"
+
     def _attach_reports(
         self,
         message: Any,
         report_path: Optional[Any] = None,
         report_paths: Optional[Any] = None,
         station: Optional[str] = None,
-    ) -> None:
+    ) -> List[str]:
+        """Attach station HTML reports (auto-zipping if combined size exceeds Office365 budget)."""
         if not self.attach_report:
             logger.info("HTML report attachments disabled by .env (EMAIL_ATTACH_REPORT=false)")
-            return
+            return []
 
         from email import encoders
         from email.mime.base import MIMEBase
 
         all_paths = self._normalise_report_paths(report_path, report_paths)
         seen_paths = set()
+        candidates: List[Tuple[str, Path, int, str]] = []
 
         for station_label, path_val in all_paths:
             if not path_val:
@@ -627,53 +650,60 @@ class EmailSender:
             if not path.is_file():
                 logger.warning("Report file not found; skipping attachment: %s", path)
                 continue
-
             resolved_path = str(path.resolve())
             if resolved_path in seen_paths:
                 continue
             seen_paths.add(resolved_path)
-
             size = path.stat().st_size
-            if size > self.MAX_REPORT_SIZE:
+            display_name = self._resolve_attachment_filename(path, station_label, station)
+            candidates.append((station_label, path, size, display_name))
+
+        if not candidates:
+            return []
+
+        # Zip reports automatically when combined raw HTML exceeds Office365 safe budget
+        total_raw_bytes = sum(size for _, _, size, _ in candidates)
+        use_zip = total_raw_bytes > self.MAX_TOTAL_ATTACHMENTS_SIZE
+        total_attached_bytes = 0
+        attached_names: List[str] = []
+
+        for station_label, path, raw_size, html_filename in candidates:
+            if use_zip:
+                buf = io.BytesIO()
+                with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+                    zf.write(path, arcname=html_filename)
+                payload = buf.getvalue()
+                attachment_filename = Path(html_filename).with_suffix(".zip").name
+            else:
+                payload = path.read_bytes()
+                attachment_filename = html_filename
+
+            payload_size = len(payload)
+            if payload_size > self.MAX_REPORT_SIZE or (total_attached_bytes + payload_size) > self.MAX_TOTAL_ATTACHMENTS_SIZE:
                 logger.warning(
-                    "HTML report exceeds %s MB; skipping attachment: %s",
-                    self.MAX_REPORT_SIZE // (1024 * 1024),
-                    path,
+                    "Report exceeds attachment budget (file=%.2f MB, total=%.2f MB); skipping attachment: %s",
+                    payload_size / (1024 * 1024),
+                    (total_attached_bytes + payload_size) / (1024 * 1024),
+                    attachment_filename,
                 )
                 continue
 
-            # Determine attachment display filename strictly in StationName_Report.html format
-            clean_station = ""
-            m_fn = re.search(r"([A-Z0-9_-]{2,10})_Report\.html$", path.name, re.IGNORECASE)
-            if m_fn and "," not in m_fn.group(1):
-                clean_station = m_fn.group(1).upper()
-            elif station_label and station_label not in ("REPORT", "CONSOLIDATED", "ALL_STATIONS") and "," not in station_label:
-                clean_station = station_label.upper()
-            elif station and str(station).strip().upper() not in ("DEFAULT", "UNKNOWN", "-", "NONE", ""):
-                first_st = str(station).split(",")[0].strip().upper()
-                clean_station = first_st
-            else:
-                excel_code, _ = self.get_excel_station_config(getattr(self, "default_project", "flydubai"))
-                clean_station = excel_code or "DXB"
-
-            clean_station = clean_station.split(",")[0].strip().upper()
-            attachment_filename = f"{clean_station}_Report.html"
-
-            # Use application/octet-stream so email clients (Outlook/Gmail) attach it as a downloadable/openable file
-            # instead of attempting to display raw HTML source code in a text previewer.
+            total_attached_bytes += payload_size
             attachment = MIMEBase("application", "octet-stream")
-            with path.open("rb") as rf:
-                attachment.set_payload(rf.read())
+            attachment.set_payload(payload)
             encoders.encode_base64(attachment)
             attachment.add_header("Content-Disposition", "attachment", filename=attachment_filename)
             message.attach(attachment)
+            attached_names.append(attachment_filename)
             logger.info(
-                "Attached HTML report for %s as '%s': %s (%.2f MB)",
+                "Attached report for %s as '%s': %s (%.2f MB)",
                 station_label,
                 attachment_filename,
                 path.name,
-                size / (1024 * 1024),
+                payload_size / (1024 * 1024),
             )
+
+        return attached_names
 
     # --------------------------------------------------------------
     # SMTP Delivery
@@ -683,7 +713,7 @@ class EmailSender:
         server = None
         try:
             logger.info("Creating SMTP connection to %s:%s", self.smtp_server, self.smtp_port)
-            server = smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=45)
+            server = smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=120)
             logger.info("Starting TLS")
             server.starttls()
             logger.info("Logging in as %s", self.sender_email)
@@ -704,6 +734,65 @@ class EmailSender:
                     server.quit()
                 except Exception:
                     logger.warning("SMTP connection was already closed or could not quit cleanly")
+
+    def _build_and_send_summary_email(
+        self,
+        summaries: Dict[str, Dict[str, Any]],
+        report_path: Optional[Any] = None,
+        report_paths: Optional[Any] = None,
+        station: Optional[Any] = None,
+    ) -> bool:
+        """Build summary email and retry without attachments if Office365 rejects payload size."""
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
+        def _create_message(include_attachments: bool, note_text: str = "") -> Tuple[MIMEMultipart, List[str]]:
+            body_html = self.build_email_body(summaries)
+            body_text = self.build_plain_text(summaries)
+            if note_text:
+                body_text = f"{body_text}\n\nNote: {note_text}"
+                note_html = (
+                    '<div style="max-width:800px;margin:16px auto 0;padding:10px 14px;'
+                    'border:1px solid #f59e0b;background:#fffbeb;color:#92400e;font-size:12px;">'
+                    f'{html.escape(note_text)}</div>'
+                )
+                body_html = body_html.replace("</body>", f"{note_html}</body>")
+
+            msg = MIMEMultipart("mixed")
+            msg["From"] = self.sender_email
+            msg["To"] = ", ".join(self.receiver_emails)
+            if self.cc_emails:
+                msg["Cc"] = ", ".join(self.cc_emails)
+            msg["Subject"] = "Automation Test Execution Summary"
+
+            alternatives = MIMEMultipart("alternative")
+            alternatives.attach(MIMEText(body_text, "plain", "utf-8"))
+            alternatives.attach(MIMEText(body_html, "html", "utf-8"))
+            msg.attach(alternatives)
+
+            attached: List[str] = []
+            if include_attachments:
+                attached = self._attach_reports(msg, report_path=report_path, report_paths=report_paths, station=station)
+            return msg, attached
+
+        message, attached = _create_message(include_attachments=True)
+        try:
+            return self._send_smtp_message(message)
+        except (smtplib.SMTPResponseException, TimeoutError, OSError) as exc:
+            if not attached:
+                raise
+            logger.warning(
+                "SMTP send failed with attachments (%s: %s); retrying summary email without attachments.",
+                type(exc).__name__,
+                exc,
+            )
+            saved_paths = [str(p) for _, p in self._normalise_report_paths(report_path, report_paths) if p]
+            note = (
+                "HTML report attachment(s) exceeded SMTP delivery limits and were omitted. "
+                f"Reports are saved locally at: {', '.join(saved_paths)}"
+            )
+            fallback_msg, _ = _create_message(include_attachments=False, note_text=note)
+            return self._send_smtp_message(fallback_msg)
 
     # --------------------------------------------------------------
     # Public Send Methods
@@ -739,39 +828,6 @@ class EmailSender:
             logger.warning("No test summaries generated from records; email not sent.")
             return False
 
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-
-        body_html = self.build_email_body(summaries)
-        body_text = self.build_plain_text(summaries)
-
-        total_failed = sum(s["failed"] for s in summaries.values())
-        total_executed = sum(s["total"] for s in summaries.values())
-        if total_executed == 0:
-            verdict = "NO TESTS EXECUTED"
-        elif total_failed:
-            verdict = "FAILED"
-        else:
-            verdict = "PASSED"
-
-        project = meta.get("project") or "AUTOMATION"
-        env = meta.get("env") or "QA"
-        stations_label = ", ".join(summaries.keys()) if len(summaries) <= 3 else "MULTI-STATION"
-
-        subject = f"Automation Test Execution Summary"
-
-        message = MIMEMultipart("mixed")
-        message["From"] = self.sender_email
-        message["To"] = ", ".join(self.receiver_emails)
-        if self.cc_emails:
-            message["Cc"] = ", ".join(self.cc_emails)
-        message["Subject"] = subject
-
-        alternatives = MIMEMultipart("alternative")
-        alternatives.attach(MIMEText(body_text, "plain", "utf-8"))
-        alternatives.attach(MIMEText(body_html, "html", "utf-8"))
-        message.attach(alternatives)
-
         # Attach station-specific reports only for executed stations
         all_report_paths: Dict[str, str] = {}
         if station_reports:
@@ -782,9 +838,7 @@ class EmailSender:
         elif consolidated_report:
             all_report_paths["REPORT"] = consolidated_report
 
-        self._attach_reports(message, report_paths=all_report_paths)
-
-        return self._send_smtp_message(message)
+        return self._build_and_send_summary_email(summaries, report_paths=all_report_paths)
 
     def send_execution_report(
         self,
@@ -815,38 +869,6 @@ class EmailSender:
             logger.warning("No test cases found in %s; email not sent.", xml_file)
             return False
 
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-
-        body_html = self.build_email_body(summaries)
-        body_text = self.build_plain_text(summaries)
-
-        total_failed = sum(s["failed"] for s in summaries.values())
-        total_executed = sum(s["total"] for s in summaries.values())
-        if total_executed == 0:
-            verdict = "NO TESTS EXECUTED"
-        elif total_failed:
-            verdict = "FAILED"
-        else:
-            verdict = "PASSED"
-
-        stations_label = ", ".join(summaries.keys()) if len(summaries) <= 3 else "MULTI-STATION"
-        proj_label = str(project or "AUTOMATION").upper()
-        env_label = str(env or "QA").upper()
-        subject = f"Automation Test Execution Summary"
-
-        message = MIMEMultipart("mixed")
-        message["From"] = self.sender_email
-        message["To"] = ", ".join(self.receiver_emails)
-        if self.cc_emails:
-            message["Cc"] = ", ".join(self.cc_emails)
-        message["Subject"] = subject
-
-        alternatives = MIMEMultipart("alternative")
-        alternatives.attach(MIMEText(body_text, "plain", "utf-8"))
-        alternatives.attach(MIMEText(body_html, "html", "utf-8"))
-        message.attach(alternatives)
-
         executed_stations_set = {k.upper() for k in summaries.keys()}
         if not report_paths:
             candidate_stations = list(summaries.keys())
@@ -866,9 +888,12 @@ class EmailSender:
                 if st_k.upper() in executed_stations_set or st_k.upper() == "REPORT"
             }
 
-        self._attach_reports(message, report_path=report_path, report_paths=report_paths, station=station)
-
-        return self._send_smtp_message(message)
+        return self._build_and_send_summary_email(
+            summaries,
+            report_path=report_path,
+            report_paths=report_paths,
+            station=station,
+        )
 
     def send_station_report(
         self,

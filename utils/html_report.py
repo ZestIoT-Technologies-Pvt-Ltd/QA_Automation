@@ -386,21 +386,29 @@ class HtmlReportPlugin:
             "meta": {k: v for k, v in meta.items() if k not in ("warnings", "plan_warnings")},
             "summary": summary})
 
-        if not cfg.getoption("--no-email"):
-            if not getattr(cfg, "_email_delivered", False):
-                from utils.email_sender import EmailSender
-                try:
-                    sender = EmailSender()
-                    sender.send_session_report(
-                        meta=meta,
-                        records=records,
-                        station_reports=station_reports,
-                        consolidated_report=None,
-                    )
+        if cfg.getoption("--no-email"):
+            cfg._email_status = "Skipped (--no-email flag set)"
+        elif not getattr(cfg, "_email_delivered", False):
+            from utils.email_sender import EmailSender
+            try:
+                sender = EmailSender()
+                delivered = sender.send_session_report(
+                    meta=meta,
+                    records=records,
+                    station_reports=station_reports,
+                    consolidated_report=None,
+                )
+                if delivered:
                     cfg._email_delivered = True
-                except Exception as error:
-                    self.framework_warnings.append(f"E-mail delivery failed: {type(error).__name__}: {error}")
-                    print(f"\n[report] E-mail delivery problem: {type(error).__name__}: {error}")
+                    recipients = ", ".join(sender.receiver_emails)
+                    cfg._email_status = f"Sent successfully to {recipients}"
+                else:
+                    cfg._email_status = "Skipped (no executed test summaries generated)"
+            except Exception as error:
+                err_text = f"{type(error).__name__}: {error}"
+                self.framework_warnings.append(f"E-mail delivery failed: {err_text}")
+                cfg._email_status = f"FAILED ({err_text})"
+                print(f"\n[report] E-mail delivery problem: {err_text}")
 
     def pytest_terminal_summary(self, terminalreporter):
         station_reports = getattr(self.config, "_station_reports", {})
@@ -411,6 +419,11 @@ class HtmlReportPlugin:
         elif self.report_path:
             terminalreporter.write_sep("-", "HTML report")
             terminalreporter.write_line(self.report_path)
+
+        email_status = getattr(self.config, "_email_status", None)
+        if email_status:
+            terminalreporter.write_sep("-", "Email Delivery")
+            terminalreporter.write_line(email_status)
 
 
 # --------------------------------------------------------------------------- summary
